@@ -161,7 +161,7 @@ Ada::Ada(
   srdf::Model srdfModel;
   std::string adaSrdfXMLString = retriever->readAll(adaSrdfUri);
   srdfModel.initString(urdfModel, adaSrdfXMLString);
-  auto disabledCollisions = adaModel.getDisabledCollisionPairs();
+  auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
 
   for (auto disabledPair : disabledCollisions)
   {
