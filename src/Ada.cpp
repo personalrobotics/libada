@@ -470,10 +470,10 @@ ConcreteManipulatorPtr Ada::configureArm(
   using dart::dynamics::Chain;
 
   std::stringstream armBaseName;
-  armBaseName << "base";
+  armBaseName << "j2n6s200_link_base";
 
   std::stringstream armEndName;
-  armEndName << "end_effector/INPUT_INTERFACE";
+  armEndName << "j2n6s200_end_effector";
 
   // std::stringstream endEffectorName;
   // endEffectorName << "/hand_base";
