@@ -1,0 +1,12 @@
+# Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
+
+coverage:
+  fixes:
+    - "src/libada::"  # reduce root "src/aikido/" => "/"
+  ignore:
+    - "build"
+    - "src/aikido"
+    - "tests"
+
+comment:
+  layout: "diff, flags, files"
