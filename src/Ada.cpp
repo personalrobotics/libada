@@ -298,7 +298,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 
   if (!mSimulation)
   {
-    auto armSkeleton = mArm-> getMetaSkeleton();
+    auto armSkeleton = mRobot-> getMetaSkeleton();
     armSkeleton->setPositions(mJointStateClient->getLatestPosition(*armSkeleton));
   }
 }
@@ -473,7 +473,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   armBaseName << "j2n6s200_link_base";
 
   std::stringstream armEndName;
-  armEndName << "j2n6s200_end_effector";
+  armEndName << "j2n6s200_link_finger_tip_2";
 
   // std::stringstream endEffectorName;
   // endEffectorName << "/hand_base";
