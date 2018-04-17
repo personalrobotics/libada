@@ -67,62 +67,62 @@ public:
   virtual ~Ada() = default;
 
   /// \copydoc Robot::smoothPath
-  virtual std::unique_ptr<aikido::trajectory::Spline> smoothPath(
+  std::unique_ptr<aikido::trajectory::Spline> smoothPath(
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path,
       const aikido::constraint::TestablePtr& constraint) override;
 
   /// \copydoc Robot::retimePath
-  virtual std::unique_ptr<aikido::trajectory::Spline> retimePath(
+  std::unique_ptr<aikido::trajectory::Spline> retimePath(
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path) override;
 
   /// Executes a trajectory
   /// \param[in] trajectory Timed trajectory to execute
-  virtual std::future<void> executeTrajectory(
+  std::future<void> executeTrajectory(
           const aikido::trajectory::TrajectoryPtr& trajectory) const override;
 
   // TODO (avk): Set up the resource directory
   /// Returns a named configuration
   /// \param[in] name Name of the configuration
-  virtual boost::optional<Eigen::VectorXd> getNamedConfiguration(
+  boost::optional<Eigen::VectorXd> getNamedConfiguration(
       const std::string& name) const override;
 
   /// Sets the list of named configurations
   /// \param[in] namedConfigurations Map of name, configuration
-  virtual void setNamedConfigurations(
+  void setNamedConfigurations(
       std::unordered_map<std::string,
       const Eigen::VectorXd> namedConfigurations) override;
 
   /// \return Name of this Robot
-  virtual std::string getName() const override;
+  std::string getName() const override;
 
   /// Returns the MetaSkeleton of this robot.
-  virtual dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
+  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   /// \return MetaSkeletonStateSpace of this robot.
-  virtual aikido::statespace::dart::MetaSkeletonStateSpacePtr
-    getStateSpace() const override;
+  aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr
+  getStateSpace() const override;
 
   /// Sets the root of this robot.
-  virtual void setRoot(Robot* robot) override;
+  void setRoot(Robot* robot) override;
 
   /// Simulates up to the provided timepoint.
   /// Assumes that parent robot is locked.
   /// \param[in] timepoint Time to simulate to.
-  virtual void step(const std::chrono::system_clock::time_point& timepoint) override;
+  void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   /// Returns self collision constraint
-  virtual aikido::constraint::dart::CollisionFreePtr getSelfCollisionConstraint(
+  aikido::constraint::dart::CollisionFreePtr getSelfCollisionConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton) override;
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const override;
 
   /// Returns self-collision constraint along with provided constraint
   /// \param[in] collisionFree Collision constraint
-  virtual aikido::constraint::TestablePtr getFullCollisionConstraint(
+  aikido::constraint::TestablePtr getFullCollisionConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree) override;
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree) const override;
 
   // Clones RNG
   std::unique_ptr<aikido::common::RNG> cloneRNG();
