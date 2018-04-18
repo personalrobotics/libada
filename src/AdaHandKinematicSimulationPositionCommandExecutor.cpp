@@ -87,12 +87,12 @@ void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
 
   const auto fingerChains = std::array<ChainPtr, kNumPositionExecutors>{{
       Chain::create(
-          robot->getBodyNode(prefix + "finger0_0"), // finger0Primal
-          robot->getBodyNode(prefix + "finger0_1"), // finger0Distal
+          robot->getBodyNode("j2n6s200_link_finger_1"), // finger0Primal
+          robot->getBodyNode("j2n6s200_link_finger_tip_1"), // finger0Distal
           Chain::IncludeBoth),
       Chain::create(
-          robot->getBodyNode(prefix + "finger1_0"), // finger1Primal
-          robot->getBodyNode(prefix + "finger1_1"), // finger1Distal
+          robot->getBodyNode("j2n6s200_link_finger_2"), // finger1Primal
+          robot->getBodyNode("j2n6s200_link_finger_tip_2"), // finger1Distal
           Chain::IncludeBoth),
       }};
 

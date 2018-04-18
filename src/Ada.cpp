@@ -120,7 +120,7 @@ Ada::Ada(
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
 
-  std::string name = "ada";
+  std::string name = "j2n6s200";
 
   // Load Ada
   mRobotSkeleton = mWorld->getSkeleton(name);
@@ -201,7 +201,7 @@ Ada::Ada(
  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
  // Setup the arm
- mArm = configureArm("adaArm", retriever, mTrajectoryExecutor,
+ mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
      collisionDetector, selfCollisionFilter);
 
  // Set up the concrete robot from the meta skeleton
@@ -475,8 +475,8 @@ ConcreteManipulatorPtr Ada::configureArm(
   std::stringstream armEndName;
   armEndName << "j2n6s200_end_effector";
 
-  // std::stringstream endEffectorName;
-  // endEffectorName << "/hand_base";
+  std::stringstream endEffectorName;
+  endEffectorName << "j2n6s200_link_finger_1";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
@@ -484,13 +484,13 @@ ConcreteManipulatorPtr Ada::configureArm(
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
 
-  // auto hand = std::make_shared<BarrettHand>(
-  //     armName,
-  //     mSimulation,
-  //     getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
-  //     selfCollisionFilter,
-  //     mNode.get(),
-  //     retriever);
+  auto hand = std::make_shared<AdaHand>(
+       armName,
+       mSimulation,
+       getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
+       selfCollisionFilter,
+       mNode.get(),
+       retriever);
 
   // Hardcoding to acceleration limits used in OpenRAVE
   // This is necessary because ADA is loaded from URDF, which

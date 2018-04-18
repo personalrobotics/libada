@@ -293,7 +293,7 @@ AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
     auto jointNodes = preshapeNode.second;
 
     // TODO: check
-    Eigen::VectorXd preshape(4);
+    Eigen::VectorXd preshape(2);
     for (auto joint : jointNodes)
     {
       auto jointName = joint.first.as<std::string>();
@@ -338,7 +338,7 @@ AdaHand::createAdaHandPositionExecutor(
     const std::string serverName
         = "/" + mName + "_hand_controller/set_position";
 
-    std::vector<std::string> jointNames(4);
+    std::vector<std::string> jointNames(2);
     for (const auto kv : adaFingerJointNameToPositionIndexMap)
     {
       assert(kv.second < jointNames.size());
@@ -352,7 +352,7 @@ AdaHand::createAdaHandPositionExecutor(
 
 const std::unordered_map<std::string, size_t>
     AdaHand::adaFingerJointNameToPositionIndexMap = {
-        {"finger0_1", 0}, {"finger1_1", 1},
+        {"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_tip_1", 1}, {"j2n6s200_link_finger_2", 0}, {"j2n6s200_link_finger_tip_2", 1}
 };
 
 } // namespace ada
