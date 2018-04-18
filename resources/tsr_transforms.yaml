@@ -1,0 +1,18 @@
+---
+# AdaHand endeffector frame to palm offset = 0.18 m
+left:
+  default: !Matrix &left_default
+    [[0., 0., 1., 0.],
+     [1., 0., 0., 0.],
+     [0., 1., 0., .18],
+     [0., 0., 0., 1.]]
+  cylinder: *left_default
+
+#AdaHand endeffector frame to palm offset = 0.18m
+right:
+  default: !Matrix &right_default
+    [[0., 0., 1., 0.],
+     [1., 0., 0., 0.],
+     [0., 1., 0., .18],
+     [0., 0., 0., 1.]]
+  cylinder: *right_default

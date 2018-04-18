@@ -1,0 +1,10 @@
+---
+closed:
+    finger0_1: 2.443
+    finger1_1: 2.443
+open:
+    finger0_1: 0.0
+    finger1_1: 0.0
+partial_open:
+    finger0_1: 0.75
+    finger1_1: 0.75
