@@ -133,6 +133,9 @@ public:
   /// Get the arm
   aikido::robot::ConcreteManipulatorPtr getArm();
 
+  /// Get the hand
+  aikido::robot::HandPtr getHand();
+
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
 

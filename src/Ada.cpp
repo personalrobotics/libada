@@ -340,6 +340,12 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
+HandPtr Ada::getHand()
+{
+  return mArm->getHand();
+}
+
+//==============================================================================
 void Ada::update()
 {
   step(std::chrono::system_clock::now());
