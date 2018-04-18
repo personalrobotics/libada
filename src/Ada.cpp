@@ -201,7 +201,7 @@ Ada::Ada(
  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
  // Setup the arm
- mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
+ mArm = configureArm("adaArm", retriever, mTrajectoryExecutor,
      collisionDetector, selfCollisionFilter);
 
  // Set up the concrete robot from the meta skeleton
