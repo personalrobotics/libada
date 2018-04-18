@@ -2,8 +2,7 @@
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include "aikido/common/algorithm.hpp"
 
-namespace aikido {
-namespace control {
+namespace ada {
 
 //==============================================================================
 AdaFingerKinematicSimulationPositionCommandExecutor::
@@ -99,7 +98,7 @@ AdaFingerKinematicSimulationPositionCommandExecutor::execute(
 
     mPromise.reset(new std::promise<void>());
 
-    mProximalGoalPosition = common::clamp(
+    mProximalGoalPosition = aikido::common::clamp(
         goalPosition[0], mProximalLimits.first, mProximalLimits.second);
     mDistalGoalPosition = mProximalGoalPosition * kMimicRatio;
     mDistalOnly = false;
@@ -268,5 +267,4 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::
       mDistalDof->getChildBodyNode());
 }
 
-} // namespace control
-} // namespace aikido
+} // ada

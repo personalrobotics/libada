@@ -9,11 +9,10 @@
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/dynamics/dynamics.hpp>
-#include "AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
+#include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
 #include "aikido/control/PositionCommandExecutor.hpp"
 
-namespace aikido {
-namespace control {
+namespace ada {
 
 AIKIDO_DECLARE_POINTERS(AdaHandKinematicSimulationPositionCommandExecutor)
 
@@ -22,7 +21,7 @@ AIKIDO_DECLARE_POINTERS(AdaHandKinematicSimulationPositionCommandExecutor)
 /// See AdaFingerKinematicSimulationPositionCommandExecutor and
 /// for details.
 class AdaHandKinematicSimulationPositionCommandExecutor
-    : public PositionCommandExecutor
+    : public aikido::control::PositionCommandExecutor
 {
 public:
   /// Constructor.
@@ -113,7 +112,6 @@ private:
   std::mutex mMutex;
 };
 
-} // namespace control
-} // namespace aikido
+} // namespace ada
 
 #endif

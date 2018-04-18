@@ -11,8 +11,7 @@
 #include "aikido/common/pointers.hpp"
 #include "aikido/control/PositionCommandExecutor.hpp"
 
-namespace aikido {
-namespace control {
+namespace ada {
 
 AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
 
@@ -27,7 +26,7 @@ AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
 /// to move until it reaches the joint limit or until distal collision is
 /// detected.
 class AdaFingerKinematicSimulationPositionCommandExecutor
-    : public PositionCommandExecutor
+    : public aikido::control::PositionCommandExecutor
 {
 public:
   /// Constructor.
@@ -151,7 +150,6 @@ private:
   std::mutex mMutex;
 };
 
-} // namespace control
-} // namespace aikido
+} // ada
 
 #endif

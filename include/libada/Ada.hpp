@@ -28,6 +28,7 @@
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
+#include "libada/AdaHand.hpp"
 
 namespace ada {
 
@@ -38,6 +39,11 @@ extern const std::vector<std::string> trajectoryExecutors;
 class Ada final : public aikido::robot::Robot
 {
 public:
+
+  // Expose base class functions
+  using aikido::robot::Robot::getMetaSkeleton;
+  using aikido::robot::Robot::getStateSpace;
+
   // TODO parameter
   const double collisionResolution = 0.02;
   const double rosTrajectoryInterpolationTimestep = 0.1;
@@ -98,10 +104,10 @@ public:
   std::string getName() const override;
 
   /// Returns the MetaSkeleton of this robot.
-  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
+  virtual dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   /// \return MetaSkeletonStateSpace of this robot.
-  aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr
+  virtual aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr
   getStateSpace() const override;
 
   /// Sets the root of this robot.
@@ -122,7 +128,8 @@ public:
   aikido::constraint::TestablePtr getFullCollisionConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree) const override;
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+  const override;
 
   // Clones RNG
   std::unique_ptr<aikido::common::RNG> cloneRNG();

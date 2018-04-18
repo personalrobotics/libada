@@ -1,8 +1,7 @@
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
-namespace aikido {
-namespace control {
+namespace ada {
 
 constexpr std::chrono::milliseconds
     AdaHandKinematicSimulationPositionCommandExecutor::kWaitPeriod;
@@ -130,7 +129,7 @@ AdaHandKinematicSimulationPositionCommandExecutor::execute(
 
   mPromise.reset(new std::promise<void>());
 
-  const Eigen::Vector3d proximalGoalPositions = goalPositions.head<2>();
+  const Eigen::Vector2d proximalGoalPositions = goalPositions.head<2>();
   mFingerFutures.clear();
 
   mFingerFutures.reserve(kNumPositionExecutors);
@@ -199,7 +198,6 @@ void AdaHandKinematicSimulationPositionCommandExecutor::step(
   // Call the finger executors' step function.
   for (int i = 0; i < kNumPositionExecutors; ++i)
     mPositionCommandExecutors[i]->step(timepoint);
-  mSpreadCommandExecutor->step(timepoint);
 }
 
 //==============================================================================
@@ -216,10 +214,8 @@ bool AdaHandKinematicSimulationPositionCommandExecutor::setCollideWith(
 
   for (std::size_t i = 0; i < kNumPositionExecutors; ++i)
     mPositionCommandExecutors[i]->setCollideWith(mCollideWith);
-  mSpreadCommandExecutor->setCollideWith(mCollideWith);
 
   return true;
 }
 
-} // namespace control
-} // namespace aikido
+} // ada

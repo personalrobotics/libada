@@ -201,7 +201,7 @@ Ada::Ada(
  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
  // Setup the arm
- mArm = configureArm("adaArm", retriever, mTrajectoryExecutor,
+ mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
      collisionDetector, selfCollisionFilter);
 
  // Set up the concrete robot from the meta skeleton
@@ -473,7 +473,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   armBaseName << "j2n6s200_link_base";
 
   std::stringstream armEndName;
-  armEndName << "j2n6s200_link_finger_tip_2";
+  armEndName << "j2n6s200_end_effector";
 
   // std::stringstream endEffectorName;
   // endEffectorName << "/hand_base";

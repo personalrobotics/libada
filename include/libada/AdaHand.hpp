@@ -11,6 +11,7 @@
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
+#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 
@@ -122,7 +123,7 @@ private:
   ///
   /// \param[in] robot Robot to construct executor for
   std::shared_ptr<aikido::control::PositionCommandExecutor>
-  createBarrettHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot);
+  createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot);
 
   /// Loads preshapes from YAML file (retrieved from \c preshapesUri).
   ///

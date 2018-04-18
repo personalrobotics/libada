@@ -1,6 +1,6 @@
 #include "libada/AdaHand.hpp"
 #include <chrono>
-#include <libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp>
+#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 #include <aikido/control/ros/RosPositionCommandExecutor.hpp>
 #include <aikido/planner/World.hpp>
 
@@ -325,7 +325,6 @@ std::shared_ptr<aikido::control::PositionCommandExecutor>
 AdaHand::createAdaHandPositionExecutor(
     const dart::dynamics::SkeletonPtr& robot)
 {
-  using AdaHandKinematicSimulationPositionCommandExecutor;
   using aikido::control::ros::RosPositionCommandExecutor;
 
   if (mSimulation)

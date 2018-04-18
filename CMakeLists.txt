@@ -71,6 +71,9 @@ endif()
 #
 
 set(sources
+  src/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
+  src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
+  src/AdaHand.cpp
   src/Ada.cpp
 )
 
@@ -191,3 +194,8 @@ else()
   message(STATUS "Looking for clang-format - NOT found, please install "
       "clang-format to enable automatic code formatting.")
 endif()
+
+# This custom target doesn't affect building libherb but is only for
+# displaying the header files in IDEs.
+FILE(GLOB_RECURSE libherb_headers "include/*.hpp")
+add_custom_target(headers SOURCES ${libherb_headers})
