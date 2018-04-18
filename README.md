@@ -1,2 +1,2 @@
 # libada
-C++ library for simulating and running UW-ADA based on DART and AIKIDO
+C++ library for simulating and running ADA based on DART and AIKIDO

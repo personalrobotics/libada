@@ -8,10 +8,6 @@
 #include <aikido/common/RNG.hpp>
 #include <aikido/constraint/CyclicSampleable.hpp>
 #include <aikido/constraint/FiniteSampleable.hpp>
-//#include <aikido/constraint/FrameDifferentiable.hpp>
-//#include <aikido/constraint/FrameTestable.hpp>
-//#include <aikido/constraint/InverseKinematicsSampleable.hpp>
-//#include <aikido/constraint/JointStateSpaceHelpers.hpp>
 #include <aikido/constraint/NewtonsMethodProjectable.hpp>
 #include <aikido/constraint/Testable.hpp>
 #include <aikido/constraint/TestableIntersection.hpp>
@@ -46,9 +42,6 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::constraint::TestablePtr;
-//using aikido::constraint::createProjectableBounds;
-//using aikido::constraint::createSampleableBounds;
-//using aikido::constraint::createTestableBounds;
 using aikido::distance::createDistanceMetric;
 using aikido::planner::parabolic::ParabolicSmoother;
 using aikido::planner::parabolic::ParabolicTimer;
@@ -65,6 +58,7 @@ using aikido::statespace::StateSpace;
 using aikido::statespace::GeodesicInterpolator;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
+using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
 using aikido::trajectory::Interpolated;
 using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
@@ -272,13 +266,13 @@ std::string Ada::getName() const
 }
 
 //==============================================================================
-dart::dynamics::MetaSkeletonPtr Ada::getMetaSkeleton()
+dart::dynamics::ConstMetaSkeletonPtr Ada::getMetaSkeleton() const
 {
   return mRobot->getMetaSkeleton();
 }
 
 //==============================================================================
-MetaSkeletonStateSpacePtr Ada::getStateSpace() const
+ConstMetaSkeletonStateSpacePtr Ada::getStateSpace() const
 {
   return mRobot->getStateSpace();
 }
@@ -306,7 +300,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 //==============================================================================
 CollisionFreePtr Ada::getSelfCollisionConstraint(
   const MetaSkeletonStateSpacePtr& space,
-  const dart::dynamics::MetaSkeletonPtr& metaSkeleton)
+  const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const
 {
   return mRobot->getSelfCollisionConstraint(space, metaSkeleton);
 }
@@ -316,7 +310,7 @@ CollisionFreePtr Ada::getSelfCollisionConstraint(
 TestablePtr Ada::getFullCollisionConstraint(
       const MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const CollisionFreePtr& collisionFree)
+      const CollisionFreePtr& collisionFree) const
 {
   return mRobot->getFullCollisionConstraint(space, metaSkeleton, collisionFree);
 }
