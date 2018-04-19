@@ -288,7 +288,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
   mRobot->step(timepoint);
-  //mArm->step(timepoint);
+  mArm->step(timepoint);
 
   if (!mSimulation)
   {
@@ -473,10 +473,10 @@ ConcreteManipulatorPtr Ada::configureArm(
   armBaseName << "j2n6s200_link_base";
 
   std::stringstream armEndName;
-  armEndName << "j2n6s200_end_effector";
+  armEndName << "j2n6s200_link_6";
 
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_link_finger_1";
+  endEffectorName << "j2n6s200_end_effector";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
@@ -512,7 +512,7 @@ ConcreteManipulatorPtr Ada::configureArm(
       selfCollisionFilter);
 
   auto manipulator = std::make_shared<ConcreteManipulator>(
-      manipulatorRobot, nullptr); // replace with hand if defined 
+      manipulatorRobot, hand);
 
   return manipulator;
 }

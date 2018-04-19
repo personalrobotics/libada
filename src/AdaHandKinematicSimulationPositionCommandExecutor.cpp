@@ -93,7 +93,7 @@ void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
       Chain::create(
           robot->getBodyNode("j2n6s200_link_finger_2"), // finger1Primal
           robot->getBodyNode("j2n6s200_link_finger_tip_2"), // finger1Distal
-          Chain::IncludeBoth),
+          Chain::IncludeBoth)
       }};
 
   for (std::size_t i = 0; i < fingerChains.size(); ++i)

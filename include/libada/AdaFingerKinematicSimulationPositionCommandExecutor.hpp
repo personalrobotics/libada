@@ -95,9 +95,11 @@ private:
 
   /// How much the distal joint moves relative to the proximal joint. This ratio
   /// is only considered when both joints are moving.
-  constexpr static double kMimicRatio = 0.333;
+  // TODO (Tapo): Figure out the correct mimic ratio for ADA
+  constexpr static double kMimicRatio = 0.0;
 
   /// Proximal joint velocity limit
+  // TODO (Tapo): Figure out the correct speed for ADA
   constexpr static double kProximalSpeed = 2.0;
 
   /// Distal joint velocity limit

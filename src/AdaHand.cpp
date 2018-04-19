@@ -237,7 +237,6 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
             << "' specified.";
     throw std::runtime_error(message.str());
   }
-
   return mExecutor->execute(preshape.get());
 }
 
@@ -352,7 +351,7 @@ AdaHand::createAdaHandPositionExecutor(
 
 const std::unordered_map<std::string, size_t>
     AdaHand::adaFingerJointNameToPositionIndexMap = {
-        {"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_tip_1", 1}, {"j2n6s200_link_finger_2", 0}, {"j2n6s200_link_finger_tip_2", 1}
+        {"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_2", 1}
 };
 
 } // namespace ada
