@@ -101,6 +101,10 @@ public:
   void loadTSRTransforms(
       const dart::common::Uri& tsrTransformsUri,
       const dart::common::ResourceRetrieverPtr& retriever);
+ 
+  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
+          const std::string& objectType) const;
+
 
 private:
   /// Schema description for preshapes YAML file.

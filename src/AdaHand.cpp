@@ -282,6 +282,17 @@ boost::optional<Eigen::VectorXd> AdaHand::getPreshape(
 }
 
 //==============================================================================
+boost::optional<Eigen::Isometry3d> AdaHand::getEndEffectorTransform(
+    const std::string& objectType) const
+{
+  auto transform = mEndEffectorTransforms.find(objectType);
+  if (transform == mEndEffectorTransforms.end())
+    return boost::none;
+
+  return transform->second;
+}
+
+//==============================================================================
 AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
     const YAML::Node& node)
 {

@@ -1,10 +1,9 @@
 ---
-# AdaHand endeffector frame to palm offset = 0.18 m
 # TODO (Tapo): Figure out the TSR definitions for ADA-Objects
 j2n6s200:
   default: !Matrix &j2n6s200_default
-    [[0., 0., 1., 0.],
-     [1., 0., 0., 0.],
-     [0., 1., 0., .18],
+    [[1., 0., 0., 0.],
+     [0., 1., 0., 0.],
+     [0., 0., 1., 0.],
      [0., 0., 0., 1.]]
   cylinder: *j2n6s200_default
