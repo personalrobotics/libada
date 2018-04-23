@@ -255,6 +255,10 @@ private:
     const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
       selfCollisionFilter);
 
+  /// Set up end effectors by loading the IK solver
+  void setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
+                         const dart::common::ResourceRetrieverPtr& retriever);
+
   /// Compute velocity limits from the MetaSkeleton
   Eigen::VectorXd getVelocityLimits(
       dart::dynamics::MetaSkeleton& metaSkeleton) const;

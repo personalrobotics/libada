@@ -67,6 +67,11 @@ if(LIBADA_TREAT_WARNINGS_AS_ERRORS)
 endif()
 
 #================================================================================
+# Queue up CMakeLists from subdirectories
+
+add_subdirectory(src/ikfast)
+
+#================================================================================
 # Library
 #
 
