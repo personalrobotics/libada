@@ -73,8 +73,8 @@ using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
-const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada.urdf"};
-const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada.srdf"};
+const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_accessories.urdf"};
+const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_accessories.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 const std::vector<std::string> gravityCompensationControllers
@@ -476,7 +476,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   armEndName << "j2n6s200_link_6";
 
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_end_effector";
+  endEffectorName << "j2n6s200_forque_end_effector";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
@@ -513,6 +513,10 @@ ConcreteManipulatorPtr Ada::configureArm(
 
   auto manipulator = std::make_shared<ConcreteManipulator>(
       manipulatorRobot, hand);
+
+  aikido::robot::util::CRRTPlannerParameters crrtPlannerParamaters;
+  crrtPlannerParamaters.rng = manipulatorRobot->getRNGPtr();
+  manipulator->setCRRTPlannerParameters(crrtPlannerParamaters);
 
   return manipulator;
 }
