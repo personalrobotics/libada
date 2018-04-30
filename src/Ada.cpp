@@ -200,14 +200,19 @@ Ada::Ada(
  // TODO: change Smoother/Timer to not take a testable in constructor.
  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
- // Setup the arm
- mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
-     collisionDetector, selfCollisionFilter);
+ // create default CRRTPlannerParameters (otherwise, they are undefined by default in aikido)
+CRRTPlannerParameters crrtParams(&mRng, 5, std::numeric_limits<double>::infinity(), 0.1, 0.05, 0.1, 20, 1e-4);
 
- // Set up the concrete robot from the meta skeleton
- mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
-    mSimulation, cloneRNG(), mTrajectoryExecutor,
-    collisionDetector, selfCollisionFilter);
+  // Setup the arm
+mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
+      collisionDetector, selfCollisionFilter);
+mArm->setCRRTPlannerParameters(crrtParams);
+
+// Set up the concrete robot from the meta skeleton
+mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
+      mSimulation, cloneRNG(), mTrajectoryExecutor,
+      collisionDetector, selfCollisionFilter);
+mRobot->setCRRTPlannerParameters(crrtParams);
 
 // TODO: When the named configurations are set in resources.
 // Load the named configurations
@@ -513,10 +518,6 @@ ConcreteManipulatorPtr Ada::configureArm(
 
   auto manipulator = std::make_shared<ConcreteManipulator>(
       manipulatorRobot, hand);
-
-  aikido::robot::util::CRRTPlannerParameters crrtPlannerParamaters;
-  crrtPlannerParamaters.rng = manipulatorRobot->getRNGPtr();
-  manipulator->setCRRTPlannerParameters(crrtPlannerParamaters);
 
   return manipulator;
 }
