@@ -52,9 +52,6 @@ public:
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
 
-  using aikido::robot::Robot::getMetaSkeleton;
-  using aikido::robot::Robot::getStateSpace;
-
   /// Construct the ada metaskeleton using a URI
   /// \param[in] env World (either for planning, post-processing, or executing)
   /// \param[in] simulation True if running in simulation mode
@@ -143,7 +140,7 @@ public:
   aikido::robot::ConcreteManipulatorPtr getArm();
 
   /// Get the hand
-  aikido::robot::HandPtr getHand();
+  AdaHandPtr getHand();
 
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
@@ -304,6 +301,7 @@ private:
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
+  AdaHandPtr mHand;
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;

@@ -331,9 +331,9 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
-HandPtr Ada::getHand()
+AdaHandPtr Ada::getHand()
 {
-  return mArm->getHand();
+  return mHand;
 }
 
 //==============================================================================
@@ -481,7 +481,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
 
-  auto hand = std::make_shared<AdaHand>(
+  mHand = std::make_shared<AdaHand>(
        armName,
        mSimulation,
        getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
@@ -509,7 +509,7 @@ ConcreteManipulatorPtr Ada::configureArm(
       selfCollisionFilter);
 
   auto manipulator = std::make_shared<ConcreteManipulator>(
-      manipulatorRobot, hand);
+      manipulatorRobot, mHand);
 
   return manipulator;
 }
