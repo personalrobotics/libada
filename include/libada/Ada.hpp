@@ -32,8 +32,7 @@
 namespace ada {
 
 extern const dart::common::Uri adaUrdfUri;
-extern const std::vector<std::string> gravityCompensationControllers;
-extern const std::vector<std::string> trajectoryExecutors;
+extern const std::string trajectoryExecutor;
 
 class Ada final : public aikido::robot::Robot
 {
@@ -46,6 +45,9 @@ public:
   // TODO parameter
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
+
+  using aikido::robot::Robot::getMetaSkeleton;
+  using aikido::robot::Robot::getStateSpace;
 
   /// Construct the ada metaskeleton using a URI
   /// \param[in] env World (either for planning, post-processing, or executing)
@@ -208,16 +210,16 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
-  /// Switches controllers from gravity compensation controllers to
-  /// trajectory executors. The controllers must be switched to
+  /// Switches controllers to trajectory executors.
+  /// The controllers must be switched to
   /// trajectory executors before calling \c executeTrajectory
   /// \return true if all controllers have been successfully switched
-  bool switchFromGravityCompensationControllersToTrajectoryExecutors();
+  bool startTrajectoryExecutor();
 
   /// Switches controllers from trajectory executors to gravity compensation
   /// controllers.
   /// \return true if all controllers have been successfully switched
-  bool switchFromTrajectoryExecutorsToGravityCompensationControllers();
+  bool stopTrajectoryExecutor();
 
   /// Sets CRRTPlanner parameters.
   /// TODO: To be removed when PlannerAdapters are in place.

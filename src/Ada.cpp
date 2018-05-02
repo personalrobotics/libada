@@ -77,11 +77,8 @@ const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada.urdf"};
 const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> gravityCompensationControllers
-    = {"gravity_compensation_controller"};
 const std::vector<std::string> trajectoryExecutors
     = {"trajectory_controller"};
-// TODO define in ada_launch 
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -136,7 +133,7 @@ Ada::Ada(
     throw std::runtime_error("Unable to load ADA model.");
   }
 
-  // Manually set the acceleration limit
+  // TODO: Read from robot configuration.
   mRobotSkeleton->setAccelerationLowerLimits(
       Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -2.0));
   mRobotSkeleton->setAccelerationUpperLimits(
@@ -426,15 +423,15 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 }
 
 //==============================================================================
-bool Ada::switchFromGravityCompensationControllersToTrajectoryExecutors()
+bool Ada::startTrajectoryExecutor()
 {
-  return switchControllers(trajectoryExecutors, gravityCompensationControllers);
+  return switchControllers(trajectoryExecutors, std::vector<std::string>());
 }
 
 //==============================================================================
-bool Ada::switchFromTrajectoryExecutorsToGravityCompensationControllers()
+bool Ada::stopTrajectoryExecutor()
 {
- return switchControllers(gravityCompensationControllers, trajectoryExecutors);
+ return switchControllers(std::vector<std::string>(), trajectoryExecutors);
 }
 
 //=============================================================================
@@ -489,7 +486,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   // Hardcoding to acceleration limits used in OpenRAVE
   // This is necessary because ADA is loaded from URDF, which
   // provides no means of specifying acceleration limits
-  // TODO : update acceleration limits after hearing back from HEBI.us
+  // TODO : update acceleration limits by checking Kinova spec.
   arm->setAccelerationLowerLimits(
       Eigen::VectorXd::Constant(arm->getNumDofs(), -2.0));
   arm->setAccelerationUpperLimits(
