@@ -141,7 +141,7 @@ public:
   aikido::robot::ConcreteManipulatorPtr getArm();
 
   /// Get the hand
-  std::shared_ptr<ada::AdaHand> getHand();
+  AdaHandPtr getHand();
 
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
@@ -310,7 +310,7 @@ private:
   aikido::robot::ConcreteManipulatorPtr mArm;
 
   // The hand
-  std::shared_ptr<ada::AdaHand> mHand;
+  AdaHandPtr mHand;
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;

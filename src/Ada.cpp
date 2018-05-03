@@ -334,7 +334,7 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
-std::shared_ptr<ada::AdaHand> Ada::getHand()
+AdaHandPtr Ada::getHand()
 {
   return mHand;
 }
