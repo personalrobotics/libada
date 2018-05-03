@@ -204,6 +204,9 @@ Ada::Ada(
  mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
      collisionDetector, selfCollisionFilter);
 
+ // Setup the hand
+ mHand = std::make_shared<AdaHand>("j2n6s200", mSimulation, getBodyNodeOrThrow(mRobotSkeleton, "j2n6s200_end_effector"), selfCollisionFilter, mNode.get(), retriever);
+
  // Set up the concrete robot from the meta skeleton
  mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
     mSimulation, cloneRNG(), mTrajectoryExecutor,
@@ -334,9 +337,9 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
-HandPtr Ada::getHand()
+std::shared_ptr<ada::AdaHand> Ada::getHand()
 {
-  return mArm->getHand();
+  return mHand;
 }
 
 //==============================================================================
