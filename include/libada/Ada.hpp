@@ -59,7 +59,7 @@ public:
   /// \param[in] node ROS node. Required for running in real.
   /// \param[in] rngSeed seed for initializing random generator
   ///            May be nullptr if simulation is true
-  /// \param[in] hebiUrdfUri Path to Hebi urdf model.
+  /// \param[in] adaUrdfUri Path to Ada urdf model.
   /// \param[in] retriever Resource retriever for retrieving Hebi
   Ada(
       aikido::planner::WorldPtr env,
