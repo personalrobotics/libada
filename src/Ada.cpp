@@ -522,7 +522,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   armEndName << "j2n6s200_link_6";
 
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_forque";
+  endEffectorName << "j2n6s200_end_effector";
   // Use this end effector when using the forque
   //endEffectorName << "j2n6s200_forque_end_effector";
 
