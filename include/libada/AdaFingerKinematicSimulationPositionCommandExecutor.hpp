@@ -14,7 +14,7 @@
 namespace ada {
 
 AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
-
+// To confirm this behavior from Kinova people
 /// This executor mimics the behavior of an AdaHand finger.
 ///
 /// It moves a finger to a desired point; it may stop early if the joint limit

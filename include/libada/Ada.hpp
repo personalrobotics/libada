@@ -140,8 +140,14 @@ public:
   /// Get the arm
   aikido::robot::ConcreteManipulatorPtr getArm();
 
+  /// Get the arm
+  aikido::robot::ConstConcreteManipulatorPtr getArm() const;
+
   /// Get the hand
-  aikido::robot::HandPtr getHand();
+  AdaHandPtr getHand();
+
+  /// Get the hand
+  ConstAdaHandPtr getHand() const;
 
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
@@ -150,6 +156,7 @@ public:
   void update();
 
   /// Plans a trajectory to the specified configuration
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfiguration(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -158,6 +165,7 @@ public:
       double timelimit);
 
   /// Wrapper for planToConfiguration using Eigen vectors.
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfiguration(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -166,6 +174,7 @@ public:
       double timelimit);
 
   /// Plans a trajectory to one of the spcified configurations.
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfigurations(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -174,6 +183,7 @@ public:
       double timelimit);
 
   /// Wrapper for planToConfigurations using Eigen vectors.
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfigurations(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -182,6 +192,7 @@ public:
       double timelimit);
 
   /// Plans to a TSR.
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToTSR(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -199,6 +210,7 @@ public:
   /// \param[in] goalTsr The goal TSR to move to
   /// \param[in] constraintTsr The constraint TSR for the trajectory
   /// \return Trajectory to a sample in TSR, or nullptr if planning fails.
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToTSRwithTrajectoryConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -213,10 +225,34 @@ public:
   /// \param[in] name Name of the configuration to plan to
   /// \param[in] collisionFree Collision constraint
   /// \return Trajectory to the configuration, or nullptr if planning fails
+  // Will be replaced once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToNamedConfiguration(
       const std::string& name,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
+
+  /// Plans to a desired end-effector offset with fixed orientation.
+  /// \param[in] space The StateSpace for the metaskeleton.
+  /// \param[in] metaSkeleton Metaskeleton to plan with.
+  /// \param[in] body Bodynode for the end effector.
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// Self-collision is checked by default.
+  /// \param[in] direction Direction unit vector in the world frame.
+  /// \param[in] distance Distance distance to move, in meters.
+  /// \param[in] timelimit Timelimit for planning.
+  /// \param[in] positionTolerance Constraint tolerance in meters.
+  /// \param[in] angularTolerance Constraint tolerance in radians.
+  /// \return Output trajectory
+  aikido::trajectory::TrajectoryPtr planToEndEffectorOffset(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const dart::dynamics::BodyNodePtr& body,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      const Eigen::Vector3d& direction,
+      double distance,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance);
 
   /// Switches controllers from gravity compensation controllers to
   /// trajectory executors. The controllers must be switched to
@@ -251,17 +287,14 @@ private:
     const dart::common::ResourceRetrieverPtr& retriever,
     const aikido::control::TrajectoryExecutorPtr& executor,
     dart::collision::CollisionDetectorPtr collisionDetector,
-    //dart::collision::CollisionGroupPtr collideWith,
     const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
       selfCollisionFilter);
 
   /// Compute velocity limits from the MetaSkeleton
-  Eigen::VectorXd getVelocityLimits(
-      dart::dynamics::MetaSkeleton& metaSkeleton) const;
+  Eigen::VectorXd getVelocityLimits() const;
 
   /// Compute acceleration limits from the MetaSkeleton
-  Eigen::VectorXd getAccelerationLimits(
-      dart::dynamics::MetaSkeleton& metaSkeleton) const;
+  Eigen::VectorXd getAccelerationLimits() const;
 
   std::shared_ptr<aikido::control::TrajectoryExecutor>
   createTrajectoryExecutor();
@@ -302,6 +335,9 @@ private:
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
+
+  // The hand
+  AdaHandPtr mHand;
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;

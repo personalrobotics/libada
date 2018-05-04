@@ -49,6 +49,7 @@ using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
+using aikido::robot::ConstConcreteManipulatorPtr;
 using aikido::robot::Hand;
 using aikido::robot::HandPtr;
 using aikido::robot::util::parseYAMLToNamedConfigurations;
@@ -73,8 +74,8 @@ using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
-const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_accessories.urdf"};
-const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_accessories.srdf"};
+const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_with_camera.urdf"};
+const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_with_camera.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 const std::vector<std::string> gravityCompensationControllers
@@ -343,9 +344,21 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
-HandPtr Ada::getHand()
+ConstConcreteManipulatorPtr Ada::getArm() const
 {
-  return mArm->getHand();
+  return mArm;
+}
+
+//==============================================================================
+AdaHandPtr Ada::getHand()
+{
+  return mHand;
+}
+
+//==============================================================================
+ConstAdaHandPtr Ada::getHand() const
+{
+  return mHand;
 }
 
 //==============================================================================
@@ -441,6 +454,30 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 }
 
 //==============================================================================
+TrajectoryPtr Ada::planToEndEffectorOffset(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const dart::dynamics::BodyNodePtr& body,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector3d& direction,
+    double distance,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  return mArm->planToEndEffectorOffset(
+      space,
+      metaSkeleton,
+      body,
+      collisionFree,
+      direction,
+      distance,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+}
+
+//==============================================================================
 bool Ada::switchFromGravityCompensationControllersToTrajectoryExecutors()
 {
   return switchControllers(trajectoryExecutors, gravityCompensationControllers);
@@ -495,7 +532,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
 
-  auto hand = std::make_shared<AdaHand>(
+  mHand = std::make_shared<AdaHand>(
        armName,
        mSimulation,
        getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
@@ -523,7 +560,7 @@ ConcreteManipulatorPtr Ada::configureArm(
       selfCollisionFilter);
 
   auto manipulator = std::make_shared<ConcreteManipulator>(
-      manipulatorRobot, hand);
+      manipulatorRobot, mHand);
 
   return manipulator;
 }
@@ -536,19 +573,13 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 
 //==============================================================================
 // TODO : fill the right value in URDF
-Eigen::VectorXd Ada::getVelocityLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
+Eigen::VectorXd Ada::getVelocityLimits() const
 {
-  // The arm composes of the following actuators:
-  //  8-3 8-9 8-9 x5-1 x5-1
-  // Speed Limit (RPM), according to specification
-  //  84 30 30 90 90
   return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
 }   
 
 //==============================================================================
-Eigen::VectorXd Ada::getAccelerationLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
+Eigen::VectorXd Ada::getAccelerationLimits() const
 {
   return mRobot->getMetaSkeleton()->getAccelerationUpperLimits();
 }
