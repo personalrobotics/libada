@@ -49,6 +49,7 @@ using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
+using aikido::robot::ConstConcreteManipulatorPtr;
 using aikido::robot::Hand;
 using aikido::robot::HandPtr;
 using aikido::robot::util::parseYAMLToNamedConfigurations;
@@ -334,7 +335,19 @@ ConcreteManipulatorPtr Ada::getArm()
 }
 
 //==============================================================================
+ConstConcreteManipulatorPtr Ada::getArm() const
+{
+  return mArm;
+}
+
+//==============================================================================
 AdaHandPtr Ada::getHand()
+{
+  return mHand;
+}
+
+//==============================================================================
+ConstAdaHandPtr Ada::getHand() const
 {
   return mHand;
 }

@@ -140,8 +140,14 @@ public:
   /// Get the arm
   aikido::robot::ConcreteManipulatorPtr getArm();
 
+  /// Get the arm
+  aikido::robot::ConstConcreteManipulatorPtr getArm() const;
+
   /// Get the hand
   AdaHandPtr getHand();
+
+  /// Get the hand
+  ConstAdaHandPtr getHand() const;
 
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
