@@ -1,0 +1,11 @@
+# Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
+
+coverage:
+  fixes:
+    - "src/libada::"  # reduce root "src/libada/" => "/"
+  ignore:
+    - "build"
+    - "tests"
+
+comment:
+  layout: "diff, flags, files"
