@@ -192,29 +192,38 @@ Ada::Ada(
        std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
        jointUpdateCycle);
    ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
- }
+  }
  
- mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
 
- mTrajectoryExecutor = createTrajectoryExecutor();
+  mTrajectoryExecutor = createTrajectoryExecutor();
 
- // TODO: change Smoother/Timer to not take a testable in constructor.
- auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
+  // TODO: change Smoother/Timer to not take a testable in constructor.
+  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
- // Setup the arm
- mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
-     collisionDetector, selfCollisionFilter);
+  // create default parameters (otherwise, they are undefined by default in aikido)
+  // these parameters are taken mainly from the default constructors of the structs
+  // (aikido/robot/util.hpp) and one of the herb demos
+  CRRTPlannerParameters crrtParams(&mRng, 5, std::numeric_limits<double>::infinity(), 0.1, 0.05, 0.1, 20, 1e-4);
+  VectorFieldPlannerParameters vfParams(0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
 
- // Set up the concrete robot from the meta skeleton
- mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
-    mSimulation, cloneRNG(), mTrajectoryExecutor,
-    collisionDetector, selfCollisionFilter);
+    // Setup the arm
+  mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
+        collisionDetector, selfCollisionFilter);
+  mArm->setCRRTPlannerParameters(crrtParams);
+  mArm->setVectorFieldPlannerParameters(vfParams);
 
-// TODO: When the named configurations are set in resources.
-// Load the named configurations
-// auto namedConfigurations = parseYAMLToNamedConfigurations(
-//     aikido::io::loadYAML(namedConfigurationsUri, retriever));
-// mRobot->setNamedConfigurations(namedConfigurations);
+  // Set up the concrete robot from the meta skeleton
+  mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
+        mSimulation, cloneRNG(), mTrajectoryExecutor,
+        collisionDetector, selfCollisionFilter);
+  mRobot->setCRRTPlannerParameters(crrtParams);
+
+  // TODO: When the named configurations are set in resources.
+  // Load the named configurations
+  // auto namedConfigurations = parseYAMLToNamedConfigurations(
+  //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
+  // mRobot->setNamedConfigurations(namedConfigurations);
 
   mThread = make_unique<ExecutorThread>(
     std::bind(&Ada::update, this), threadExecutionCycle);
@@ -445,6 +454,30 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 }
 
 //==============================================================================
+TrajectoryPtr Ada::planToEndEffectorOffset(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const dart::dynamics::BodyNodePtr& body,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector3d& direction,
+    double distance,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  return mArm->planToEndEffectorOffset(
+      space,
+      metaSkeleton,
+      body,
+      collisionFree,
+      direction,
+      distance,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+}
+
+//==============================================================================
 bool Ada::switchFromGravityCompensationControllersToTrajectoryExecutors()
 {
   return switchControllers(trajectoryExecutors, gravityCompensationControllers);
@@ -489,7 +522,9 @@ ConcreteManipulatorPtr Ada::configureArm(
   armEndName << "j2n6s200_link_6";
 
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_end_effector";
+  endEffectorName << "j2n6s200_forque";
+  // Use this end effector when using the forque
+  //endEffectorName << "j2n6s200_forque_end_effector";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
