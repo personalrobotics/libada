@@ -77,14 +77,6 @@ void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
   using dart::dynamics::ChainPtr;
   using FingerPositionCommandExecutor = AdaFingerKinematicSimulationPositionCommandExecutor;
 
-  //if (prefix != "/left/" && prefix != "/right/")
-  //{
-  //  std::stringstream message;
-  //  message << "Invalid prefix '" << prefix << "', "
-  //          << "must be either '/left/' or '/right/'";
-  //  throw std::invalid_argument(message.str());
-  //}
-
   const auto fingerChains = std::array<ChainPtr, kNumPositionExecutors>{{
       Chain::create(
           robot->getBodyNode("j2n6s200_link_finger_1"), // finger0Primal
