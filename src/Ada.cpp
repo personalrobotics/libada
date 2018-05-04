@@ -73,8 +73,8 @@ using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
-const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada.urdf"};
-const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada.srdf"};
+const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_with_camera.urdf"};
+const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_with_camera.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 const std::vector<std::string> gravityCompensationControllers
