@@ -439,6 +439,30 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 }
 
 //==============================================================================
+TrajectoryPtr Ada::planToEndEffectorOffset(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const dart::dynamics::BodyNodePtr& body,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector3d& direction,
+    double distance,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  return mArm->planToEndEffectorOffset(
+      space,
+      metaSkeleton,
+      body,
+      collisionFree,
+      direction,
+      distance,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+}
+
+//==============================================================================
 bool Ada::switchFromGravityCompensationControllersToTrajectoryExecutors()
 {
   return switchControllers(trajectoryExecutors, gravityCompensationControllers);
