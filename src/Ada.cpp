@@ -538,19 +538,13 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 
 //==============================================================================
 // TODO : fill the right value in URDF
-Eigen::VectorXd Ada::getVelocityLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
+Eigen::VectorXd Ada::getVelocityLimits() const
 {
-  // The arm composes of the following actuators:
-  //  8-3 8-9 8-9 x5-1 x5-1
-  // Speed Limit (RPM), according to specification
-  //  84 30 30 90 90
   return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
 }   
 
 //==============================================================================
-Eigen::VectorXd Ada::getAccelerationLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
+Eigen::VectorXd Ada::getAccelerationLimits() const
 {
   return mRobot->getMetaSkeleton()->getAccelerationUpperLimits();
 }

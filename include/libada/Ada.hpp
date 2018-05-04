@@ -268,12 +268,10 @@ private:
       selfCollisionFilter);
 
   /// Compute velocity limits from the MetaSkeleton
-  Eigen::VectorXd getVelocityLimits(
-      dart::dynamics::MetaSkeleton& metaSkeleton) const;
+  Eigen::VectorXd getVelocityLimits() const;
 
   /// Compute acceleration limits from the MetaSkeleton
-  Eigen::VectorXd getAccelerationLimits(
-      dart::dynamics::MetaSkeleton& metaSkeleton) const;
+  Eigen::VectorXd getAccelerationLimits() const;
 
   std::shared_ptr<aikido::control::TrajectoryExecutor>
   createTrajectoryExecutor();
