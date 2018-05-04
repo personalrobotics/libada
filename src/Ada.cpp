@@ -201,6 +201,8 @@ Ada::Ada(
   auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
   // create default parameters (otherwise, they are undefined by default in aikido)
+  // these parameters are taken mainly from the default constructors of the structs
+  // (aikido/robot/util.hpp) and one of the herb demos
   CRRTPlannerParameters crrtParams(&mRng, 5, std::numeric_limits<double>::infinity(), 0.1, 0.05, 0.1, 20, 1e-4);
   VectorFieldPlannerParameters vfParams(0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
 
@@ -483,7 +485,9 @@ ConcreteManipulatorPtr Ada::configureArm(
   armEndName << "j2n6s200_link_6";
 
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_forque_end_effector";
+  endEffectorName << "j2n6s200_forque";
+  // Use this end effector when using the forque
+  //endEffectorName << "j2n6s200_forque_end_effector";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
