@@ -1,14 +1,19 @@
+import argparse
 import openravepy 
 from openravepy import ikfast
 from openravepy import RaveCreateModule
 env = openravepy.Environment()
 
-urdf_address = '/home/kayke/dev/my-workspace/src/ada_description/robots/ada.urdf'
-srdf_address = '/home/kayke/dev/my-workspace/src/ada_description/robots/ada.srdf'
+parser = argparse.ArgumentParser(description='PyTorch GAIL example')
+parser.add_argument('--urdf', default='../ada_description/robots/ada.urdf',
+                        help='location of the urdf file')
+parser.add_argument('--srdf', default='../ada_description/robots/ada.srdf',
+                        help='location of the srdf file')
+args = parser.parse_args()
 
 with env:
 	module = RaveCreateModule(env,'urdf')
-	name = module.SendCommand('load ' + urdf_address + ' ' + srdf_address)
+	name = module.SendCommand('load ' + args.urdf + ' ' + args.srdf)
 	kinbody = env.GetRobot(name)
 solver = ikfast.IKFastSolver(kinbody=kinbody)
 
