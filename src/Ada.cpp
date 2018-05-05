@@ -74,8 +74,8 @@ using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
-const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_with_camera.urdf"};
-const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_with_camera.srdf"};
+dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_with_camera.urdf"};
+dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_with_camera.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 const std::vector<std::string> gravityCompensationControllers
@@ -105,9 +105,11 @@ BodyNodePtr getBodyNodeOrThrow(
 Ada::Ada(
   aikido::planner::WorldPtr env,
   bool simulation,
+  bool feeding,
   const ::ros::NodeHandle* node,
   aikido::common::RNG::result_type rngSeed,
-  const dart::common::Uri& adaUrdfUri,
+  dart::common::Uri& adaUrdfUri,
+  dart::common::Uri& adaSrdfUri,
   const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation) 
   , mCollisionResolution(collisionResolution)
@@ -117,6 +119,12 @@ Ada::Ada(
   , mWorld(std::move(env))
 {
   simulation = true; // temporarily set simulation to true
+
+  if (feeding)
+  {
+      adaUrdfUri.fromStringOrPath("package://ada_description/robots/ada_with_camera_forque.urdf");
+      adaSrdfUri.fromStringOrPath("package://ada_description/robots/ada_with_camera_forque.srdf");
+  }
 
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
@@ -207,7 +215,19 @@ Ada::Ada(
   CRRTPlannerParameters crrtParams(&mRng, 5, std::numeric_limits<double>::infinity(), 0.1, 0.05, 0.1, 20, 1e-4);
   VectorFieldPlannerParameters vfParams(0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
 
-    // Setup the arm
+  //Setting arm base and end names
+  armBaseName << "j2n6s200_link_base";
+  armEndName << "j2n6s200_link_6";
+  if (feeding)
+  {
+      endEffectorName << "j2n6s200_forque_end_effector";
+  }
+  else
+  {
+      endEffectorName << "j2n6s200_end_effector";
+  }
+  
+  // Setup the arm
   mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
         collisionDetector, selfCollisionFilter);
   mArm->setCRRTPlannerParameters(crrtParams);
@@ -227,7 +247,6 @@ Ada::Ada(
 
   mThread = make_unique<ExecutorThread>(
     std::bind(&Ada::update, this), threadExecutionCycle);
-
 }
 
 //==============================================================================
@@ -515,16 +534,6 @@ ConcreteManipulatorPtr Ada::configureArm(
 {
   using dart::dynamics::Chain;
 
-  std::stringstream armBaseName;
-  armBaseName << "j2n6s200_link_base";
-
-  std::stringstream armEndName;
-  armEndName << "j2n6s200_link_6";
-
-  std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_end_effector";
-  // Use this end effector when using the forque
-  //endEffectorName << "j2n6s200_forque_end_effector";
 
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());

@@ -32,7 +32,8 @@
 
 namespace ada {
 
-extern const dart::common::Uri adaUrdfUri;
+extern dart::common::Uri adaUrdfUri;
+extern dart::common::Uri adaSrdfUri;
 extern const std::vector<std::string> gravityCompensationControllers;
 extern const std::vector<std::string> trajectoryExecutors;
 
@@ -64,9 +65,11 @@ public:
   Ada(
       aikido::planner::WorldPtr env,
       bool simulation,
+      bool feeding,
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
-      const dart::common::Uri& adaUrdfUri = adaUrdfUri,
+      dart::common::Uri& adaUrdfUri = adaUrdfUri,
+      dart::common::Uri& adaSrdfUri = adaSrdfUri,
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
@@ -333,6 +336,11 @@ private:
 
   std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
+  //arm Base, End names
+  std::stringstream armBaseName;
+  std::stringstream armEndName;
+  std::stringstream endEffectorName;
+    
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
 
