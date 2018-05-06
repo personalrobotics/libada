@@ -83,8 +83,7 @@ AdaFingerKinematicSimulationPositionCommandExecutor::
 }
 
 //==============================================================================
-std::future<void>
-AdaFingerKinematicSimulationPositionCommandExecutor::execute(
+std::future<void> AdaFingerKinematicSimulationPositionCommandExecutor::execute(
     const Eigen::VectorXd& goalPosition)
 {
   if (!mFinger->isAssembled())

@@ -9,15 +9,15 @@
 #include <aikido/common/ExecutorThread.hpp>
 #include <aikido/common/RNG.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
-#include <aikido/constraint/dart/TSR.hpp>  
+#include <aikido/constraint/dart/TSR.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/parabolic/ParabolicSmoother.hpp>
 #include <aikido/planner/parabolic/ParabolicTimer.hpp>
-#include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
+#include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <aikido/trajectory/Interpolated.hpp>
@@ -39,7 +39,6 @@ extern const std::vector<std::string> trajectoryExecutors;
 class Ada final : public aikido::robot::Robot
 {
 public:
-
   // Expose base class functions
   using aikido::robot::Robot::getMetaSkeleton;
   using aikido::robot::Robot::getStateSpace;
@@ -61,8 +60,7 @@ public:
   ///            May be nullptr if simulation is true
   /// \param[in] adaUrdfUri Path to Ada urdf model.
   /// \param[in] retriever Resource retriever for retrieving Hebi
-  Ada(
-      aikido::planner::WorldPtr env,
+  Ada(aikido::planner::WorldPtr env,
       bool simulation,
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
@@ -86,7 +84,7 @@ public:
   /// Executes a trajectory
   /// \param[in] trajectory Timed trajectory to execute
   std::future<void> executeTrajectory(
-          const aikido::trajectory::TrajectoryPtr& trajectory) const override;
+      const aikido::trajectory::TrajectoryPtr& trajectory) const override;
 
   // TODO (avk): Set up the resource directory
   /// Returns a named configuration
@@ -97,8 +95,8 @@ public:
   /// Sets the list of named configurations
   /// \param[in] namedConfigurations Map of name, configuration
   void setNamedConfigurations(
-      std::unordered_map<std::string,
-      const Eigen::VectorXd> namedConfigurations) override;
+      std::unordered_map<std::string, const Eigen::VectorXd>
+          namedConfigurations) override;
 
   /// \return Name of this Robot
   std::string getName() const override;
@@ -129,7 +127,7 @@ public:
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree)
-  const override;
+      const override;
 
   // Clones RNG
   std::unique_ptr<aikido::common::RNG> cloneRNG();
@@ -278,17 +276,16 @@ public:
       const aikido::robot::util::VectorFieldPlannerParameters& vfParameters);
 
 private:
-
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
 
   aikido::robot::ConcreteManipulatorPtr configureArm(
-    const std::string& armName,
-    const dart::common::ResourceRetrieverPtr& retriever,
-    const aikido::control::TrajectoryExecutorPtr& executor,
-    dart::collision::CollisionDetectorPtr collisionDetector,
-    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
-      selfCollisionFilter);
+      const std::string& armName,
+      const dart::common::ResourceRetrieverPtr& retriever,
+      const aikido::control::TrajectoryExecutorPtr& executor,
+      dart::collision::CollisionDetectorPtr collisionDetector,
+      const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
+          selfCollisionFilter);
 
   /// Compute velocity limits from the MetaSkeleton
   Eigen::VectorXd getVelocityLimits() const;

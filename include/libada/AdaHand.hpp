@@ -41,7 +41,8 @@ public:
   /// zero-indexed finger and \c joint_index is the zero-indexed phalange within
   /// the finger.
   ///
-  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one hand). 
+  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one
+  /// hand).
   /// \param[in] simulation True if running in simulation mode
   /// \param[in] endEffectorBodyNode End-effector body node. Must be the link
   ///            that represents the palm of an AdaHand (i.e. \c hand_base).
@@ -104,10 +105,9 @@ public:
   void loadTSRTransforms(
       const dart::common::Uri& tsrTransformsUri,
       const dart::common::ResourceRetrieverPtr& retriever);
- 
-  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
-          const std::string& objectType) const;
 
+  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
+      const std::string& objectType) const;
 
 private:
   /// Schema description for preshapes YAML file.
