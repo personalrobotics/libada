@@ -534,7 +534,6 @@ ConcreteManipulatorPtr Ada::configureArm(
 {
   using dart::dynamics::Chain;
 
-
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
 

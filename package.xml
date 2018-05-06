@@ -6,7 +6,7 @@
   <maintainer email="tapo@uw.edu">Tapomayukh Bhattacharjee</maintainer>
   <author email="xyz@uw.edu">XYZ</author>
   <license>UNRELEASED</license>
-  <depend>dart</depend>
+  <depend>dartsim</depend>
   <depend>eigen</depend>
   <depend>aikido</depend>
   <depend>controller_manager_msgs</depend>

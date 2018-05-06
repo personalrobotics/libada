@@ -340,7 +340,7 @@ private:
   std::stringstream armBaseName;
   std::stringstream armEndName;
   std::stringstream endEffectorName;
-    
+
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
 
