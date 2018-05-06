@@ -65,24 +65,22 @@ public:
   virtual ~AdaHand() = default;
 
   // Documentation inherited.
-  virtual void grab(const dart::dynamics::SkeletonPtr& bodyToGrab) override;
+  void grab(const dart::dynamics::SkeletonPtr& bodyToGrab) override;
 
   // Documentation inherited.
-  virtual void ungrab() override;
+  void ungrab() override;
 
   // Documentation inherited.
-  virtual std::future<void> executePreshape(
-      const std::string& preshapeName) override;
+  std::future<void> executePreshape(const std::string& preshapeName) override;
 
   // Documentation inherited.
-  virtual void step(
-      const std::chrono::system_clock::time_point& timepoint) override;
+  void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   // Documentation inherited.
-  virtual dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
+  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   // Documentation inherited.
-  virtual dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
+  dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
 
   // Documentation inherited.
   dart::dynamics::BodyNode* getEndEffectorBodyNode() const override;

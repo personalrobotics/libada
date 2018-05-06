@@ -102,11 +102,11 @@ public:
   std::string getName() const override;
 
   /// Returns the MetaSkeleton of this robot.
-  virtual dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
+  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   /// \return MetaSkeletonStateSpace of this robot.
-  virtual aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr
-  getStateSpace() const override;
+  aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr getStateSpace()
+      const override;
 
   /// Sets the root of this robot.
   void setRoot(Robot* robot) override;
