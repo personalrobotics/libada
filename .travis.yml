@@ -25,7 +25,8 @@ before_install:
   - mkdir -p "${HOME}/workspace/src"
   - cd "${HOME}/workspace"
   - git clone https://github.com/personalrobotics/pr-cleanroom.git scripts
-  - curl -sS "${DISTRIBUTION}" # | ./scripts/internal-convert.py > distribution.yml # internal-convert.py is required as this repo is private; please remove it once becomes public
+  - curl -sS "${DISTRIBUTION}" > distribution.yml
+  #- curl -sS "${DISTRIBUTION}" | ./scripts/internal-convert.py > distribution.yml # internal-convert.py is required as this repo is private; please remove it once becomes public
   - ./scripts/internal-setup.sh
   - export PACKAGE_NAMES="$(./scripts/internal-get-packages.py distribution.yml ${REPOSITORY})"
 
