@@ -71,7 +71,7 @@ AdaHandKinematicSimulationPositionCommandExecutor::
 
 //==============================================================================
 void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
-    dart::dynamics::SkeletonPtr robot, const std::string& prefix)
+    dart::dynamics::SkeletonPtr robot, const std::string& /*prefix*/)
 {
   using dart::dynamics::Chain;
   using dart::dynamics::ChainPtr;
