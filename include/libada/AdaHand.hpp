@@ -84,7 +84,10 @@ public:
   virtual dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
 
   // Documentation inherited.
-  virtual dart::dynamics::BodyNode* getBodyNode() const override;
+  dart::dynamics::BodyNode* getEndEffectorBodyNode() const override;
+
+  // Documentation inherited.
+  dart::dynamics::BodyNode* getHandBaseBodyNode() const override;
 
   /// Load preshapes from a YAML file.
   ///

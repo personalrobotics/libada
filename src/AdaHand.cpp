@@ -247,7 +247,13 @@ void AdaHand::step(const std::chrono::system_clock::time_point& timepoint)
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* AdaHand::getBodyNode() const
+dart::dynamics::BodyNode* AdaHand::getEndEffectorBodyNode() const
+{
+  return mEndEffectorBodyNode.get();
+}
+
+//==============================================================================
+dart::dynamics::BodyNode *AdaHand::getHandBaseBodyNode() const
 {
   return mEndEffectorBodyNode.get();
 }
