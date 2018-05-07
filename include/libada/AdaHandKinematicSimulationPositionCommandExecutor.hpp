@@ -1,16 +1,16 @@
 #ifndef AIKIDO_CONTROL_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
 #define AIKIDO_CONTROL_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
 
-#include <future>
-#include <mutex>
+#include "aikido/control/PositionCommandExecutor.hpp"
+#include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
 #include <Eigen/Dense>
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/dynamics/dynamics.hpp>
-#include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
-#include "aikido/control/PositionCommandExecutor.hpp"
+#include <future>
+#include <mutex>
 
 namespace ada {
 
@@ -21,8 +21,7 @@ AIKIDO_DECLARE_POINTERS(AdaHandKinematicSimulationPositionCommandExecutor)
 /// See AdaFingerKinematicSimulationPositionCommandExecutor and
 /// for details.
 class AdaHandKinematicSimulationPositionCommandExecutor
-    : public aikido::control::PositionCommandExecutor
-{
+    : public aikido::control::PositionCommandExecutor {
 public:
   /// Constructor.
   ///
@@ -37,12 +36,11 @@ public:
   ///        maxNumContacts = 1.) See dart/collison/Option.h for more
   ///        information
   AdaHandKinematicSimulationPositionCommandExecutor(
-      dart::dynamics::SkeletonPtr robot,
-      const std::string& prefix,
+      dart::dynamics::SkeletonPtr robot, const std::string &prefix,
       ::dart::collision::CollisionDetectorPtr collisionDetector = nullptr,
       ::dart::collision::CollisionGroupPtr collideWith = nullptr,
-      ::dart::collision::CollisionOption collisionOptions
-      = ::dart::collision::CollisionOption(false, 1));
+      ::dart::collision::CollisionOption collisionOptions =
+          ::dart::collision::CollisionOption(false, 1));
 
   /// Move fingers to goalPositions. Call step() after this until future
   /// returns for actual execution.
@@ -51,12 +49,12 @@ public:
   ///        First 3 should specify proximal joints, last element should specify
   ///        spread. Joints will move only up to the joint limits.
   /// \return future which becomes available when the movement stops
-  std::future<void> execute(const Eigen::VectorXd& goalPositions) override;
+  std::future<void> execute(const Eigen::VectorXd &goalPositions) override;
 
   /// \copydoc PositionCommandExecutor::step()
   /// \note Lock the Skeleton associated with this executor before calling this
   /// method.
-  void step(const std::chrono::system_clock::time_point& timepoint) override;
+  void step(const std::chrono::system_clock::time_point &timepoint) override;
 
   /// Sets CollisionGroup to check against for finger collisions.
   ///
@@ -68,19 +66,19 @@ private:
   /// Set up mPositionCommandExecutors and mSpreadCommandExecutor.
   /// \param[in] robot Robot to construct hand executor for
   /// \param[in] prefix String (either "/right/" or "/left/") to specify hand
-  void setupExecutors(
-      dart::dynamics::SkeletonPtr robot, const std::string& prefix);
+  void setupExecutors(dart::dynamics::SkeletonPtr robot,
+                      const std::string &prefix);
 
   /// Number of finger position executors
   constexpr static int kNumPositionExecutors = 2;
 
   /// Indices of primal dofs
-  constexpr static auto kPrimalDofs
-      = std::array<std::size_t, kNumPositionExecutors>{{0, 0}};
+  constexpr static auto kPrimalDofs =
+      std::array<std::size_t, kNumPositionExecutors>{{0, 0}};
 
   /// Indices of distal dofs
-  constexpr static auto kDistalDofs
-      = std::array<std::size_t, kNumPositionExecutors>{{1, 1}};
+  constexpr static auto kDistalDofs =
+      std::array<std::size_t, kNumPositionExecutors>{{1, 1}};
 
   /// Executor for proximal and distal joints
   std::array<AdaFingerKinematicSimulationPositionCommandExecutorPtr,

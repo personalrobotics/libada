@@ -1,26 +1,21 @@
 #include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include "aikido/common/algorithm.hpp"
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 namespace ada {
 
 //==============================================================================
 AdaFingerKinematicSimulationPositionCommandExecutor::
     AdaFingerKinematicSimulationPositionCommandExecutor(
-        ::dart::dynamics::ChainPtr finger,
-        std::size_t proximal,
+        ::dart::dynamics::ChainPtr finger, std::size_t proximal,
         std::size_t distal,
         ::dart::collision::CollisionDetectorPtr collisionDetector,
         ::dart::collision::CollisionGroupPtr collideWith,
         ::dart::collision::CollisionOption collisionOptions)
-  : mFinger(std::move(finger))
-  , mProximalDof(nullptr)
-  , mDistalDof(nullptr)
-  , mCollisionDetector(std::move(collisionDetector))
-  , mCollideWith(std::move(collideWith))
-  , mCollisionOptions(std::move(collisionOptions))
-  , mInProgress(false)
-{
+    : mFinger(std::move(finger)), mProximalDof(nullptr), mDistalDof(nullptr),
+      mCollisionDetector(std::move(collisionDetector)),
+      mCollideWith(std::move(collideWith)),
+      mCollisionOptions(std::move(collisionOptions)), mInProgress(false) {
   if (!mFinger)
     throw std::invalid_argument("Finger is null.");
 
@@ -42,34 +37,26 @@ AdaFingerKinematicSimulationPositionCommandExecutor::
   if (!mDistalDof)
     throw std::invalid_argument("Finger does not have distal dof.");
 
-  if (mCollisionDetector && mCollideWith)
-  {
+  if (mCollisionDetector && mCollideWith) {
     // If a collision group is given and its collision detector does not match
     // mCollisionDetector, set the collision group to an empty collision group.
-    if (mCollisionDetector != mCollideWith->getCollisionDetector())
-    {
+    if (mCollisionDetector != mCollideWith->getCollisionDetector()) {
       std::cerr << "[AdaFingerKinematicSimulationPositionCommandExecutor] "
                 << "CollisionDetector of type " << mCollisionDetector->getType()
                 << " does not match CollisionGroup's CollisionDetector of type "
                 << mCollideWith->getCollisionDetector()->getType() << std::endl;
 
-      ::dart::collision::CollisionGroupPtr newCollideWith
-          = mCollisionDetector->createCollisionGroup();
+      ::dart::collision::CollisionGroupPtr newCollideWith =
+          mCollisionDetector->createCollisionGroup();
       for (auto i = 0u; i < mCollideWith->getNumShapeFrames(); ++i)
         newCollideWith->addShapeFrame(mCollideWith->getShapeFrame(i));
       mCollideWith = std::move(newCollideWith);
     }
-  }
-  else if (mCollisionDetector && !mCollideWith)
-  {
+  } else if (mCollisionDetector && !mCollideWith) {
     mCollideWith = mCollisionDetector->createCollisionGroup();
-  }
-  else if (!mCollisionDetector && mCollideWith)
-  {
+  } else if (!mCollisionDetector && mCollideWith) {
     mCollisionDetector = mCollideWith->getCollisionDetector();
-  }
-  else
-  {
+  } else {
     // Default mCollisionDetector to FCL collision detector and mCollideWith to
     // empty collision group.
     mCollisionDetector = dart::collision::FCLCollisionDetector::create();
@@ -83,10 +70,8 @@ AdaFingerKinematicSimulationPositionCommandExecutor::
 }
 
 //==============================================================================
-std::future<void>
-AdaFingerKinematicSimulationPositionCommandExecutor::execute(
-    const Eigen::VectorXd& goalPosition)
-{
+std::future<void> AdaFingerKinematicSimulationPositionCommandExecutor::execute(
+    const Eigen::VectorXd &goalPosition) {
   if (!mFinger->isAssembled())
     throw std::runtime_error("Finger is disassembled.");
 
@@ -110,24 +95,22 @@ AdaFingerKinematicSimulationPositionCommandExecutor::execute(
 }
 
 //==============================================================================
-void AdaFingerKinematicSimulationPositionCommandExecutor::terminate()
-{
+void AdaFingerKinematicSimulationPositionCommandExecutor::terminate() {
   mPromise->set_value();
   mInProgress = false;
 }
 
 //==============================================================================
 void AdaFingerKinematicSimulationPositionCommandExecutor::step(
-    const std::chrono::system_clock::time_point& timepoint)
-{
+    const std::chrono::system_clock::time_point &timepoint) {
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (!mInProgress)
     return;
 
   const auto timeSincePreviousCall = timepoint - mTimeOfPreviousCall;
-  const auto period
-      = std::chrono::duration<double>(timeSincePreviousCall).count();
+  const auto period =
+      std::chrono::duration<double>(timeSincePreviousCall).count();
 
   if (period < 0)
     throw std::invalid_argument("Timepoint is before previous call.");
@@ -139,13 +122,10 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::step(
 
   // Check distal collision
   bool distalCollision = mCollisionDetector->collide(
-      mDistalCollisionGroup.get(),
-      mCollideWith.get(),
-      mCollisionOptions,
+      mDistalCollisionGroup.get(), mCollideWith.get(), mCollisionOptions,
       nullptr);
 
-  if (distalCollision)
-  {
+  if (distalCollision) {
     terminate();
     return;
   }
@@ -153,38 +133,30 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::step(
   double newDistal;
   bool distalLimitReached = false;
 
-  if (proximalPosition < mProximalGoalPosition)
-  {
+  if (proximalPosition < mProximalGoalPosition) {
     newDistal = distalPosition + period * kDistalSpeed;
-    if (mDistalLimits.second <= newDistal)
-    {
+    if (mDistalLimits.second <= newDistal) {
       newDistal = mDistalLimits.second;
       distalLimitReached = true;
     }
-    if (!mDistalOnly && mDistalGoalPosition <= newDistal)
-    {
+    if (!mDistalOnly && mDistalGoalPosition <= newDistal) {
       newDistal = mDistalGoalPosition;
     }
-  }
-  else
-  {
+  } else {
     newDistal = distalPosition - period * kDistalSpeed;
-    if (mDistalLimits.first >= newDistal)
-    {
+    if (mDistalLimits.first >= newDistal) {
       newDistal = mDistalLimits.first;
       distalLimitReached = true;
     }
 
-    if (!mDistalOnly && mDistalGoalPosition >= newDistal)
-    {
+    if (!mDistalOnly && mDistalGoalPosition >= newDistal) {
       newDistal = mDistalGoalPosition;
     }
   }
 
   mDistalDof->setPosition(newDistal);
 
-  if (distalLimitReached)
-  {
+  if (distalLimitReached) {
     terminate();
     return;
   }
@@ -194,41 +166,32 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::step(
 
   // Check proximal collision
   bool proximalCollision = mCollisionDetector->collide(
-      mProximalCollisionGroup.get(),
-      mCollideWith.get(),
-      mCollisionOptions,
+      mProximalCollisionGroup.get(), mCollideWith.get(), mCollisionOptions,
       nullptr);
 
-  if (proximalCollision)
-  {
+  if (proximalCollision) {
     mDistalOnly = true;
     return;
   }
 
   double newProximal;
   bool proximalGoalReached = false;
-  if (proximalPosition < mProximalGoalPosition)
-  {
+  if (proximalPosition < mProximalGoalPosition) {
     newProximal = proximalPosition + period * kProximalSpeed;
-    if (mProximalGoalPosition <= newProximal)
-    {
+    if (mProximalGoalPosition <= newProximal) {
       newProximal = mProximalGoalPosition;
       proximalGoalReached = true;
     }
-  }
-  else
-  {
+  } else {
     newProximal = proximalPosition - period * kProximalSpeed;
-    if (mProximalGoalPosition >= newProximal)
-    {
+    if (mProximalGoalPosition >= newProximal) {
       newProximal = mProximalGoalPosition;
       proximalGoalReached = true;
     }
   }
 
   mProximalDof->setPosition(newProximal);
-  if (proximalGoalReached)
-  {
+  if (proximalGoalReached) {
     terminate();
     return;
   }
@@ -236,8 +199,7 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::step(
 
 //==============================================================================
 bool AdaFingerKinematicSimulationPositionCommandExecutor::setCollideWith(
-    ::dart::collision::CollisionGroupPtr collideWith)
-{
+    ::dart::collision::CollisionGroupPtr collideWith) {
   std::lock_guard<std::mutex> lock(mMutex);
 
   if (mInProgress)
@@ -253,18 +215,17 @@ bool AdaFingerKinematicSimulationPositionCommandExecutor::setCollideWith(
 
 //==============================================================================
 void AdaFingerKinematicSimulationPositionCommandExecutor::
-    setFingerCollisionGroup()
-{
-  if (mProximalCollisionGroup
-      && mProximalCollisionGroup->getCollisionDetector() == mCollisionDetector
-      && mDistalCollisionGroup
-      && mDistalCollisionGroup->getCollisionDetector() == mCollisionDetector)
+    setFingerCollisionGroup() {
+  if (mProximalCollisionGroup &&
+      mProximalCollisionGroup->getCollisionDetector() == mCollisionDetector &&
+      mDistalCollisionGroup &&
+      mDistalCollisionGroup->getCollisionDetector() == mCollisionDetector)
     return;
 
   mProximalCollisionGroup = mCollisionDetector->createCollisionGroup(
       mProximalDof->getChildBodyNode());
-  mDistalCollisionGroup = mCollisionDetector->createCollisionGroup(
-      mDistalDof->getChildBodyNode());
+  mDistalCollisionGroup =
+      mCollisionDetector->createCollisionGroup(mDistalDof->getChildBodyNode());
 }
 
 } // ada
