@@ -32,8 +32,10 @@
 
 namespace ada {
 
-extern dart::common::Uri adaUrdfUri;
-extern dart::common::Uri adaSrdfUri;
+dart::common::Uri defaultAdaUrdfUri{
+    "package://ada_description/robots/ada_with_camera.urdf"};
+dart::common::Uri defaultAdaSrdfUri{
+    "package://ada_description/robots/ada_with_camera.srdf"};
 extern const std::vector<std::string> gravityCompensationControllers;
 extern const std::vector<std::string> trajectoryExecutors;
 
@@ -60,14 +62,16 @@ public:
   /// \param[in] rngSeed seed for initializing random generator
   ///            May be nullptr if simulation is true
   /// \param[in] adaUrdfUri Path to Ada urdf model.
+  /// \param[in] adaSrdfUri Path to Ada srdf file.
+  /// \param[in] endEffectorName Name of the end effector as defined in the urdf file
   /// \param[in] retriever Resource retriever for retrieving Hebi
   Ada(aikido::planner::WorldPtr env,
       bool simulation,
-      bool feeding,
+      const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
+      const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
+      std::string endEffectorName = "j2n6s200_end_effector",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
-      dart::common::Uri& adaUrdfUri = adaUrdfUri,
-      dart::common::Uri& adaSrdfUri = adaSrdfUri,
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
@@ -334,9 +338,9 @@ private:
   std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
   // arm Base, End names
-  std::stringstream armBaseName;
-  std::stringstream armEndName;
-  std::stringstream endEffectorName;
+  std::stringstream mArmBaseName;
+  std::stringstream mArmEndName;
+  std::stringstream mEndEffectorName;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
