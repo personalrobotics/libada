@@ -1,17 +1,19 @@
 #ifndef LIBADA_ADAHAND_HPP_
 #define LIBADA_ADAHAND_HPP_
 
-#include <memory>
-#include <unordered_map>
+#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 #include <Eigen/Core>
+#include <aikido/common/RNG.hpp>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
 #include <aikido/robot/GrabMetadata.hpp>
 #include <aikido/robot/Hand.hpp>
+#include <aikido/robot/Robot.hpp>
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
+#include <memory>
 #include <ros/ros.h>
-#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
+#include <unordered_map>
 
 namespace ada {
 
@@ -25,9 +27,11 @@ extern const dart::common::Uri tsrEndEffectorTransformsUri;
 
 AIKIDO_DECLARE_POINTERS(AdaHand)
 
-class AdaHand : public aikido::robot::Hand
-{
+class AdaHand : public aikido::robot::Hand {
 public:
+  const double rosTrajectoryInterpolationTimestep = 0.1;
+  const double rosTrajectoryGoalTimeTolerance = 5.0;
+
   /// Creates an instance of an AdaHand.
   ///
   /// When simulation is false, uses \c RosPositionCommandExecutor to send
@@ -41,10 +45,13 @@ public:
   /// zero-indexed finger and \c joint_index is the zero-indexed phalange within
   /// the finger.
   ///
-  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one hand). 
+  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one
+  /// hand).
   /// \param[in] simulation True if running in simulation mode
+  /// \param[in] handBaseBodyNode Body node which is the root of all fingers.
   /// \param[in] endEffectorBodyNode End-effector body node. Must be the link
-  ///            that represents the palm of an AdaHand (i.e. \c hand_base).
+  ///            that represents the palm of an AdaHand (i.e. \c hand_base),
+  ///            for which inverse kinematics is solved.
   /// \param[in] selfCollisionFilter CollisionFilter used for self-collision
   ///            checking for the whole robot.
   /// \param[in] node ROS node. Required for running in real.
@@ -52,59 +59,60 @@ public:
   /// \param[in] retriever Resource retriever for retrieving preshapes and
   ///            end-effector transforms, specified as \c package://libada
   ///            URIs.
-  AdaHand(
-      const std::string& name,
-      bool simulation,
-      dart::dynamics::BodyNodePtr endEffectorBodyNode,
-      std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
-          selfCollisionFilter,
-      const ::ros::NodeHandle* node,
-      const dart::common::ResourceRetrieverPtr& retriever);
+  AdaHand(const std::string &name, aikido::robot::RobotPtr robot,
+          bool simulation, dart::dynamics::BodyNodePtr handBaseBodyNode,
+          dart::dynamics::BodyNodePtr endEffectorBodyNode,
+          std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
+              selfCollisionFilter,
+          const ::ros::NodeHandle *node,
+          const dart::common::ResourceRetrieverPtr &retriever,
+          aikido::common::RNG::result_type rngSeed = std::random_device{}());
 
   virtual ~AdaHand() = default;
 
   // Documentation inherited.
-  virtual void grab(const dart::dynamics::SkeletonPtr& bodyToGrab) override;
+  void grab(const dart::dynamics::SkeletonPtr &bodyToGrab) override;
 
   // Documentation inherited.
-  virtual void ungrab() override;
+  void ungrab() override;
 
   // Documentation inherited.
-  virtual std::future<void> executePreshape(
-      const std::string& preshapeName) override;
+  std::future<void> executePreshape(const std::string &preshapeName) override;
 
   // Documentation inherited.
-  virtual void step(
-      const std::chrono::system_clock::time_point& timepoint) override;
+  void step(const std::chrono::system_clock::time_point &timepoint) override;
 
   // Documentation inherited.
-  virtual dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
+  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   // Documentation inherited.
-  virtual dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
+  dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
 
-  // Documentation inherited.
-  virtual dart::dynamics::BodyNode* getBodyNode() const override;
+  /// Get the end-effector body node for which IK can be created.
+  /// \return DART body node of end-effector
+  dart::dynamics::BodyNode *getEndEffectorBodyNode() const override;
+
+  /// Get the body node which is the root of the hand, containing
+  /// all fingers.
+  /// \return DART body node at the root of the hand
+  dart::dynamics::BodyNode *getHandBaseBodyNode() const override;
 
   /// Load preshapes from a YAML file.
   ///
   /// \param[in] preshapesUri Preshapes in YAML file
   /// \param[in] retriever Resource retriever to resolve URIs
-  void loadPreshapes(
-      const dart::common::Uri& preshapesUri,
-      const dart::common::ResourceRetrieverPtr& retriever);
+  void loadPreshapes(const dart::common::Uri &preshapesUri,
+                     const dart::common::ResourceRetrieverPtr &retriever);
 
   /// Load TSR transforms for an end-effector from a YAML file.
   ///
   /// \param[in] tsrTransformsUri TSR transforms in YAML file
   /// \param[in] retriever Resource retriever to resolve URIs
-  void loadTSRTransforms(
-      const dart::common::Uri& tsrTransformsUri,
-      const dart::common::ResourceRetrieverPtr& retriever);
- 
-  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
-          const std::string& objectType) const;
+  void loadTSRTransforms(const dart::common::Uri &tsrTransformsUri,
+                         const dart::common::ResourceRetrieverPtr &retriever);
 
+  boost::optional<Eigen::Isometry3d>
+  getEndEffectorTransform(const std::string &objectType) const;
 
 private:
   /// Schema description for preshapes YAML file.
@@ -115,49 +123,56 @@ private:
   /// Schema description for end-effector transform YAML file.
   ///
   /// Maps an end-effector transform name (string) to a transform.
-  using EndEffectorTransformMap = std::
-      unordered_map<std::string,
-                    Eigen::Isometry3d,
-                    std::hash<std::string>,
-                    std::equal_to<std::string>,
-                    Eigen::aligned_allocator<std::pair<const std::string,
-                                                       Eigen::Isometry3d>>>;
+  using EndEffectorTransformMap =
+      std::unordered_map<std::string, Eigen::Isometry3d, std::hash<std::string>,
+                         std::equal_to<std::string>,
+                         Eigen::aligned_allocator<
+                             std::pair<const std::string, Eigen::Isometry3d>>>;
 
   /// Create controllers in real or simulation.
   ///
   /// \param[in] robot Robot to construct executor for
-  std::shared_ptr<aikido::control::PositionCommandExecutor>
-  createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot);
+  std::shared_ptr<aikido::control::TrajectoryExecutor>
+  createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr &robot);
 
   /// Loads preshapes from YAML file (retrieved from \c preshapesUri).
   ///
   /// \param[in] node The YAML node to read from
-  PreshapeMap parseYAMLToPreshapes(const YAML::Node& node);
+  PreshapeMap parseYAMLToPreshapes(const YAML::Node &node);
 
   /// Loads end-effector transforms from YAML file (retrieved from
   /// \c tsrEndEffectorTransformsUri).
   ///
   /// \param[in] node The YAML node to read from
-  EndEffectorTransformMap parseYAMLToEndEffectorTransforms(
-      const YAML::Node& node);
+  EndEffectorTransformMap
+  parseYAMLToEndEffectorTransforms(const YAML::Node &node);
 
   /// Returns the corresponding preshape (from \c preshapesUri).
   ///
   /// \param[in] preshapeName Name of preshape (e.g. "open")
   /// \return preshape if it exists, boost::none if not
-  boost::optional<Eigen::VectorXd> getPreshape(const std::string& preshapeName);
+  boost::optional<Eigen::VectorXd> getPreshape(const std::string &preshapeName);
 
   /// Name of the hand, either "left" or "right"
   const std::string mName;
 
-  /// Hand MetaSkeleton consisting of the nodes rooted at \c
-  /// mEndEffectorBodyNode
-  dart::dynamics::BranchPtr mHand;
+  /// Parent robot
+  aikido::robot::RobotPtr mRobot;
+
+  aikido::common::RNGWrapper<std::mt19937> mRng;
+
+  /// Hand metaskeleton consisting of the nodes rooted at \c
+  /// mHandBodyNode
+  dart::dynamics::GroupPtr mHand;
+  aikido::statespace::dart::MetaSkeletonStateSpacePtr mSpace;
 
   /// Whether hand is running in simulation mode
   const bool mSimulation;
 
-  /// End-effector body node
+  /// Body node which is the root link for all fingers
+  dart::dynamics::BodyNodePtr mHandBaseBodyNode;
+
+  /// End-effector body node, for which IK is created
   dart::dynamics::BodyNodePtr mEndEffectorBodyNode;
 
   /// CollisionFilter used for self-collision checking for the whole robot
@@ -165,10 +180,10 @@ private:
       mSelfCollisionFilter;
 
   /// Hand position command executor (may be real if simulation is False)
-  std::shared_ptr<aikido::control::PositionCommandExecutor> mExecutor;
+  std::shared_ptr<aikido::control::TrajectoryExecutor> mExecutor;
 
   /// Hand position command executor (always in simulation)
-  std::shared_ptr<aikido::control::PositionCommandExecutor> mSimExecutor;
+  std::shared_ptr<aikido::control::TrajectoryExecutor> mSimExecutor;
 
   /// Maps a preshape name (string) to a configuration
   PreshapeMap mPreshapeConfigurations;
