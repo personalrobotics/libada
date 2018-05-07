@@ -191,4 +191,4 @@ private:
 
 } // namespace ada
 
-#endif
+#endif // LIBADA_ADAHAND_HPP_
