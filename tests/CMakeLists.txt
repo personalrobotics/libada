@@ -13,12 +13,3 @@ if(NOT DART_utils_FOUND)
   return()
 endif()
 
-# libhebi_add_test(test_Grab test_Grab.cpp)
-# target_link_libraries(test_Grab "${PROJECT_NAME}")
-
-# libherb_add_test(test_planOutOfJointLimits test_planOutOfJointLimits.cpp)
-# target_link_libraries(test_planOutOfJointLimits "${PROJECT_NAME}")
-
-# libherb_add_test(test_planToEndEffectorOffset
-#    test_planToEndEffectorOffset.cpp)
-# target_link_libraries(test_planToEndEffectorOffset "${PROJECT_NAME}")

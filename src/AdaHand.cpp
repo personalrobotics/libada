@@ -1,8 +1,11 @@
 #include "libada/AdaHand.hpp"
+
 #include <chrono>
-#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
+
 #include <aikido/control/ros/RosPositionCommandExecutor.hpp>
 #include <aikido/planner/World.hpp>
+
+#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 
@@ -184,9 +187,8 @@ void AdaHand::ungrab()
     std::stringstream ss;
 
     // TODO: use proper logging
-    ss << "[AdaHand::ungrab] End effector \""
-       << mEndEffectorBodyNode->getName() << "\" is not grabbing an object."
-       << std::endl;
+    ss << "[AdaHand::ungrab] End effector \"" << mEndEffectorBodyNode->getName()
+       << "\" is not grabbing an object." << std::endl;
     throw std::runtime_error(ss.str());
   }
 
@@ -247,7 +249,13 @@ void AdaHand::step(const std::chrono::system_clock::time_point& timepoint)
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* AdaHand::getBodyNode() const
+dart::dynamics::BodyNode* AdaHand::getEndEffectorBodyNode() const
+{
+  return mEndEffectorBodyNode.get();
+}
+
+//==============================================================================
+dart::dynamics::BodyNode* AdaHand::getHandBaseBodyNode() const
 {
   return mEndEffectorBodyNode.get();
 }
@@ -293,8 +301,7 @@ boost::optional<Eigen::Isometry3d> AdaHand::getEndEffectorTransform(
 }
 
 //==============================================================================
-AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
-    const YAML::Node& node)
+AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(const YAML::Node& node)
 {
   PreshapeMap preshapeMap;
   for (const auto preshapeNode : node)
@@ -307,8 +314,7 @@ AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
     for (auto joint : jointNodes)
     {
       auto jointName = joint.first.as<std::string>();
-      auto jointIndex
-          = adaFingerJointNameToPositionIndexMap.find(jointName);
+      auto jointIndex = adaFingerJointNameToPositionIndexMap.find(jointName);
       if (jointIndex == adaFingerJointNameToPositionIndexMap.end())
       {
         std::stringstream message;
@@ -324,24 +330,22 @@ AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
 }
 
 //==============================================================================
-AdaHand::EndEffectorTransformMap
-AdaHand::parseYAMLToEndEffectorTransforms(const YAML::Node& node)
+AdaHand::EndEffectorTransformMap AdaHand::parseYAMLToEndEffectorTransforms(
+    const YAML::Node& node)
 {
   return node[mName].as<EndEffectorTransformMap>();
 }
 
 //==============================================================================
 std::shared_ptr<aikido::control::PositionCommandExecutor>
-AdaHand::createAdaHandPositionExecutor(
-    const dart::dynamics::SkeletonPtr& robot)
+AdaHand::createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot)
 {
   using aikido::control::ros::RosPositionCommandExecutor;
 
   if (mSimulation)
   {
-    return std::
-        make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
-            robot, "/" + mName + "/");
+    return std::make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
+        robot, "/" + mName + "/");
   }
   else
   {
@@ -361,8 +365,7 @@ AdaHand::createAdaHandPositionExecutor(
 }
 
 const std::unordered_map<std::string, size_t>
-    AdaHand::adaFingerJointNameToPositionIndexMap = {
-        {"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_2", 1}
-};
+    AdaHand::adaFingerJointNameToPositionIndexMap
+    = {{"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_2", 1}};
 
 } // namespace ada

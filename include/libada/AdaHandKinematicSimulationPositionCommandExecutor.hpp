@@ -1,16 +1,14 @@
-#ifndef AIKIDO_CONTROL_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
-#define AIKIDO_CONTROL_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
+#ifndef LIBADA_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
+#define LIBADA_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
 
 #include <future>
 #include <mutex>
+
 #include <Eigen/Dense>
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/CollisionFilter.hpp>
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/dynamics/dynamics.hpp>
+#include <aikido/control/PositionCommandExecutor.hpp>
+#include <dart/dart.hpp>
+
 #include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
-#include "aikido/control/PositionCommandExecutor.hpp"
 
 namespace ada {
 
@@ -114,4 +112,4 @@ private:
 
 } // namespace ada
 
-#endif
+#endif // LIBADA_ADAHANDKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
