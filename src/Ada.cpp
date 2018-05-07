@@ -539,16 +539,13 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
 
   // Set up default transform
   Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));  
   ee->setDefaultRelativeTransform(tf_hand, true);
   // TODO: visualize the ee frame to determine the translate
 
   // Load IK Solver
+  // TODO: instead of loading from a fixed location, use ResourceRetriever
   std::string libName = "devel/lib/libadaIk";
 
-#if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
-  //libName += "d";
-#endif
 #if DART_OS_LINUX
   libName += ".so";
 #elif DART_OS_MACOS
@@ -562,8 +559,6 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
               << "Please run the program from the workspace folder" << std::endl;
   #endif
 
-  // TODO: Use Catkin ResourceRetriever to pass to Dart
-
   std::vector<std::size_t> ikFastDofs{0,1,2,3,4,5};
   std::vector<std::size_t> ikFastFreeDofs{};
 
@@ -576,7 +571,8 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
     throw "Failed to load the IK Soler";
   }
 
-  // Set bounds
+  // TODO: Tuning and set the error bounds for orientation and translation
+  
   Eigen::Vector3d linearBounds =
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
@@ -585,6 +581,7 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+  
 }
 
 //==============================================================================
