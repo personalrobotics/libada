@@ -291,8 +291,9 @@ private:
           selfCollisionFilter);
 
   /// Set up end effectors by loading the IK solver
-  void setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
-                         const dart::common::ResourceRetrieverPtr& retriever);
+  void setupEndEffectors(
+      const dart::dynamics::SkeletonPtr& robot,
+      const dart::common::ResourceRetrieverPtr& retriever);
 
   /// Compute velocity limits from the MetaSkeleton
   Eigen::VectorXd getVelocityLimits() const;

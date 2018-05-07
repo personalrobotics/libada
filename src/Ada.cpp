@@ -596,19 +596,21 @@ ConcreteManipulatorPtr Ada::configureArm(
 }
 
 //==============================================================================
-void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot, 
-                            const dart::common::ResourceRetrieverPtr& retriever)
+void Ada::setupEndEffectors(
+    const dart::dynamics::SkeletonPtr& robot,
+    const dart::common::ResourceRetrieverPtr& /*retriever*/)
 {
   // Create end effector
   std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_end_effector"; 
+  endEffectorName << "j2n6s200_end_effector";
 
   dart::dynamics::EndEffector* ee
-      = getBodyNodeOrThrow(robot, endEffectorName.str())->createEndEffector("ee");
+      = getBodyNodeOrThrow(robot, endEffectorName.str())
+            ->createEndEffector("ee");
 
   // Set up default transform
   Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));  
+  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
   ee->setDefaultRelativeTransform(tf_hand, true);
   // TODO: visualize the ee frame to determine the translate
 
@@ -616,7 +618,7 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
   std::string libName = "devel/lib/libadaIk";
 
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
-  //libName += "d";
+// libName += "d";
 #endif
 #if DART_OS_LINUX
   libName += ".so";
@@ -626,31 +628,32 @@ void Ada::setupEndEffectors(const dart::dynamics::SkeletonPtr& robot,
   libName += ".dll";
 #endif
 
-  #ifndef NDEBUG
-    std::cout << "[INFO] Loading IK Solver: " << libName << ", "
-              << "Please run the program from the workspace folder" << std::endl;
-  #endif
+#ifndef NDEBUG
+  std::cout << "[INFO] Loading IK Solver: " << libName << ", "
+            << "Please run the program from the workspace folder" << std::endl;
+#endif
 
   // TODO: Use Catkin ResourceRetriever to pass to Dart
 
-  std::vector<std::size_t> ikFastDofs{0,1,2,3,4,5};
+  std::vector<std::size_t> ikFastDofs{0, 1, 2, 3, 4, 5};
   std::vector<std::size_t> ikFastFreeDofs{};
 
-  auto ikfast = ee->getIK(true)->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
-      libName, ikFastDofs, std::vector<std::size_t>());
+  auto ikfast
+      = ee->getIK(true)->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
+          libName, ikFastDofs, std::vector<std::size_t>());
 
-  if(!ikfast.isConfigured())
+  if (!ikfast.isConfigured())
   {
     std::cout << "[ERRPR] Failed to load the IK Solver" << std::endl;
     throw "Failed to load the IK Soler";
   }
 
   // Set bounds
-  Eigen::Vector3d linearBounds =
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
-  Eigen::Vector3d angularBounds =
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
