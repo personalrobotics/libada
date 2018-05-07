@@ -1,4 +1,5 @@
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
+
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 namespace ada {

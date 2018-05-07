@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+
 #include <Eigen/Core>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
@@ -11,7 +12,6 @@
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
-#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 

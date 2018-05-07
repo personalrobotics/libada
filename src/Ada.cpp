@@ -27,10 +27,7 @@
 #include <aikido/statespace/GeodesicInterpolator.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <controller_manager_msgs/SwitchController.h>
-#include <dart/common/Console.hpp>
-#include <dart/common/StlHelpers.hpp>
-#include <dart/common/Timer.hpp>
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <srdfdom/model.h>
 #include <urdf/model.h>

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <future>
 #include <memory>
+
 #include <Eigen/Core>
 #include <actionlib/client/simple_action_client.h>
 #include <aikido/common/ExecutorThread.hpp>
@@ -24,10 +25,9 @@
 #include <aikido/trajectory/Spline.hpp>
 #include <aikido/trajectory/Trajectory.hpp>
 #include <boost/optional.hpp>
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/CollisionGroup.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
+
 #include "libada/AdaHand.hpp"
 
 namespace ada {

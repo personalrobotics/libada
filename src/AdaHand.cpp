@@ -1,7 +1,10 @@
 #include "libada/AdaHand.hpp"
+
 #include <chrono>
+
 #include <aikido/control/ros/RosPositionCommandExecutor.hpp>
 #include <aikido/planner/World.hpp>
+
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {

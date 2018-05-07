@@ -3,14 +3,12 @@
 
 #include <future>
 #include <mutex>
+
 #include <Eigen/Dense>
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/CollisionFilter.hpp>
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/dynamics/dynamics.hpp>
+#include <aikido/control/PositionCommandExecutor.hpp>
+#include <dart/dart.hpp>
+
 #include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
-#include "aikido/control/PositionCommandExecutor.hpp"
 
 namespace ada {
 
