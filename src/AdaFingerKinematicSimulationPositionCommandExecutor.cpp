@@ -1,6 +1,7 @@
 #include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
+
+#include <aikido/common/algorithm.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include "aikido/common/algorithm.hpp"
 
 namespace ada {
 
@@ -83,8 +84,7 @@ AdaFingerKinematicSimulationPositionCommandExecutor::
 }
 
 //==============================================================================
-std::future<void>
-AdaFingerKinematicSimulationPositionCommandExecutor::execute(
+std::future<void> AdaFingerKinematicSimulationPositionCommandExecutor::execute(
     const Eigen::VectorXd& goalPosition)
 {
   if (!mFinger->isAssembled())

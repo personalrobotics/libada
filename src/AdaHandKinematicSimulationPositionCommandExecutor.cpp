@@ -1,12 +1,13 @@
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
+
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 namespace ada {
 
 constexpr std::chrono::milliseconds
     AdaHandKinematicSimulationPositionCommandExecutor::kWaitPeriod;
-constexpr int AdaHandKinematicSimulationPositionCommandExecutor::
-    kNumPositionExecutors;
+constexpr int
+    AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors;
 constexpr std::array<std::size_t,
                      AdaHandKinematicSimulationPositionCommandExecutor::
                          kNumPositionExecutors>
@@ -71,30 +72,22 @@ AdaHandKinematicSimulationPositionCommandExecutor::
 
 //==============================================================================
 void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
-    dart::dynamics::SkeletonPtr robot, const std::string& prefix)
+    dart::dynamics::SkeletonPtr robot, const std::string& /*prefix*/)
 {
   using dart::dynamics::Chain;
   using dart::dynamics::ChainPtr;
-  using FingerPositionCommandExecutor = AdaFingerKinematicSimulationPositionCommandExecutor;
+  using FingerPositionCommandExecutor
+      = AdaFingerKinematicSimulationPositionCommandExecutor;
 
-  //if (prefix != "/left/" && prefix != "/right/")
-  //{
-  //  std::stringstream message;
-  //  message << "Invalid prefix '" << prefix << "', "
-  //          << "must be either '/left/' or '/right/'";
-  //  throw std::invalid_argument(message.str());
-  //}
-
-  const auto fingerChains = std::array<ChainPtr, kNumPositionExecutors>{{
-      Chain::create(
-          robot->getBodyNode("j2n6s200_link_finger_1"), // finger0Primal
-          robot->getBodyNode("j2n6s200_link_finger_tip_1"), // finger0Distal
-          Chain::IncludeBoth),
-      Chain::create(
-          robot->getBodyNode("j2n6s200_link_finger_2"), // finger1Primal
-          robot->getBodyNode("j2n6s200_link_finger_tip_2"), // finger1Distal
-          Chain::IncludeBoth)
-      }};
+  const auto fingerChains = std::array<ChainPtr, kNumPositionExecutors>{
+      {Chain::create(
+           robot->getBodyNode("j2n6s200_link_finger_1"),     // finger0Primal
+           robot->getBodyNode("j2n6s200_link_finger_tip_1"), // finger0Distal
+           Chain::IncludeBoth),
+       Chain::create(
+           robot->getBodyNode("j2n6s200_link_finger_2"),     // finger1Primal
+           robot->getBodyNode("j2n6s200_link_finger_tip_2"), // finger1Distal
+           Chain::IncludeBoth)}};
 
   for (std::size_t i = 0; i < fingerChains.size(); ++i)
   {
@@ -110,8 +103,7 @@ void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
 }
 
 //==============================================================================
-std::future<void>
-AdaHandKinematicSimulationPositionCommandExecutor::execute(
+std::future<void> AdaHandKinematicSimulationPositionCommandExecutor::execute(
     const Eigen::VectorXd& goalPositions)
 {
   std::lock_guard<std::mutex> lock(mMutex);

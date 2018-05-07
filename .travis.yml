@@ -1,0 +1,51 @@
+dist: trusty
+
+sudo: required
+
+language: generic
+
+env:
+  global:
+    - TIMEOUT=30
+
+cache:
+  - apt
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      env: BUILD_TYPE=Debug CODECOV=OFF CATKIN_CONFIG_OPTIONS="-DCMAKE_BUILD_TYPE=Debug -DLIBADA_TREAT_WARNINGS_AS_ERRORS=ON"
+    - os: linux
+      compiler: gcc
+      env: BUILD_TYPE=Release CODECOV=OFF CATKIN_CONFIG_OPTIONS="-DCMAKE_BUILD_TYPE=Release -DLIBADA_TREAT_WARNINGS_AS_ERRORS=ON"
+
+# Install test fixture dependencies.
+before_install:
+  - mkdir -p "${HOME}/workspace/src"
+  - cd "${HOME}/workspace"
+  - git clone https://github.com/personalrobotics/pr-cleanroom.git scripts
+  - curl -sS "${DISTRIBUTION}" > distribution.yml
+  #- curl -sS "${DISTRIBUTION}" | ./scripts/internal-convert.py > distribution.yml # internal-convert.py is required as this repo is private; please remove it once becomes public
+  - ./scripts/internal-setup.sh
+  - export PACKAGE_NAMES="$(./scripts/internal-get-packages.py distribution.yml ${REPOSITORY})"
+
+install:
+  - mv "${TRAVIS_BUILD_DIR}" src
+  - ./scripts/internal-distro.py --workspace=src distribution.yml --repository "${REPOSITORY}"
+
+script:
+  - ./scripts/internal-build.sh ${PACKAGE_NAMES}
+  - ./scripts/internal-test.sh ${PACKAGE_NAMES}
+  # Check code style
+  - ./scripts/internal-run.sh catkin build --no-status --no-deps -p 1 -i --make-args check-format -- libada
+  # Manually build libada's tests; they are not run automatically because it is not a Catkin package.
+  - ./scripts/internal-run.sh catkin build --no-status --no-deps -p 1 -i --cmake-args -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBADA_TREAT_WARNINGS_AS_ERRORS=ON -DCODECOV=$CODECOV --make-args tests -- libada
+  # Measure test coverage if CodeCov is on; otherwise, just run tests.
+  - if [ $CODECOV = ON ]; then ./scripts/internal-run.sh make -C build/libada libada_coverage; else ./scripts/internal-run.sh make -C build/libada test; fi
+  # Uploading code coverage report to CodeCov
+  - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports."; fi
+
+after_failure:
+  - cat ./build/libada/Testing/Temporary/LastTest.log
+  - cat ./build/libada/Testing/Temporary/LastTestsFailed.log
