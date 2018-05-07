@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+
 #include <Eigen/Core>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
@@ -11,7 +12,6 @@
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
-#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 
@@ -41,7 +41,8 @@ public:
   /// zero-indexed finger and \c joint_index is the zero-indexed phalange within
   /// the finger.
   ///
-  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one hand). 
+  /// \param[in] name Name of the hand, either "left" or "right" (ADA has one
+  /// hand).
   /// \param[in] simulation True if running in simulation mode
   /// \param[in] endEffectorBodyNode End-effector body node. Must be the link
   ///            that represents the palm of an AdaHand (i.e. \c hand_base).
@@ -64,24 +65,22 @@ public:
   virtual ~AdaHand() = default;
 
   // Documentation inherited.
-  virtual void grab(const dart::dynamics::SkeletonPtr& bodyToGrab) override;
+  void grab(const dart::dynamics::SkeletonPtr& bodyToGrab) override;
 
   // Documentation inherited.
-  virtual void ungrab() override;
+  void ungrab() override;
 
   // Documentation inherited.
-  virtual std::future<void> executePreshape(
-      const std::string& preshapeName) override;
+  std::future<void> executePreshape(const std::string& preshapeName) override;
 
   // Documentation inherited.
-  virtual void step(
-      const std::chrono::system_clock::time_point& timepoint) override;
+  void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   // Documentation inherited.
-  virtual dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
+  dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
   // Documentation inherited.
-  virtual dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
+  dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
 
   // Documentation inherited.
   dart::dynamics::BodyNode* getEndEffectorBodyNode() const override;
@@ -104,10 +103,9 @@ public:
   void loadTSRTransforms(
       const dart::common::Uri& tsrTransformsUri,
       const dart::common::ResourceRetrieverPtr& retriever);
- 
-  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
-          const std::string& objectType) const;
 
+  boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
+      const std::string& objectType) const;
 
 private:
   /// Schema description for preshapes YAML file.
@@ -193,4 +191,4 @@ private:
 
 } // namespace ada
 
-#endif
+#endif // LIBADA_ADAHAND_HPP_
