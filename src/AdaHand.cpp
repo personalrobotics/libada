@@ -255,7 +255,7 @@ dart::dynamics::BodyNode* AdaHand::getEndEffectorBodyNode() const
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* AdaHand::getHandBaseBodyNode() const
+dart::dynamics::BodyNode *AdaHand::getHandBaseBodyNode() const
 {
   return mEndEffectorBodyNode.get();
 }
