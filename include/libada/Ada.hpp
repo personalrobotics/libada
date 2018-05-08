@@ -63,7 +63,8 @@ public:
   ///            May be nullptr if simulation is true
   /// \param[in] adaUrdfUri Path to Ada urdf model.
   /// \param[in] adaSrdfUri Path to Ada srdf file.
-  /// \param[in] endEffectorName Name of the end effector as defined in the urdf file
+  /// \param[in] endEffectorName Name of the end effector as defined in the urdf
+  /// file
   /// \param[in] retriever Resource retriever for retrieving Hebi
   Ada(aikido::planner::WorldPtr env,
       bool simulation,
