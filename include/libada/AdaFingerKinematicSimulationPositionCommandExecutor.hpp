@@ -1,20 +1,17 @@
-#ifndef AIKIDO_CONTROL_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
-#define AIKIDO_CONTROL_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
+#ifndef LIBADA_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
+#define LIBADA_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
 
-#include "aikido/common/pointers.hpp"
-#include "aikido/control/PositionCommandExecutor.hpp"
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/CollisionFilter.hpp>
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/dynamics/dynamics.hpp>
 #include <future>
 #include <mutex>
+
+#include <aikido/common/pointers.hpp>
+#include <aikido/control/PositionCommandExecutor.hpp>
+#include <dart/dart.hpp>
 
 namespace ada {
 
 AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
-
+// To confirm this behavior from Kinova people
 /// This executor mimics the behavior of an AdaHand finger.
 ///
 /// It moves a finger to a desired point; it may stop early if the joint limit
@@ -26,7 +23,8 @@ AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
 /// to move until it reaches the joint limit or until distal collision is
 /// detected.
 class AdaFingerKinematicSimulationPositionCommandExecutor
-    : public aikido::control::PositionCommandExecutor {
+    : public aikido::control::PositionCommandExecutor
+{
 public:
   /// Constructor.
   ///
@@ -42,12 +40,13 @@ public:
   ///        maxNumContacts = 1.) See dart/collison/Option.h for more
   ///        information
   AdaFingerKinematicSimulationPositionCommandExecutor(
-      ::dart::dynamics::ChainPtr finger, std::size_t proximal,
+      ::dart::dynamics::ChainPtr finger,
+      std::size_t proximal,
       std::size_t distal,
       ::dart::collision::CollisionDetectorPtr collisionDetector = nullptr,
       ::dart::collision::CollisionGroupPtr collideWith = nullptr,
-      ::dart::collision::CollisionOption collisionOptions =
-          ::dart::collision::CollisionOption(false, 1));
+      ::dart::collision::CollisionOption collisionOptions
+      = ::dart::collision::CollisionOption(false, 1));
 
   /// Open or close finger to goal position. Call step() after this until future
   /// returns for actual execution.
@@ -57,12 +56,15 @@ public:
   ///
   /// \param goalPosition Desired angle for proximal joint
   /// \return future which becomes available when movement stops
-  std::future<void> execute(const Eigen::VectorXd &goalPosition) override;
+  std::future<void> execute(const Eigen::VectorXd& goalPosition) override;
 
   /// Returns the mimic ratio, i.e. how much the distal joint moves relative to
   /// the proximal joint.
   /// \return mimic ratio
-  constexpr static double getMimicRatio() { return kMimicRatio; }
+  constexpr static double getMimicRatio()
+  {
+    return kMimicRatio;
+  }
 
   /// \copydoc BarrettHandKinematicSimulationPositionCommandExecutor::step()
   ///
@@ -74,7 +76,7 @@ public:
   /// When collision is detected on the proximal link, the distal link continues
   /// to move until it either reaches mimicRatio * goalPosition, a joint limit
   /// is reached, or collision is detected.
-  void step(const std::chrono::system_clock::time_point &timepoint) override;
+  void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   // clang-format off
   /// \copydoc BarrettHandKinematicSimulationPositionCommandExecutor::setCollideWith()
@@ -104,10 +106,10 @@ private:
   ::dart::dynamics::ChainPtr mFinger;
 
   /// Proximal DOF
-  ::dart::dynamics::DegreeOfFreedom *mProximalDof;
+  ::dart::dynamics::DegreeOfFreedom* mProximalDof;
 
   /// Distal DOF
-  ::dart::dynamics::DegreeOfFreedom *mDistalDof;
+  ::dart::dynamics::DegreeOfFreedom* mDistalDof;
 
   /// Joint limits for proximal and distal dof
   std::pair<double, double> mProximalLimits, mDistalLimits;
@@ -149,4 +151,4 @@ private:
 
 } // ada
 
-#endif
+#endif // LIBADA_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_

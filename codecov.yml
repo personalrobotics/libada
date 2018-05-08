@@ -2,10 +2,9 @@
 
 coverage:
   fixes:
-    - "src/libada::"  # reduce root "src/aikido/" => "/"
+    - "src/libada::"  # reduce root "src/libada/" => "/"
   ignore:
     - "build"
-    - "src/aikido"
     - "tests"
 
 comment:
