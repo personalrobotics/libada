@@ -101,7 +101,7 @@ Ada::Ada(
     bool simulation,
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
-    std::string endEffectorName,
+    const std::string& endEffectorName,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
@@ -214,8 +214,8 @@ Ada::Ada(
       0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
 
   // Setting arm base and end names
-  mArmBaseName << "j2n6s200_link_base";
-  mArmEndName << "j2n6s200_link_6";
+  mArmBaseName = "j2n6s200_link_base";
+  mArmEndName = "j2n6s200_link_6";
 
   // Setup the arm
   mArm = configureArm(
@@ -535,8 +535,8 @@ ConcreteManipulatorPtr Ada::configureArm(
 {
   using dart::dynamics::Chain;
 
-  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, mArmBaseName.str());
-  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, mArmEndName.str());
+  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, mArmBaseName);
+  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, mArmEndName);
 
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
@@ -544,7 +544,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   mHand = std::make_shared<AdaHand>(
       armName,
       mSimulation,
-      getBodyNodeOrThrow(mRobotSkeleton, mEndEffectorName.str()),
+      getBodyNodeOrThrow(mRobotSkeleton, mEndEffectorName),
       selfCollisionFilter,
       mNode.get(),
       retriever);
