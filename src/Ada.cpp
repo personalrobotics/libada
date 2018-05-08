@@ -636,6 +636,8 @@ void Ada::setupEndEffectors(
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
   
+  // Store the IKFast solver
+  mEndEffectorIk = ee->getIK();
 }
 
 //==============================================================================

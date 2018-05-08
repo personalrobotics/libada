@@ -355,6 +355,9 @@ private:
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
+
+  // The IKFast Solver for the end effector
+  std::shared_ptr<dart::dynamics::InverseKinematics> mEndEffectorIk;
 };
 
 } // namespace ada
