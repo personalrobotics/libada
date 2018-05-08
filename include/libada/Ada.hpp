@@ -25,8 +25,6 @@
 #include <aikido/trajectory/Spline.hpp>
 #include <aikido/trajectory/Trajectory.hpp>
 #include <boost/optional.hpp>
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/CollisionGroup.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
 
@@ -346,6 +344,7 @@ private:
   std::string mArmBaseName;
   std::string mArmEndName;
   std::string mEndEffectorName;
+  std::string mHandBaseName;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;

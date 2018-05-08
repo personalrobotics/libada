@@ -1,7 +1,7 @@
 #include "libada/AdaFingerKinematicSimulationPositionCommandExecutor.hpp"
 
+#include <aikido/common/algorithm.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include "aikido/common/algorithm.hpp"
 
 namespace ada {
 

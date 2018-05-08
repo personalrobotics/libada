@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include <Eigen/Core>
-#include <aikido/common/RNG.hpp>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
@@ -93,13 +92,10 @@ public:
   // Documentation inherited.
   dart::dynamics::MetaSkeletonPtr getMetaSkeleton() override;
 
-  /// Get the end-effector body node for which IK can be created.
-  /// \return DART body node of end-effector
+  // Documentation inherited.
   dart::dynamics::BodyNode* getEndEffectorBodyNode() const override;
 
-  /// Get the body node which is the root of the hand, containing
-  /// all fingers.
-  /// \return DART body node at the root of the hand
+  // Documentation inherited.
   dart::dynamics::BodyNode* getHandBaseBodyNode() const override;
 
   /// Load preshapes from a YAML file.
@@ -171,12 +167,11 @@ private:
   /// Name of the hand, either "left" or "right"
   const std::string mName;
 
-  /// Parent robot
-  aikido::robot::RobotPtr mRobot;
-
   /// Hand metaskeleton consisting of the nodes rooted at \c
-  /// mHandBodyNode
+  /// mHandBodyNode.
   dart::dynamics::GroupPtr mHand;
+
+  /// Statespace for the hand.
   aikido::statespace::dart::MetaSkeletonStateSpacePtr mSpace;
 
   /// Whether hand is running in simulation mode

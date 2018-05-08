@@ -17,10 +17,8 @@ using dart::dynamics::Group;
 using dart::dynamics::BodyNode;
 using dart::dynamics::BodyNodePtr;
 using dart::dynamics::MetaSkeletonPtr;
-
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
-using aikido::common::cloneRNGFrom;
 
 const dart::common::Uri preshapesUri{
     "package://libada/resources/preshapes.yaml"};
@@ -136,7 +134,7 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
 
   // TODO: implement grabbing multiple objects
 
-  // Check if end-effector is already grabbong object
+  // Check if end-effector is already grabbing object
   if (mGrabMetadata)
   {
     std::stringstream ss;
@@ -268,13 +266,9 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
   auto goalState = mSpace->createState();
   mSpace->convertPositionsToState(preshape.get(), goalState);
 
-  std::cout << "Current state: " << mHand->getPositions().transpose()
-            << std::endl;
-  std::cout << "Goal state: " << preshape.get().transpose() << std::endl;
-
   auto satisfied = std::make_shared<Satisfied>(mSpace);
 
-  // TODO: passing nullptr as random seed because
+  // TODO(Gilwoo): passing nullptr as random seed because
   // this shoud just use snap planner. It should be changed to
   // explicitly call SnapPlanner
   auto trajectory = aikido::robot::util::planToConfiguration(

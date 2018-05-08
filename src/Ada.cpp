@@ -184,7 +184,7 @@ Ada::Ada(
     mJointStateThread = make_unique<ExecutorThread>(
         std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
         jointUpdateCycle);
-    ros::Duration(1.0).sleep(); // first callback at around 0.12 - 0.25 seconds
+    ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
   }
 
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
@@ -212,6 +212,7 @@ Ada::Ada(
   // Setting arm base and end names
   mArmBaseName = "j2n6s200_link_base";
   mArmEndName = "j2n6s200_link_6";
+  mHandBaseName = "j2n6s200_hand_base";
 
   // Setup the arm
   mArm = configureArm(
@@ -352,9 +353,21 @@ aikido::planner::WorldPtr Ada::getWorld() const
 }
 
 //==============================================================================
+ConcreteManipulatorPtr Ada::getArm()
+{
+  return mArm;
+}
+
+//==============================================================================
 ConstConcreteManipulatorPtr Ada::getArm() const
 {
   return mArm;
+}
+
+//==============================================================================
+AdaHandPtr Ada::getHand()
+{
+  return mHand;
 }
 
 //==============================================================================
@@ -520,20 +533,8 @@ ConcreteManipulatorPtr Ada::configureArm(
 {
   using dart::dynamics::Chain;
 
-  std::stringstream armBaseName;
-  armBaseName << "j2n6s200_link_base";
-
-  std::stringstream armEndName;
-  armEndName << "j2n6s200_link_6";
-
-  std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_end_effector";
-
-  std::stringstream handBaseName;
-  handBaseName << "j2n6s200_hand_base";
-
-  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
-  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
+  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, mArmBaseName);
+  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, mArmEndName);
 
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
@@ -541,8 +542,8 @@ ConcreteManipulatorPtr Ada::configureArm(
   mHand = std::make_shared<AdaHand>(
       armName,
       mSimulation,
-      getBodyNodeOrThrow(mRobotSkeleton, handBaseName.str()),
-      getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
+      getBodyNodeOrThrow(mRobotSkeleton, mHandBaseName),
+      getBodyNodeOrThrow(mRobotSkeleton, mEndEffectorName),
       selfCollisionFilter,
       mNode.get(),
       retriever);
