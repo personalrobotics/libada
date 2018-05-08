@@ -381,6 +381,12 @@ ConstAdaHandPtr Ada::getHand() const
 }
 
 //==============================================================================
+std::shared_ptr<dart::dynamics::InverseKinematics> Ada::getEndEffectorIkSolver() const
+{
+  return mEndEffectorIk;
+}
+
+//==============================================================================
 void Ada::update()
 {
   step(std::chrono::system_clock::now());

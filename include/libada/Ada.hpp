@@ -155,6 +155,9 @@ public:
   /// Get the hand
   ConstAdaHandPtr getHand() const;
 
+  /// Get the EndEffectorIKSolver
+  std::shared_ptr<dart::dynamics::InverseKinematics> getEndEffectorIkSolver() const;
+
   /// Get current configuration
   Eigen::VectorXd getCurrentConfiguration() const;
 
