@@ -69,7 +69,7 @@ public:
       bool simulation,
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
-      std::string endEffectorName = "j2n6s200_end_effector",
+      const std::string& endEffectorName = "j2n6s200_end_effector",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
@@ -343,9 +343,9 @@ private:
   std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
   // arm Base, End names
-  std::stringstream mArmBaseName;
-  std::stringstream mArmEndName;
-  std::stringstream mEndEffectorName;
+  std::string mArmBaseName;
+  std::string mArmEndName;
+  std::string mEndEffectorName;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
