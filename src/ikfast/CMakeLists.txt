@@ -10,7 +10,7 @@ add_compile_options(-std=c++11 -fPIC)
 #==================================================================
 # Option 1: generate a .so library and put to devel/lib
 
-add_library(adaIk SHARED ada_2018_05_07_ik.cpp)
+add_library(adaIk SHARED ada_2018_05_08_ik.cpp)
 target_compile_definitions(adaIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
 target_compile_options(adaIk PRIVATE -w)
 
