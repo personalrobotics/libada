@@ -24,13 +24,13 @@ class AdaHandKinematicSimulationPositionCommandExecutor
 public:
   /// Constructor.
   ///
-  /// \param robot Robot to construct executor for
-  /// \param prefix String (either "/right/" or "/left/") to specify hand
-  /// \param collisionDetector CollisionDetector to check finger collisions
+  /// \param[in] robot Robot to construct executor for
+  /// \param[in] prefix String (either "/right/" or "/left/") to specify hand
+  /// \param[in] collisionDetector CollisionDetector to check finger collisions
   ///        If nullptr, default to FCLCollisionDetector.
-  /// \param collideWith CollisionGroup to check finger collisions
+  /// \param[in] collideWith CollisionGroup to check finger collisions
   ///        If nullptr, default to empty CollisionGroup.
-  /// \param collisionOptions
+  /// \param[in] collisionOptions
   ///        Default is (enableContact=false, binaryCheck=true,
   ///        maxNumContacts = 1.) See dart/collison/Option.h for more
   ///        information
@@ -45,7 +45,7 @@ public:
   /// Move fingers to goalPositions. Call step() after this until future
   /// returns for actual execution.
   ///
-  /// \param goalPositions Desired values for proximal and spread joints.
+  /// \param[in] goalPositions Desired values for proximal and spread joints.
   ///        First 3 should specify proximal joints, last element should specify
   ///        spread. Joints will move only up to the joint limits.
   /// \return future which becomes available when the movement stops
@@ -58,7 +58,7 @@ public:
 
   /// Sets CollisionGroup to check against for finger collisions.
   ///
-  /// \param collideWith CollisionGroup to check finger collisions
+  /// \param[in] collideWith CollisionGroup to check finger collisions
   /// \return false if collideWith cannot be set (during execution)
   bool setCollideWith(::dart::collision::CollisionGroupPtr collideWith);
 

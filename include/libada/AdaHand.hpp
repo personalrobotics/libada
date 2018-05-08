@@ -148,7 +148,7 @@ private:
   /// \return preshape if it exists, boost::none if not
   boost::optional<Eigen::VectorXd> getPreshape(const std::string& preshapeName);
 
-  /// Name of the hand, either "left" or "right"
+  /// Name of the hand
   const std::string mName;
 
   /// Hand MetaSkeleton consisting of the nodes rooted at \c

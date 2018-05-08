@@ -11,7 +11,7 @@
 namespace ada {
 
 AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
-// To confirm this behavior from Kinova people
+// Todo(tapo): To confirm this behavior from Kinova people
 /// This executor mimics the behavior of an AdaHand finger.
 ///
 /// It moves a finger to a desired point; it may stop early if the joint limit
@@ -28,14 +28,14 @@ class AdaFingerKinematicSimulationPositionCommandExecutor
 public:
   /// Constructor.
   ///
-  /// \param finger Finger to be controlled by this Executor.
-  /// \param proximal Index of proximal dof
-  /// \param distal Index of distal dof
-  /// \param collisionDetector CollisionDetector to check finger collisions
+  /// \param[in] finger Finger to be controlled by this Executor.
+  /// \param[in] proximal Index of proximal dof
+  /// \param[in] distal Index of distal dof
+  /// \param[in] collisionDetector CollisionDetector to check finger collisions
   ///        If nullptr, default to FCLCollisionDetector.
-  /// \param collideWith CollisionGroup to check finger collisions
+  /// \param[in] collideWith CollisionGroup to check finger collisions
   ///        If nullptr, default to empty CollisionGroup.
-  /// \param collisionOptions
+  /// \param[in] collisionOptions
   ///        Default is (enableContact=false, binaryCheck=true,
   ///        maxNumContacts = 1.) See dart/collison/Option.h for more
   ///        information
@@ -54,7 +54,7 @@ public:
   /// Proximal dof moves to goalPosition, joint limit, or until collision.
   /// Distal dof follows with mimic ratio.
   ///
-  /// \param goalPosition Desired angle for proximal joint
+  /// \param[in] goalPosition Desired angle for proximal joint
   /// \return future which becomes available when movement stops
   std::future<void> execute(const Eigen::VectorXd& goalPosition) override;
 

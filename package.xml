@@ -4,7 +4,8 @@
   <version>0.2.0</version>
   <description>C++ library for simulating and running ADA based on DART</description>
   <maintainer email="tapo@uw.edu">Tapomayukh Bhattacharjee</maintainer>
-  <author email="xyz@uw.edu">XYZ</author>
+  <author email="tapo@uw.edu">Tapomayukh Bhattacharjee</author>
+  <author email="danielga@uw.edu">Daniel Gallenberger</author>
   <license>UNRELEASED</license>
   <depend>dartsim</depend>
   <depend>eigen</depend>

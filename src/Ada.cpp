@@ -619,8 +619,8 @@ Ada::createTrajectoryExecutor()
 
 //==============================================================================
 bool Ada::switchControllers(
-    const std::vector<std::string>& start_controllers,
-    const std::vector<std::string>& stop_controllers)
+    const std::vector<std::string>& startControllers,
+    const std::vector<std::string>& stopControllers)
 {
   if (!mNode)
     throw std::runtime_error("Ros node has not been instantiated.");
@@ -629,8 +629,8 @@ bool Ada::switchControllers(
     throw std::runtime_error("ServiceClient not instantiated.");
 
   controller_manager_msgs::SwitchController srv;
-  srv.request.start_controllers = start_controllers;
-  srv.request.stop_controllers = stop_controllers;
+  srv.request.start_controllers = startControllers;
+  srv.request.stop_controllers = stopControllers;
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
@@ -640,4 +640,4 @@ bool Ada::switchControllers(
     throw std::runtime_error("SwitchController failed.");
 }
 
-} // ada
+} // adamSmootherFeasibilityCheckResolution
