@@ -6,6 +6,7 @@
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
+#include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/robot/GrabMetadata.hpp>
 #include <aikido/robot/Hand.hpp>
 #include <aikido/robot/Robot.hpp>
@@ -59,14 +60,13 @@ public:
   /// \param[in] retriever Resource retriever for retrieving preshapes and
   ///            end-effector transforms, specified as \c package://libada
   ///            URIs.
-  AdaHand(const std::string &name, aikido::robot::RobotPtr robot,
-          bool simulation, dart::dynamics::BodyNodePtr handBaseBodyNode,
+  AdaHand(const std::string &name, bool simulation,
+          dart::dynamics::BodyNodePtr handBaseBodyNode,
           dart::dynamics::BodyNodePtr endEffectorBodyNode,
           std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
               selfCollisionFilter,
           const ::ros::NodeHandle *node,
-          const dart::common::ResourceRetrieverPtr &retriever,
-          aikido::common::RNG::result_type rngSeed = std::random_device{}());
+          const dart::common::ResourceRetrieverPtr &retriever);
 
   virtual ~AdaHand() = default;
 
@@ -133,7 +133,13 @@ private:
   ///
   /// \param[in] robot Robot to construct executor for
   std::shared_ptr<aikido::control::TrajectoryExecutor>
-  createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr &robot);
+  createTrajectoryExecutor(const dart::dynamics::SkeletonPtr &robot);
+
+  /// Create a controller for simulated hand movement.
+  ///
+  /// \param[in] robot Robot to construct executor for
+  std::shared_ptr<aikido::control::PositionCommandExecutor>
+  createSimPositionCommandExecutor(const dart::dynamics::SkeletonPtr &robot);
 
   /// Loads preshapes from YAML file (retrieved from \c preshapesUri).
   ///
@@ -159,8 +165,6 @@ private:
   /// Parent robot
   aikido::robot::RobotPtr mRobot;
 
-  aikido::common::RNGWrapper<std::mt19937> mRng;
-
   /// Hand metaskeleton consisting of the nodes rooted at \c
   /// mHandBodyNode
   dart::dynamics::GroupPtr mHand;
@@ -183,7 +187,7 @@ private:
   std::shared_ptr<aikido::control::TrajectoryExecutor> mExecutor;
 
   /// Hand position command executor (always in simulation)
-  std::shared_ptr<aikido::control::TrajectoryExecutor> mSimExecutor;
+  std::shared_ptr<aikido::control::PositionCommandExecutor> mSimExecutor;
 
   /// Maps a preshape name (string) to a configuration
   PreshapeMap mPreshapeConfigurations;

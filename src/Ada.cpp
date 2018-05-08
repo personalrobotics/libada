@@ -9,9 +9,9 @@
 #include <aikido/constraint/CyclicSampleable.hpp>
 #include <aikido/constraint/FiniteSampleable.hpp>
 #include <aikido/constraint/NewtonsMethodProjectable.hpp>
+#include <aikido/constraint/Satisfied.hpp>
 #include <aikido/constraint/Testable.hpp>
 #include <aikido/constraint/TestableIntersection.hpp>
-#include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
@@ -21,8 +21,8 @@
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
-#include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
+#include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
 #include <aikido/statespace/GeodesicInterpolator.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
@@ -77,17 +77,14 @@ const dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada.urdf"};
 const dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> trajectoryExecutors
-    = {"trajectory_controller"};
+const std::vector<std::string> trajectoryExecutors = {"trajectory_controller"};
 
 namespace {
-BodyNodePtr getBodyNodeOrThrow(
-    const SkeletonPtr& skeleton, const std::string& bodyNodeName)
-{
+BodyNodePtr getBodyNodeOrThrow(const SkeletonPtr &skeleton,
+                               const std::string &bodyNodeName) {
   auto bodyNode = skeleton->getBodyNode(bodyNodeName);
 
-  if (!bodyNode)
-  {
+  if (!bodyNode) {
     std::stringstream message;
     message << "Bodynode [" << bodyNodeName << "] does not exist in skeleton.";
     throw std::runtime_error(message.str());
@@ -98,20 +95,14 @@ BodyNodePtr getBodyNodeOrThrow(
 } // ns
 
 //==============================================================================
-Ada::Ada(
-  aikido::planner::WorldPtr env,
-  bool simulation,
-  const ::ros::NodeHandle* node,
-  aikido::common::RNG::result_type rngSeed,
-  const dart::common::Uri& adaUrdfUri,
-  const dart::common::ResourceRetrieverPtr& retriever)
-  : mSimulation(simulation) 
-  , mCollisionResolution(collisionResolution)
-  , mRng(rngSeed)
-  , mSmootherFeasibilityCheckResolution(1e-3)
-  , mSmootherFeasibilityApproxTolerance(1e-3)
-  , mWorld(std::move(env))
-{
+Ada::Ada(aikido::planner::WorldPtr env, bool simulation,
+         const ::ros::NodeHandle *node,
+         aikido::common::RNG::result_type rngSeed,
+         const dart::common::Uri &adaUrdfUri,
+         const dart::common::ResourceRetrieverPtr &retriever)
+    : mSimulation(simulation), mCollisionResolution(collisionResolution),
+      mRng(rngSeed), mSmootherFeasibilityCheckResolution(1e-3),
+      mSmootherFeasibilityApproxTolerance(1e-3), mWorld(std::move(env)) {
   simulation = true; // temporarily set simulation to true
 
   using aikido::common::ExecutorThread;
@@ -121,15 +112,13 @@ Ada::Ada(
 
   // Load Ada
   mRobotSkeleton = mWorld->getSkeleton(name);
-  if (!mRobotSkeleton)
-  {
+  if (!mRobotSkeleton) {
     dart::utils::DartLoader urdfLoader;
     mRobotSkeleton = urdfLoader.parseSkeleton(adaUrdfUri, retriever);
     mWorld->addSkeleton(mRobotSkeleton);
   }
 
-  if (!mRobotSkeleton)
-  {
+  if (!mRobotSkeleton) {
     throw std::runtime_error("Unable to load ADA model.");
   }
 
@@ -141,9 +130,9 @@ Ada::Ada(
 
   // Define the collision detector and groups
   auto collisionDetector = FCLCollisionDetector::create();
-  //auto collideWith = collisionDetector->createCollisionGroupAsSharedPtr();
-  auto selfCollisionFilter
-      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+  // auto collideWith = collisionDetector->createCollisionGroupAsSharedPtr();
+  auto selfCollisionFilter =
+      std::make_shared<dart::collision::BodyNodeCollisionFilter>();
 
   urdf::Model urdfModel;
   std::string adaUrdfXMLString = retriever->readAll(adaUrdfUri);
@@ -154,8 +143,7 @@ Ada::Ada(
   srdfModel.initString(urdfModel, adaSrdfXMLString);
   auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
 
-  for (auto disabledPair : disabledCollisions)
-  {
+  for (auto disabledPair : disabledCollisions) {
     auto body0 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link1_);
     auto body1 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link2_);
 
@@ -166,304 +154,248 @@ Ada::Ada(
 
     selfCollisionFilter->addBodyNodePairToBlackList(body0, body1);
   }
- 
- if (!mSimulation)
- {
-   if (!node)
-   {
-     mNode = make_unique<::ros::NodeHandle>();
-   }
-   else
-   {
-     mNode = make_unique<::ros::NodeHandle>(*node);
-   }
 
-   // TODO
-   mControllerServiceClient = make_unique<::ros::ServiceClient>(
+  if (!mSimulation) {
+    if (!node) {
+      mNode = make_unique<::ros::NodeHandle>();
+    } else {
+      mNode = make_unique<::ros::NodeHandle>(*node);
+    }
+
+    mControllerServiceClient = make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
-   mJointStateClient
-       = make_unique<RosJointStateClient>(mRobotSkeleton, *mNode, "/joint_states", 1);
-   mJointStateThread = make_unique<ExecutorThread>(
-       std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
-       jointUpdateCycle);
-   ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
- }
- 
- mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
+    mJointStateClient = make_unique<RosJointStateClient>(mRobotSkeleton, *mNode,
+                                                         "/joint_states", 1);
+    mJointStateThread = make_unique<ExecutorThread>(
+        std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
+        jointUpdateCycle);
+    ros::Duration(1.0).sleep(); // first callback at around 0.12 - 0.25 seconds
+  }
 
- mTrajectoryExecutor = createTrajectoryExecutor();
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
 
- // TODO: change Smoother/Timer to not take a testable in constructor.
- auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
+  mTrajectoryExecutor = createTrajectoryExecutor();
 
- // Setup the arm
- mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
-     collisionDetector, selfCollisionFilter);
+  // Set up the concrete robot from the meta skeleton
+  mRobot = std::make_shared<ConcreteRobot>(
+      "adaRobot", mRobotSkeleton, mSimulation, cloneRNG(), mTrajectoryExecutor,
+      collisionDetector, selfCollisionFilter);
 
- // Set up the concrete robot from the meta skeleton
- mRobot = std::make_shared<ConcreteRobot>("adaRobot", mRobotSkeleton,
-    mSimulation, cloneRNG(), mTrajectoryExecutor,
-    collisionDetector, selfCollisionFilter);
+  // Setup the arm
+  mArm = configureArm("j2n6s200", retriever, mTrajectoryExecutor,
+                      collisionDetector, selfCollisionFilter);
 
-// TODO: When the named configurations are set in resources.
-// Load the named configurations
-// auto namedConfigurations = parseYAMLToNamedConfigurations(
-//     aikido::io::loadYAML(namedConfigurationsUri, retriever));
-// mRobot->setNamedConfigurations(namedConfigurations);
+  // TODO: When the named configurations are set in resources.
+  // Load the named configurations
+  // auto namedConfigurations = parseYAMLToNamedConfigurations(
+  //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
+  // mRobot->setNamedConfigurations(namedConfigurations);
 
-  mThread = make_unique<ExecutorThread>(
-    std::bind(&Ada::update, this), threadExecutionCycle);
-
+  mThread = make_unique<ExecutorThread>(std::bind(&Ada::update, this),
+                                        threadExecutionCycle);
 }
 
 //==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::smoothPath(
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path,
-      const TestablePtr& constraint)
-{
+std::unique_ptr<aikido::trajectory::Spline>
+Ada::smoothPath(const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                const aikido::trajectory::Trajectory *path,
+                const TestablePtr &constraint) {
   return mRobot->smoothPath(metaSkeleton, path, constraint);
 }
 
 //==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path)
-{
+std::unique_ptr<aikido::trajectory::Spline>
+Ada::retimePath(const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                const aikido::trajectory::Trajectory *path) {
   return mRobot->retimePath(metaSkeleton, path);
 }
 
 //==============================================================================
-std::future<void> Ada::executeTrajectory(
-      const TrajectoryPtr& trajectory) const
-{
+std::future<void>
+Ada::executeTrajectory(const TrajectoryPtr &trajectory) const {
   return mRobot->executeTrajectory(trajectory);
 }
 
 //==============================================================================
-boost::optional<Eigen::VectorXd> Ada::getNamedConfiguration(
-      const std::string& name) const
-{
+boost::optional<Eigen::VectorXd>
+Ada::getNamedConfiguration(const std::string &name) const {
   return mRobot->getNamedConfiguration(name);
 }
 
 //==============================================================================
 void Ada::setNamedConfigurations(
-      std::unordered_map<std::string,
-      const Eigen::VectorXd> namedConfigurations)
-{
+    std::unordered_map<std::string, const Eigen::VectorXd>
+        namedConfigurations) {
   mRobot->setNamedConfigurations(namedConfigurations);
 }
 
 //==============================================================================
-std::string Ada::getName() const
-{
-  return mRobot->getName();
-}
+std::string Ada::getName() const { return mRobot->getName(); }
 
 //==============================================================================
-dart::dynamics::ConstMetaSkeletonPtr Ada::getMetaSkeleton() const
-{
+dart::dynamics::ConstMetaSkeletonPtr Ada::getMetaSkeleton() const {
   return mRobot->getMetaSkeleton();
 }
 
 //==============================================================================
-ConstMetaSkeletonStateSpacePtr Ada::getStateSpace() const
-{
+ConstMetaSkeletonStateSpacePtr Ada::getStateSpace() const {
   return mRobot->getStateSpace();
 }
 
 //==============================================================================
-void Ada::setRoot(Robot* robot)
-{
-  mRobot->setRoot(robot);
-}
+void Ada::setRoot(Robot *robot) { mRobot->setRoot(robot); }
 
 //==============================================================================
-void Ada::step(const std::chrono::system_clock::time_point& timepoint)
-{
+void Ada::step(const std::chrono::system_clock::time_point &timepoint) {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
   mRobot->step(timepoint);
   mArm->step(timepoint);
 
-  if (!mSimulation)
-  {
-    auto armSkeleton = mRobot-> getMetaSkeleton();
-    armSkeleton->setPositions(mJointStateClient->getLatestPosition(*armSkeleton));
+  if (!mSimulation) {
+    auto armSkeleton = mRobot->getMetaSkeleton();
+    armSkeleton->setPositions(
+        mJointStateClient->getLatestPosition(*armSkeleton));
   }
 }
 
 //==============================================================================
 CollisionFreePtr Ada::getSelfCollisionConstraint(
-  const MetaSkeletonStateSpacePtr& space,
-  const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const
-{
+    const MetaSkeletonStateSpacePtr &space,
+    const dart::dynamics::MetaSkeletonPtr &metaSkeleton) const {
   return mRobot->getSelfCollisionConstraint(space, metaSkeleton);
 }
 
-
 //==============================================================================
 TestablePtr Ada::getFullCollisionConstraint(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const CollisionFreePtr& collisionFree) const
-{
+    const MetaSkeletonStateSpacePtr &space,
+    const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+    const CollisionFreePtr &collisionFree) const {
   return mRobot->getFullCollisionConstraint(space, metaSkeleton, collisionFree);
 }
 
 //==============================================================================
-std::unique_ptr<aikido::common::RNG> Ada::cloneRNG()
-{
+std::unique_ptr<aikido::common::RNG> Ada::cloneRNG() {
   return std::move(cloneRNGFrom(mRng)[0]);
 }
 
 //==============================================================================
-aikido::planner::WorldPtr Ada::getWorld() const
-{
-  return mWorld;
+aikido::planner::WorldPtr Ada::getWorld() const { return mWorld; }
+
+//==============================================================================
+ConcreteManipulatorPtr Ada::getArm() { return mArm; }
+
+//==============================================================================
+AdaHandPtr Ada::getHand() { return mHand; }
+
+//==============================================================================
+void Ada::update() { step(std::chrono::system_clock::now()); }
+
+//==============================================================================
+TrajectoryPtr
+Ada::planToConfiguration(const MetaSkeletonStateSpacePtr &space,
+                         const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                         const aikido::statespace::StateSpace::State *goalState,
+                         const CollisionFreePtr &collisionFree,
+                         double timelimit) {
+  return mRobot->planToConfiguration(space, metaSkeleton, goalState,
+                                     collisionFree, timelimit);
 }
 
 //==============================================================================
-ConcreteManipulatorPtr Ada::getArm()
-{
-  return mArm;
+TrajectoryPtr
+Ada::planToConfiguration(const MetaSkeletonStateSpacePtr &space,
+                         const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                         const Eigen::VectorXd &goal,
+                         const CollisionFreePtr &collisionFree,
+                         double timelimit) {
+  return mRobot->planToConfiguration(space, metaSkeleton, goal, collisionFree,
+                                     timelimit);
 }
 
 //==============================================================================
-AdaHandPtr Ada::getHand()
-{
-  return mHand;
+TrajectoryPtr
+Ada::planToConfigurations(const MetaSkeletonStateSpacePtr &space,
+                          const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                          const std::vector<StateSpace::State *> &goalStates,
+                          const CollisionFreePtr &collisionFree,
+                          double timelimit) {
+  return mRobot->planToConfigurations(space, metaSkeleton, goalStates,
+                                      collisionFree, timelimit);
 }
 
 //==============================================================================
-void Ada::update()
-{
-  step(std::chrono::system_clock::now());
+TrajectoryPtr
+Ada::planToConfigurations(const MetaSkeletonStateSpacePtr &space,
+                          const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+                          const std::vector<Eigen::VectorXd> &goals,
+                          const CollisionFreePtr &collisionFree,
+                          double timelimit) {
+  return mRobot->planToConfigurations(space, metaSkeleton, goals, collisionFree,
+                                      timelimit);
 }
 
 //==============================================================================
-TrajectoryPtr Ada::planToConfiguration(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::statespace::StateSpace::State* goalState,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
-  return mRobot->planToConfiguration(
-      space, metaSkeleton, goalState, collisionFree, timelimit);
-}
-
-//==============================================================================
-TrajectoryPtr Ada::planToConfiguration(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const Eigen::VectorXd& goal,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
-  return mRobot->planToConfiguration(
-    space, metaSkeleton, goal, collisionFree, timelimit);
-}
-
-//==============================================================================
-TrajectoryPtr Ada::planToConfigurations(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const std::vector<StateSpace::State*>& goalStates,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
-  return mRobot->planToConfigurations(
-      space, metaSkeleton, goalStates, collisionFree, timelimit);
-}
-
-//==============================================================================
-TrajectoryPtr Ada::planToConfigurations(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const std::vector<Eigen::VectorXd>& goals,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
-  return mRobot->planToConfigurations(space, metaSkeleton,
-      goals, collisionFree, timelimit);
-}
-
-//==============================================================================
-TrajectoryPtr Ada::planToTSR(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const dart::dynamics::BodyNodePtr& bn,
-      const TSRPtr& tsr,
-      const CollisionFreePtr& collisionFree,
-      double timelimit,
-      size_t maxNumTrials)
-{
-  return mRobot->planToTSR(space, metaSkeleton, bn, tsr, collisionFree, 
-      timelimit, maxNumTrials);
+TrajectoryPtr
+Ada::planToTSR(const MetaSkeletonStateSpacePtr &space,
+               const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+               const dart::dynamics::BodyNodePtr &bn, const TSRPtr &tsr,
+               const CollisionFreePtr &collisionFree, double timelimit,
+               size_t maxNumTrials) {
+  return mRobot->planToTSR(space, metaSkeleton, bn, tsr, collisionFree,
+                           timelimit, maxNumTrials);
 }
 
 //==============================================================================
 TrajectoryPtr Ada::planToTSRwithTrajectoryConstraint(
-      const MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const dart::dynamics::BodyNodePtr& bodyNode,
-      const TSRPtr& goalTsr,
-      const TSRPtr& constraintTsr,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
+    const MetaSkeletonStateSpacePtr &space,
+    const dart::dynamics::MetaSkeletonPtr &metaSkeleton,
+    const dart::dynamics::BodyNodePtr &bodyNode, const TSRPtr &goalTsr,
+    const TSRPtr &constraintTsr, const CollisionFreePtr &collisionFree,
+    double timelimit) {
   return mRobot->planToTSRwithTrajectoryConstraint(
-      space, metaSkeleton, bodyNode, goalTsr, constraintTsr,
-      collisionFree, timelimit);
+      space, metaSkeleton, bodyNode, goalTsr, constraintTsr, collisionFree,
+      timelimit);
 }
 
 //==============================================================================
-TrajectoryPtr Ada::planToNamedConfiguration(
-      const std::string& name,
-      const CollisionFreePtr& collisionFree,
-      double timelimit)
-{
+TrajectoryPtr
+Ada::planToNamedConfiguration(const std::string &name,
+                              const CollisionFreePtr &collisionFree,
+                              double timelimit) {
   return mRobot->planToNamedConfiguration(name, collisionFree, timelimit);
 }
 
 //==============================================================================
-bool Ada::startTrajectoryExecutor()
-{
+bool Ada::startTrajectoryExecutor() {
   return switchControllers(trajectoryExecutors, std::vector<std::string>());
 }
 
 //==============================================================================
-bool Ada::stopTrajectoryExecutor()
-{
- return switchControllers(std::vector<std::string>(), trajectoryExecutors);
+bool Ada::stopTrajectoryExecutor() {
+  return switchControllers(std::vector<std::string>(), trajectoryExecutors);
 }
 
 //=============================================================================
 void Ada::setCRRTPlannerParameters(
-      const CRRTPlannerParameters& crrtParameters)
-{
+    const CRRTPlannerParameters &crrtParameters) {
   mRobot->setCRRTPlannerParameters(crrtParameters);
 }
 
 //=============================================================================
 void Ada::setVectorFieldPlannerParameters(
-      const VectorFieldPlannerParameters& vfParameters)
-{
+    const VectorFieldPlannerParameters &vfParameters) {
   mArm->setVectorFieldPlannerParameters(vfParameters);
 }
 
 //==============================================================================
 ConcreteManipulatorPtr Ada::configureArm(
-    const std::string& armName,
-    const dart::common::ResourceRetrieverPtr& retriever,
-    const TrajectoryExecutorPtr& executor,
+    const std::string &armName,
+    const dart::common::ResourceRetrieverPtr &retriever,
+    const TrajectoryExecutorPtr &executor,
     dart::collision::CollisionDetectorPtr collisionDetector,
-    //dart::collision::CollisionGroupPtr collideWith,
-    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
-      selfCollisionFilter)
-{
+    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
+        &selfCollisionFilter) {
   using dart::dynamics::Chain;
 
   std::stringstream armBaseName;
@@ -475,6 +407,9 @@ ConcreteManipulatorPtr Ada::configureArm(
   std::stringstream endEffectorName;
   endEffectorName << "j2n6s200_end_effector";
 
+  std::stringstream handBaseName;
+  handBaseName << "j2n6s200_hand_base";
+
   auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
   auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
 
@@ -482,12 +417,10 @@ ConcreteManipulatorPtr Ada::configureArm(
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
 
   mHand = std::make_shared<AdaHand>(
-       armName,
-       mSimulation,
-       getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
-       selfCollisionFilter,
-       mNode.get(),
-       retriever);
+      armName, mSimulation,
+      getBodyNodeOrThrow(mRobotSkeleton, handBaseName.str()),
+      getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
+      selfCollisionFilter, mNode.get(), retriever);
 
   // Hardcoding to acceleration limits used in OpenRAVE
   // This is necessary because ADA is loaded from URDF, which
@@ -499,75 +432,59 @@ ConcreteManipulatorPtr Ada::configureArm(
       Eigen::VectorXd::Constant(arm->getNumDofs(), 2.0));
 
   auto manipulatorRobot = std::make_shared<ConcreteRobot>(
-      armName,
-      arm,
-      mSimulation,
-      cloneRNG(),
-      executor,
-      collisionDetector,
-      //collideWith,
+      armName, arm, mSimulation, cloneRNG(), executor, collisionDetector,
+      // collideWith,
       selfCollisionFilter);
 
-  auto manipulator = std::make_shared<ConcreteManipulator>(
-      manipulatorRobot, mHand);
+  auto manipulator =
+      std::make_shared<ConcreteManipulator>(manipulatorRobot, mHand);
 
   return manipulator;
 }
 
 //==============================================================================
-Eigen::VectorXd Ada::getCurrentConfiguration() const
-{
+Eigen::VectorXd Ada::getCurrentConfiguration() const {
   return mRobot->getMetaSkeleton()->getPositions();
 }
 
 //==============================================================================
 // TODO : fill the right value in URDF
-Eigen::VectorXd Ada::getVelocityLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
-{
+Eigen::VectorXd
+Ada::getVelocityLimits(dart::dynamics::MetaSkeleton &metaSkeleton) const {
   // The arm composes of the following actuators:
   //  8-3 8-9 8-9 x5-1 x5-1
   // Speed Limit (RPM), according to specification
   //  84 30 30 90 90
   return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
-}   
+}
 
 //==============================================================================
-Eigen::VectorXd Ada::getAccelerationLimits(
-    dart::dynamics::MetaSkeleton& metaSkeleton) const
-{
+Eigen::VectorXd
+Ada::getAccelerationLimits(dart::dynamics::MetaSkeleton &metaSkeleton) const {
   return mRobot->getMetaSkeleton()->getAccelerationUpperLimits();
 }
 
 //==============================================================================
 std::shared_ptr<aikido::control::TrajectoryExecutor>
-Ada::createTrajectoryExecutor()
-{
+Ada::createTrajectoryExecutor() {
   using aikido::control::KinematicSimulationTrajectoryExecutor;
   using aikido::control::ros::RosTrajectoryExecutor;
 
-  if (mSimulation)
-  {
-    return std::make_shared<KinematicSimulationTrajectoryExecutor>(mRobotSkeleton);
-  }
-  else
-  {
+  if (mSimulation) {
+    return std::make_shared<KinematicSimulationTrajectoryExecutor>(
+        mRobotSkeleton);
+  } else {
     // TODO (k):need to check trajectory_controller exists?
-    std::string serverName
-        = "trajectory_controller/follow_joint_trajectory";
+    std::string serverName = "trajectory_controller/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
-        *mNode,
-        serverName,
-        rosTrajectoryInterpolationTimestep,
+        *mNode, serverName, rosTrajectoryInterpolationTimestep,
         rosTrajectoryGoalTimeTolerance);
   }
 }
 
 //==============================================================================
-bool Ada::switchControllers(
-    const std::vector<std::string>& start_controllers,
-    const std::vector<std::string>& stop_controllers)
-{
+bool Ada::switchControllers(const std::vector<std::string> &start_controllers,
+                            const std::vector<std::string> &stop_controllers) {
   if (!mNode)
     throw std::runtime_error("Ros node has not been instantiated.");
 
@@ -577,8 +494,8 @@ bool Ada::switchControllers(
   controller_manager_msgs::SwitchController srv;
   srv.request.start_controllers = start_controllers;
   srv.request.stop_controllers = stop_controllers;
-  srv.request.strictness
-      = controller_manager_msgs::SwitchControllerRequest::STRICT;
+  srv.request.strictness =
+      controller_manager_msgs::SwitchControllerRequest::STRICT;
 
   if (mControllerServiceClient->call(srv))
     return srv.response.ok;

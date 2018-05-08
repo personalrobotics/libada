@@ -1,12 +1,23 @@
 #include "libada/AdaHand.hpp"
 #include <chrono>
-#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
-#include <aikido/control/ros/RosPositionCommandExecutor.hpp>
+// #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
+#include <aikido/constraint/Satisfied.hpp>
+#include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
+#include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/planner/World.hpp>
+#include <aikido/robot/util.hpp>
 
 namespace ada {
 
 using dart::common::make_unique;
+using dart::dynamics::Group;
+using dart::dynamics::BodyNode;
+using dart::dynamics::BodyNodePtr;
+using dart::dynamics::MetaSkeletonPtr;
+
+using aikido::statespace::dart::MetaSkeletonStateSpace;
+using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
+using aikido::common::cloneRNGFrom;
 
 const dart::common::Uri preshapesUri{
     "package://libada/resources/preshapes.yaml"};
@@ -16,72 +27,72 @@ const dart::common::Uri tsrEndEffectorTransformsUri{
 namespace {
 
 void disablePairwiseSelfCollision(
-    const dart::dynamics::BodyNodePtr& singleNode,
-    const dart::dynamics::BodyNodePtr& rootNode,
-    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
-        selfCollisionFilter)
-{
+    const dart::dynamics::BodyNodePtr &singleNode,
+    const dart::dynamics::BodyNodePtr &rootNode,
+    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
+        &selfCollisionFilter) {
 #ifndef NDEBUG
   std::cout << "Disabling collision between " << rootNode->getName() << " and "
             << singleNode->getName() << std::endl;
 #endif
 
   selfCollisionFilter->addBodyNodePairToBlackList(rootNode, singleNode);
-  for (std::size_t i = 0; i < rootNode->getNumChildBodyNodes(); ++i)
-  {
-    disablePairwiseSelfCollision(
-        singleNode, rootNode->getChildBodyNode(i), selfCollisionFilter);
+  for (std::size_t i = 0; i < rootNode->getNumChildBodyNodes(); ++i) {
+    disablePairwiseSelfCollision(singleNode, rootNode->getChildBodyNode(i),
+                                 selfCollisionFilter);
   }
 }
 
 void enablePairwiseSelfCollision(
-    const dart::dynamics::BodyNodePtr& singleNode,
-    const dart::dynamics::BodyNodePtr& rootNode,
-    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
-        selfCollisionFilter)
-{
+    const dart::dynamics::BodyNodePtr &singleNode,
+    const dart::dynamics::BodyNodePtr &rootNode,
+    const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
+        &selfCollisionFilter) {
 #ifndef NDEBUG
   std::cout << "Enabling collision between " << rootNode->getName() << " and "
             << singleNode->getName() << std::endl;
 #endif
   selfCollisionFilter->removeBodyNodePairFromBlackList(rootNode, singleNode);
-  for (std::size_t i = 0; i < rootNode->getNumChildBodyNodes(); ++i)
-  {
-    enablePairwiseSelfCollision(
-        singleNode, rootNode->getChildBodyNode(i), selfCollisionFilter);
+  for (std::size_t i = 0; i < rootNode->getNumChildBodyNodes(); ++i) {
+    enablePairwiseSelfCollision(singleNode, rootNode->getChildBodyNode(i),
+                                selfCollisionFilter);
   }
 }
 
 } // namespace
 
 //==============================================================================
-AdaHand::AdaHand(
-    const std::string& name,
-    bool simulation,
-    dart::dynamics::BodyNodePtr endEffectorBodyNode,
-    std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
-        selfCollisionFilter,
-    const ::ros::NodeHandle* node,
-    const dart::common::ResourceRetrieverPtr& retriever)
-  : mName(name)
-  , mHand(nullptr)
-  , mSimulation(simulation)
-  , mEndEffectorBodyNode(endEffectorBodyNode)
-  , mSelfCollisionFilter(selfCollisionFilter)
-  , mGrabMetadata(nullptr)
-{
-  using dart::dynamics::Branch;
-
-  if (!mSimulation)
-  {
+AdaHand::AdaHand(const std::string &name, bool simulation,
+                 dart::dynamics::BodyNodePtr handBaseBodyNode,
+                 dart::dynamics::BodyNodePtr endEffectorBodyNode,
+                 std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
+                     selfCollisionFilter,
+                 const ::ros::NodeHandle *node,
+                 const dart::common::ResourceRetrieverPtr &retriever)
+    : mName(name), mHand(nullptr), mSimulation(simulation),
+      mHandBaseBodyNode(handBaseBodyNode),
+      mEndEffectorBodyNode(endEffectorBodyNode),
+      mSelfCollisionFilter(selfCollisionFilter), mGrabMetadata(nullptr) {
+  if (!mSimulation) {
     if (!node)
       throw std::runtime_error("ROS node not provided in real.");
     mNode = make_unique<::ros::NodeHandle>(*node);
   }
 
-  mHand = Branch::create(endEffectorBodyNode.get(), mName + "_hand");
-  mExecutor
-      = createAdaHandPositionExecutor(mEndEffectorBodyNode->getSkeleton());
+  auto robotSkeleton = mHandBaseBodyNode->getSkeleton();
+  std::vector<BodyNode *> bodyNodes;
+  bodyNodes.reserve(mHandBaseBodyNode->getNumChildBodyNodes());
+  for (size_t i = 0; i < mHandBaseBodyNode->getNumChildBodyNodes(); ++i) {
+    bodyNodes.emplace_back(mHandBaseBodyNode->getChildBodyNode(i));
+  }
+
+  mHand = Group::create("Hand", bodyNodes);
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mHand.get());
+
+  mExecutor = createTrajectoryExecutor(robotSkeleton);
+
+  // TODO(Gilwoo): Use this to find the set point when grabbing object.
+  mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
 
   loadPreshapes(preshapesUri, retriever);
 
@@ -89,30 +100,26 @@ AdaHand::AdaHand(
 }
 
 //==============================================================================
-dart::dynamics::ConstMetaSkeletonPtr AdaHand::getMetaSkeleton() const
-{
+dart::dynamics::ConstMetaSkeletonPtr AdaHand::getMetaSkeleton() const {
   return mHand;
 }
 
 //==============================================================================
-dart::dynamics::MetaSkeletonPtr AdaHand::getMetaSkeleton()
-{
+dart::dynamics::MetaSkeletonPtr AdaHand::getMetaSkeleton() {
   return std::const_pointer_cast<dart::dynamics::MetaSkeleton>(
-      const_cast<const AdaHand*>(this)->getMetaSkeleton());
+      const_cast<const AdaHand *>(this)->getMetaSkeleton());
 }
 
 //==============================================================================
-void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
-{
+void AdaHand::grab(const dart::dynamics::SkeletonPtr &bodyToGrab) {
   using dart::dynamics::Joint;
   using dart::dynamics::FreeJoint;
   using dart::dynamics::WeldJoint;
 
   // TODO: implement grabbing multiple objects
 
-  // Check if end-effector is already grabbing object
-  if (mGrabMetadata)
-  {
+  // Check if end-effector is already grabbong object
+  if (mGrabMetadata) {
     std::stringstream ss;
     // TODO: use proper logging
     ss << "[Hand::grab] An end effector may only grab one object."
@@ -123,8 +130,7 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   }
 
   // Assume the skeleton is a single pair of FreeJoint and BodyNode
-  if (bodyToGrab->getNumBodyNodes() != 1)
-  {
+  if (bodyToGrab->getNumBodyNodes() != 1) {
     std::stringstream ss;
     // TODO: use proper logging
     ss << "[Hand::grab] Only Skeletons with one BodyNode may be "
@@ -135,10 +141,9 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   }
 
   // TODO: this should be Skeleton::getRootJoint() once DART 6.2 is released
-  Joint* joint = bodyToGrab->getJoint(0);
-  FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
-  if (freeJoint == nullptr)
-  {
+  Joint *joint = bodyToGrab->getJoint(0);
+  FreeJoint *freeJoint = dynamic_cast<FreeJoint *>(joint);
+  if (freeJoint == nullptr) {
     std::stringstream ss;
     // TODO: use proper logging
     ss << "[Hand::grab] Only Skeletons with a root FreeJoint may "
@@ -154,8 +159,8 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   FreeJoint::Properties jointProperties = freeJoint->getFreeJointProperties();
 
   // Get relative transform between end effector and BodyNode
-  auto endEffectorToBodyTransform
-      = bodyNode->getTransform(mEndEffectorBodyNode);
+  auto endEffectorToBodyTransform =
+      bodyNode->getTransform(mEndEffectorBodyNode);
 
   // Connect grabbed BodyNode to end effector
   WeldJoint::Properties weldJointProperties;
@@ -165,28 +170,25 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   // Moving the grabbed object into the same skeleton as the hand means that it
   // will be considered during self-collision checking. Therefore, we need to
   // disable self-collision checking between grabbed object and hand.
-  disablePairwiseSelfCollision(
-      bodyNode, mEndEffectorBodyNode, mSelfCollisionFilter);
+  disablePairwiseSelfCollision(bodyNode, mEndEffectorBodyNode,
+                               mSelfCollisionFilter);
 
   mGrabMetadata = make_unique<aikido::robot::GrabMetadata>(
       bodyNode, bodyNodeName, bodyToGrab, jointProperties);
 }
 
 //==============================================================================
-void AdaHand::ungrab()
-{
+void AdaHand::ungrab() {
   using dart::dynamics::Joint;
   using dart::dynamics::FreeJoint;
 
   // Ensure end effector is already grabbing object
-  if (!mGrabMetadata)
-  {
+  if (!mGrabMetadata) {
     std::stringstream ss;
 
     // TODO: use proper logging
-    ss << "[AdaHand::ungrab] End effector \""
-       << mEndEffectorBodyNode->getName() << "\" is not grabbing an object."
-       << std::endl;
+    ss << "[AdaHand::ungrab] End effector \"" << mEndEffectorBodyNode->getName()
+       << "\" is not grabbing an object." << std::endl;
     throw std::runtime_error(ss.str());
   }
 
@@ -195,18 +197,18 @@ void AdaHand::ungrab()
   Eigen::Isometry3d grabbedBodyTransform = grabbedBodyNode->getTransform();
 
   // Re-enable self-collision checking between grabbed object and hand
-  enablePairwiseSelfCollision(
-      grabbedBodyNode, mEndEffectorBodyNode, mSelfCollisionFilter);
+  enablePairwiseSelfCollision(grabbedBodyNode, mEndEffectorBodyNode,
+                              mSelfCollisionFilter);
 
   // Move grabbed BodyNode to root of the old object Skeleton
   dart::dynamics::SkeletonPtr skeleton = mGrabMetadata->mParentSkeleton;
-  grabbedBodyNode->moveTo<FreeJoint>(
-      skeleton, nullptr, mGrabMetadata->mJointProperties);
+  grabbedBodyNode->moveTo<FreeJoint>(skeleton, nullptr,
+                                     mGrabMetadata->mJointProperties);
 
   // Set transform of skeleton FreeJoint wrt world
-  Joint* joint = skeleton->getJoint(0);
+  Joint *joint = skeleton->getJoint(0);
   assert(joint != nullptr);
-  FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
+  FreeJoint *freeJoint = dynamic_cast<FreeJoint *>(joint);
   freeJoint->setTransform(grabbedBodyTransform);
 
   // Restore old name. If the skeleton of the grabbedBodyNode adds a body with
@@ -215,8 +217,7 @@ void AdaHand::ungrab()
   // to something like oldName(1).
   std::string oldName = mGrabMetadata->mOldName;
   std::string newName = grabbedBodyNode->setName(oldName);
-  if (newName != oldName)
-  {
+  if (newName != oldName) {
     // TODO: use proper logging (warn)
     std::cout << "[Hand::ungrab] Released object was renamed from \"" << oldName
               << "\" to \"" << newName << "\"" << std::endl;
@@ -226,54 +227,74 @@ void AdaHand::ungrab()
 }
 
 //==============================================================================
-std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
-{
+std::future<void> AdaHand::executePreshape(const std::string &preshapeName) {
+  using aikido::constraint::Satisfied;
+
   boost::optional<Eigen::VectorXd> preshape = getPreshape(preshapeName);
 
-  if (!preshape)
-  {
+  if (!preshape) {
     std::stringstream message;
     message << "[Hand::executePreshape] Unknown preshape name '" << preshapeName
             << "' specified.";
     throw std::runtime_error(message.str());
   }
-  return mExecutor->execute(preshape.get());
+
+  auto goalState = mSpace->createState();
+  mSpace->convertPositionsToState(preshape.get(), goalState);
+
+  std::cout << "Current state: " << mHand->getPositions().transpose()
+            << std::endl;
+  std::cout << "Goal state: " << preshape.get().transpose() << std::endl;
+
+  auto satisfied = std::make_shared<Satisfied>(mSpace);
+
+  // TODO: passing nullptr as random seed because
+  // this shoud just use snap planner. It should be changed to
+  // explicitly call SnapPlanner
+  auto trajectory = aikido::robot::util::planToConfiguration(
+      mSpace, mHand, goalState, satisfied, nullptr, 1.0);
+
+  if (!trajectory) {
+    throw std::runtime_error("Failed to find a plan for fingers.");
+  }
+
+  return mExecutor->execute(trajectory);
 }
 
 //==============================================================================
-void AdaHand::step(const std::chrono::system_clock::time_point& timepoint)
-{
+void AdaHand::step(const std::chrono::system_clock::time_point &timepoint) {
   mExecutor->step(timepoint);
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* AdaHand::getBodyNode() const
-{
+dart::dynamics::BodyNode *AdaHand::getEndEffectorBodyNode() const {
   return mEndEffectorBodyNode.get();
 }
 
 //==============================================================================
+dart::dynamics::BodyNode *AdaHand::getHandBaseBodyNode() const {
+  return mHandBaseBodyNode.get();
+}
+
+//==============================================================================
 void AdaHand::loadPreshapes(
-    const dart::common::Uri& preshapesUri,
-    const dart::common::ResourceRetrieverPtr& retriever)
-{
-  mPreshapeConfigurations
-      = parseYAMLToPreshapes(aikido::io::loadYAML(preshapesUri, retriever));
+    const dart::common::Uri &preshapesUri,
+    const dart::common::ResourceRetrieverPtr &retriever) {
+  mPreshapeConfigurations =
+      parseYAMLToPreshapes(aikido::io::loadYAML(preshapesUri, retriever));
 }
 
 //==============================================================================
 void AdaHand::loadTSRTransforms(
-    const dart::common::Uri& tsrTransformsUri,
-    const dart::common::ResourceRetrieverPtr& retriever)
-{
+    const dart::common::Uri &tsrTransformsUri,
+    const dart::common::ResourceRetrieverPtr &retriever) {
   mEndEffectorTransforms = parseYAMLToEndEffectorTransforms(
       aikido::io::loadYAML(tsrTransformsUri, retriever));
 }
 
 //==============================================================================
-boost::optional<Eigen::VectorXd> AdaHand::getPreshape(
-    const std::string& preshapeName)
-{
+boost::optional<Eigen::VectorXd>
+AdaHand::getPreshape(const std::string &preshapeName) {
   auto preshape = mPreshapeConfigurations.find(preshapeName);
   if (preshape == mPreshapeConfigurations.end())
     return boost::none;
@@ -282,9 +303,8 @@ boost::optional<Eigen::VectorXd> AdaHand::getPreshape(
 }
 
 //==============================================================================
-boost::optional<Eigen::Isometry3d> AdaHand::getEndEffectorTransform(
-    const std::string& objectType) const
-{
+boost::optional<Eigen::Isometry3d>
+AdaHand::getEndEffectorTransform(const std::string &objectType) const {
   auto transform = mEndEffectorTransforms.find(objectType);
   if (transform == mEndEffectorTransforms.end())
     return boost::none;
@@ -293,24 +313,19 @@ boost::optional<Eigen::Isometry3d> AdaHand::getEndEffectorTransform(
 }
 
 //==============================================================================
-AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
-    const YAML::Node& node)
-{
+AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(const YAML::Node &node) {
   PreshapeMap preshapeMap;
-  for (const auto preshapeNode : node)
-  {
+  for (const auto preshapeNode : node) {
     auto preshapeName = preshapeNode.first.as<std::string>();
     auto jointNodes = preshapeNode.second;
 
     // TODO: check
     Eigen::VectorXd preshape(2);
-    for (auto joint : jointNodes)
-    {
+    for (auto joint : jointNodes) {
       auto jointName = joint.first.as<std::string>();
-      auto jointIndex
-          = adaFingerJointNameToPositionIndexMap.find(jointName);
-      if (jointIndex == adaFingerJointNameToPositionIndexMap.end())
-      {
+
+      auto jointIndex = adaFingerJointNameToPositionIndexMap.find(jointName);
+      if (jointIndex == adaFingerJointNameToPositionIndexMap.end()) {
         std::stringstream message;
         message << "Joint '" << jointName << "' does not exist." << std::endl;
         throw std::runtime_error(message.str());
@@ -325,44 +340,38 @@ AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(
 
 //==============================================================================
 AdaHand::EndEffectorTransformMap
-AdaHand::parseYAMLToEndEffectorTransforms(const YAML::Node& node)
-{
+AdaHand::parseYAMLToEndEffectorTransforms(const YAML::Node &node) {
   return node[mName].as<EndEffectorTransformMap>();
 }
 
 //==============================================================================
+std::shared_ptr<aikido::control::TrajectoryExecutor>
+AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr &robot) {
+  using aikido::control::KinematicSimulationTrajectoryExecutor;
+  using aikido::control::ros::RosTrajectoryExecutor;
+
+  if (mSimulation) {
+    return std::make_shared<KinematicSimulationTrajectoryExecutor>(robot);
+  } else {
+    // TODO (k):need to check trajectory_controller exists?
+    std::string serverName = "j2n6s200_hand_controller/follow_joint_trajectory";
+    return std::make_shared<RosTrajectoryExecutor>(
+        *mNode, serverName, rosTrajectoryInterpolationTimestep,
+        rosTrajectoryGoalTimeTolerance);
+  }
+}
+
+//==============================================================================
 std::shared_ptr<aikido::control::PositionCommandExecutor>
-AdaHand::createAdaHandPositionExecutor(
-    const dart::dynamics::SkeletonPtr& robot)
-{
-  using aikido::control::ros::RosPositionCommandExecutor;
+AdaHand::createSimPositionCommandExecutor(
+    const dart::dynamics::SkeletonPtr &robot) {
 
-  if (mSimulation)
-  {
-    return std::
-        make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
-            robot, "/" + mName + "/");
-  }
-  else
-  {
-    const std::string serverName
-        = "/" + mName + "_hand_controller/set_position";
-
-    std::vector<std::string> jointNames(2);
-    for (const auto kv : adaFingerJointNameToPositionIndexMap)
-    {
-      assert(kv.second < jointNames.size());
-      jointNames[kv.second] = kv.first;
-    }
-
-    return std::make_shared<RosPositionCommandExecutor>(
-        *mNode, serverName, jointNames);
-  }
+  return std::make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
+      robot, "/" + mName + "/");
 }
 
 const std::unordered_map<std::string, size_t>
     AdaHand::adaFingerJointNameToPositionIndexMap = {
-        {"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_2", 1}
-};
+        {"j2n6s200_joint_finger_1", 0}, {"j2n6s200_joint_finger_2", 1}};
 
 } // namespace ada
