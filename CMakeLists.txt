@@ -214,7 +214,7 @@ else()
   )
 endif()
 
-# This custom target doesn't affect building libherb but is only for
+# This custom target doesn't affect building libada but is only for
 # displaying the header files in IDEs.
-FILE(GLOB_RECURSE libherb_headers "include/*.hpp")
-add_custom_target(headers SOURCES ${libherb_headers})
+FILE(GLOB_RECURSE libada_headers "include/*.hpp")
+add_custom_target(headers SOURCES ${libada_headers})

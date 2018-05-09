@@ -46,12 +46,12 @@ public:
   using aikido::robot::Robot::getMetaSkeleton;
   using aikido::robot::Robot::getStateSpace;
 
-  // TODO parameter
+  // TODO(tapo) parameter
   const double collisionResolution = 0.02;
   const double rosTrajectoryInterpolationTimestep = 0.1;
   const double rosTrajectoryGoalTimeTolerance = 5.0;
 
-  // TODO parameter
+  // TODO(tapo) parameter
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
 
@@ -65,7 +65,7 @@ public:
   /// \param[in] adaSrdfUri Path to Ada srdf file.
   /// \param[in] endEffectorName Name of the end effector as defined in the urdf
   /// file
-  /// \param[in] retriever Resource retriever for retrieving Hebi
+  /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(aikido::planner::WorldPtr env,
       bool simulation,
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
@@ -94,7 +94,6 @@ public:
   std::future<void> executeTrajectory(
       const aikido::trajectory::TrajectoryPtr& trajectory) const override;
 
-  // TODO (avk): Set up the resource directory
   /// Returns a named configuration
   /// \param[in] name Name of the configuration
   boost::optional<Eigen::VectorXd> getNamedConfiguration(
@@ -106,13 +105,13 @@ public:
       std::unordered_map<std::string, const Eigen::VectorXd>
           namedConfigurations) override;
 
-  /// \return Name of this Robot
+  /// Returns the Name of this Robot
   std::string getName() const override;
 
   /// Returns the MetaSkeleton of this robot.
   dart::dynamics::ConstMetaSkeletonPtr getMetaSkeleton() const override;
 
-  /// \return MetaSkeletonStateSpace of this robot.
+  /// Returns the MetaSkeletonStateSpace of this robot.
   aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr getStateSpace()
       const override;
 
@@ -146,13 +145,13 @@ public:
   /// Get the arm
   aikido::robot::ConcreteManipulatorPtr getArm();
 
-  /// Get the arm
+  /// Get the const arm
   aikido::robot::ConstConcreteManipulatorPtr getArm() const;
 
   /// Get the hand
   AdaHandPtr getHand();
 
-  /// Get the hand
+  /// Get the const hand
   ConstAdaHandPtr getHand() const;
 
   /// Get the EndEffectorIKSolver
@@ -165,7 +164,7 @@ public:
   void update();
 
   /// Plans a trajectory to the specified configuration
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfiguration(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -174,7 +173,7 @@ public:
       double timelimit);
 
   /// Wrapper for planToConfiguration using Eigen vectors.
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfiguration(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -183,7 +182,7 @@ public:
       double timelimit);
 
   /// Plans a trajectory to one of the spcified configurations.
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfigurations(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -192,7 +191,7 @@ public:
       double timelimit);
 
   /// Wrapper for planToConfigurations using Eigen vectors.
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToConfigurations(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -201,7 +200,7 @@ public:
       double timelimit);
 
   /// Plans to a TSR.
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToTSR(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -219,7 +218,7 @@ public:
   /// \param[in] goalTsr The goal TSR to move to
   /// \param[in] constraintTsr The constraint TSR for the trajectory
   /// \return Trajectory to a sample in TSR, or nullptr if planning fails.
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToTSRwithTrajectoryConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -234,12 +233,14 @@ public:
   /// \param[in] name Name of the configuration to plan to
   /// \param[in] collisionFree Collision constraint
   /// \return Trajectory to the configuration, or nullptr if planning fails
-  // Will be replaced once Planner API is in place
+  // Todo(tapo): Replace once Planner API is in place
   aikido::trajectory::TrajectoryPtr planToNamedConfiguration(
       const std::string& name,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
+  /// Switches controllers to trajectory executors.
+  /// The controllers must be switched to
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
   /// \param[in] metaSkeleton Metaskeleton to plan with.
@@ -267,12 +268,12 @@ public:
   /// trajectory executors. The controllers must be switched to
   /// trajectory executors before calling \c executeTrajectory
   /// \return true if all controllers have been successfully switched
-  bool switchFromGravityCompensationControllersToTrajectoryExecutors();
+  bool startTrajectoryExecutor();
 
   /// Switches controllers from trajectory executors to gravity compensation
   /// controllers.
   /// \return true if all controllers have been successfully switched
-  bool switchFromTrajectoryExecutorsToGravityCompensationControllers();
+  bool stopTrajectoryExecutor();
 
   /// Sets CRRTPlanner parameters.
   /// TODO: To be removed when PlannerAdapters are in place.
@@ -313,8 +314,8 @@ private:
   createTrajectoryExecutor();
 
   bool switchControllers(
-      const std::vector<std::string>& start_controllers,
-      const std::vector<std::string>& stop_controllers);
+      const std::vector<std::string>& startControllers,
+      const std::vector<std::string>& stopControllers);
 
   const bool mSimulation;
   double mCollisionResolution;
@@ -323,6 +324,7 @@ private:
   aikido::common::RNGWrapper<std::mt19937> mRng;
 
   // Used by smoothTrajectory.
+  // Next two comment lines are copied from libherb, might not be true for Ada.
   // We are temporarily hard-coding these to 1e-3 in the constructor. 1e-4 was
   // slow, 1e-2 was too loose of a tolerance and resulted in collisions.
   double mSmootherFeasibilityCheckResolution;
@@ -331,7 +333,6 @@ private:
   aikido::planner::WorldPtr mWorld;
 
   // mRobotSkeleton stores the full skeleton of all components (arm and hand)
-  // For now hebi only has an arm and the skeleton only includes an arm
   dart::dynamics::SkeletonPtr mRobotSkeleton;
   aikido::statespace::dart::MetaSkeletonStateSpacePtr mSpace;
 
@@ -346,10 +347,16 @@ private:
 
   std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
-  // arm Base, End names
+  // Name of the first link of the arm in the URDF
   std::string mArmBaseName;
+
+  // Name of the last link of the arm in the URDF
   std::string mArmEndName;
+
+  // Name of the End Effector in the URDF
+  // might differ for different Ada configurations
   std::string mEndEffectorName;
+  std::string mHandBaseName;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
