@@ -335,10 +335,7 @@ TestablePtr Ada::getFullCollisionConstraint(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const CollisionFreePtr& collisionFree) const
 {
-  {
-    return mRobot->getFullCollisionConstraint(
-        space, metaSkeleton, collisionFree);
-  }
+  return mRobot->getFullCollisionConstraint(space, metaSkeleton, collisionFree);
 }
 //==============================================================================
 std::unique_ptr<aikido::common::RNG> Ada::cloneRNG()

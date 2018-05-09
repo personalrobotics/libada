@@ -168,7 +168,7 @@ private:
   const std::string mName;
 
   /// Hand metaskeleton consisting of the nodes rooted at \c
-  /// mHandBodyNode.
+  /// mHandBaseBodyNode.
   dart::dynamics::GroupPtr mHand;
 
   /// Statespace for the hand.
