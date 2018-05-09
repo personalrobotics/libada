@@ -71,16 +71,9 @@ using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
-const dart::common::Uri adaUrdfUri{
-    "package://ada_description/robots/ada_with_camera.urdf"};
-const dart::common::Uri adaSrdfUri{
-    "package://ada_description/robots/ada_with_camera.srdf"};
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> gravityCompensationControllers
-    = {"gravity_compensation_controller"};
 const std::vector<std::string> trajectoryExecutors = {"trajectory_controller"};
-// TODO define in ada_launch
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -103,9 +96,11 @@ BodyNodePtr getBodyNodeOrThrow(
 Ada::Ada(
     aikido::planner::WorldPtr env,
     bool simulation,
+    const dart::common::Uri& adaUrdfUri,
+    const dart::common::Uri& adaSrdfUri,
+    const std::string& endEffectorName,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
-    const dart::common::Uri& adaUrdfUri,
     const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
   , mCollisionResolution(collisionResolution)
@@ -113,6 +108,7 @@ Ada::Ada(
   , mSmootherFeasibilityCheckResolution(1e-3)
   , mSmootherFeasibilityApproxTolerance(1e-3)
   , mWorld(std::move(env))
+  , mEndEffectorName(endEffectorName)
 {
   simulation = true; // temporarily set simulation to true
 
@@ -135,7 +131,7 @@ Ada::Ada(
     throw std::runtime_error("Unable to load ADA model.");
   }
 
-  // Manually set the acceleration limit
+  // TODO: Read from robot configuration.
   mRobotSkeleton->setAccelerationLowerLimits(
       Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -2.0));
   mRobotSkeleton->setAccelerationUpperLimits(
@@ -180,7 +176,6 @@ Ada::Ada(
       mNode = make_unique<::ros::NodeHandle>(*node);
     }
 
-    // TODO
     mControllerServiceClient = make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
@@ -199,11 +194,9 @@ Ada::Ada(
   // TODO: change Smoother/Timer to not take a testable in constructor.
   auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
 
-  // create default parameters (otherwise, they are undefined by default in
-  // aikido)
-  // these parameters are taken mainly from the default constructors of the
-  // structs
-  // (aikido/robot/util.hpp) and one of the herb demos
+  // Create default parameters (otherwise, they are undefined by default in
+  // aikido). These parameters are taken mainly from the default constructors of
+  // the structs (aikido/robot/util.hpp) and one of the herb demos.
   CRRTPlannerParameters crrtParams(
       &mRng,
       5,
@@ -215,6 +208,11 @@ Ada::Ada(
       1e-4);
   VectorFieldPlannerParameters vfParams(
       0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
+
+  // Setting arm base and end names
+  mArmBaseName = "j2n6s200_link_base";
+  mArmEndName = "j2n6s200_link_6";
+  mHandBaseName = "j2n6s200_hand_base";
 
   // Setup the arm
   mArm = configureArm(
@@ -339,7 +337,6 @@ TestablePtr Ada::getFullCollisionConstraint(
 {
   return mRobot->getFullCollisionConstraint(space, metaSkeleton, collisionFree);
 }
-
 //==============================================================================
 std::unique_ptr<aikido::common::RNG> Ada::cloneRNG()
 {
@@ -474,6 +471,18 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 }
 
 //==============================================================================
+bool Ada::startTrajectoryExecutor()
+{
+  return switchControllers(trajectoryExecutors, std::vector<std::string>());
+}
+
+//==============================================================================
+bool Ada::stopTrajectoryExecutor()
+{
+  return switchControllers(std::vector<std::string>(), trajectoryExecutors);
+}
+
+//=============================================================================
 TrajectoryPtr Ada::planToEndEffectorOffset(
     const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -497,18 +506,6 @@ TrajectoryPtr Ada::planToEndEffectorOffset(
       angularTolerance);
 }
 
-//==============================================================================
-bool Ada::switchFromGravityCompensationControllersToTrajectoryExecutors()
-{
-  return switchControllers(trajectoryExecutors, gravityCompensationControllers);
-}
-
-//==============================================================================
-bool Ada::switchFromTrajectoryExecutorsToGravityCompensationControllers()
-{
-  return switchControllers(gravityCompensationControllers, trajectoryExecutors);
-}
-
 //=============================================================================
 void Ada::setCRRTPlannerParameters(const CRRTPlannerParameters& crrtParameters)
 {
@@ -528,25 +525,13 @@ ConcreteManipulatorPtr Ada::configureArm(
     const dart::common::ResourceRetrieverPtr& retriever,
     const TrajectoryExecutorPtr& executor,
     dart::collision::CollisionDetectorPtr collisionDetector,
-    // dart::collision::CollisionGroupPtr collideWith,
     const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
         selfCollisionFilter)
 {
   using dart::dynamics::Chain;
 
-  std::stringstream armBaseName;
-  armBaseName << "j2n6s200_link_base";
-
-  std::stringstream armEndName;
-  armEndName << "j2n6s200_link_6";
-
-  std::stringstream endEffectorName;
-  endEffectorName << "j2n6s200_forque";
-  // Use this end effector when using the forque
-  // endEffectorName << "j2n6s200_forque_end_effector";
-
-  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, armBaseName.str());
-  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, armEndName.str());
+  auto armBase = getBodyNodeOrThrow(mRobotSkeleton, mArmBaseName);
+  auto armEnd = getBodyNodeOrThrow(mRobotSkeleton, mArmEndName);
 
   auto arm = Chain::create(armBase, armEnd, armName);
   auto armSpace = std::make_shared<MetaSkeletonStateSpace>(arm.get());
@@ -554,7 +539,8 @@ ConcreteManipulatorPtr Ada::configureArm(
   mHand = std::make_shared<AdaHand>(
       armName,
       mSimulation,
-      getBodyNodeOrThrow(mRobotSkeleton, endEffectorName.str()),
+      getBodyNodeOrThrow(mRobotSkeleton, mHandBaseName),
+      getBodyNodeOrThrow(mRobotSkeleton, mEndEffectorName),
       selfCollisionFilter,
       mNode.get(),
       retriever);
@@ -562,7 +548,7 @@ ConcreteManipulatorPtr Ada::configureArm(
   // Hardcoding to acceleration limits used in OpenRAVE
   // This is necessary because ADA is loaded from URDF, which
   // provides no means of specifying acceleration limits
-  // TODO : update acceleration limits after hearing back from HEBI.us
+  // TODO : update acceleration limits by checking Kinova spec.
   arm->setAccelerationLowerLimits(
       Eigen::VectorXd::Constant(arm->getNumDofs(), -2.0));
   arm->setAccelerationUpperLimits(
@@ -580,7 +566,6 @@ ConcreteManipulatorPtr Ada::configureArm(
 
   auto manipulator
       = std::make_shared<ConcreteManipulator>(manipulatorRobot, mHand);
-
   return manipulator;
 }
 
@@ -591,7 +576,6 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 }
 
 //==============================================================================
-// TODO : fill the right value in URDF
 Eigen::VectorXd Ada::getVelocityLimits() const
 {
   return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
@@ -629,8 +613,8 @@ Ada::createTrajectoryExecutor()
 
 //==============================================================================
 bool Ada::switchControllers(
-    const std::vector<std::string>& start_controllers,
-    const std::vector<std::string>& stop_controllers)
+    const std::vector<std::string>& startControllers,
+    const std::vector<std::string>& stopControllers)
 {
   if (!mNode)
     throw std::runtime_error("Ros node has not been instantiated.");
@@ -639,8 +623,8 @@ bool Ada::switchControllers(
     throw std::runtime_error("ServiceClient not instantiated.");
 
   controller_manager_msgs::SwitchController srv;
-  srv.request.start_controllers = start_controllers;
-  srv.request.stop_controllers = stop_controllers;
+  srv.request.start_controllers = startControllers;
+  srv.request.stop_controllers = stopControllers;
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
@@ -650,4 +634,4 @@ bool Ada::switchControllers(
     throw std::runtime_error("SwitchController failed.");
 }
 
-} // ada
+} // adamSmootherFeasibilityCheckResolution

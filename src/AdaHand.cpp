@@ -2,14 +2,23 @@
 
 #include <chrono>
 
-#include <aikido/control/ros/RosPositionCommandExecutor.hpp>
+#include <aikido/constraint/Satisfied.hpp>
+#include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
+#include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/planner/World.hpp>
+#include <aikido/robot/util.hpp>
 
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 
 using dart::common::make_unique;
+using dart::dynamics::Group;
+using dart::dynamics::BodyNode;
+using dart::dynamics::BodyNodePtr;
+using dart::dynamics::MetaSkeletonPtr;
+using aikido::statespace::dart::MetaSkeletonStateSpace;
+using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
 
 const dart::common::Uri preshapesUri{
     "package://libada/resources/preshapes.yaml"};
@@ -61,6 +70,7 @@ void enablePairwiseSelfCollision(
 AdaHand::AdaHand(
     const std::string& name,
     bool simulation,
+    dart::dynamics::BodyNodePtr handBaseBodyNode,
     dart::dynamics::BodyNodePtr endEffectorBodyNode,
     std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
         selfCollisionFilter,
@@ -69,12 +79,11 @@ AdaHand::AdaHand(
   : mName(name)
   , mHand(nullptr)
   , mSimulation(simulation)
+  , mHandBaseBodyNode(handBaseBodyNode)
   , mEndEffectorBodyNode(endEffectorBodyNode)
   , mSelfCollisionFilter(selfCollisionFilter)
   , mGrabMetadata(nullptr)
 {
-  using dart::dynamics::Branch;
-
   if (!mSimulation)
   {
     if (!node)
@@ -82,9 +91,21 @@ AdaHand::AdaHand(
     mNode = make_unique<::ros::NodeHandle>(*node);
   }
 
-  mHand = Branch::create(endEffectorBodyNode.get(), mName + "_hand");
-  mExecutor
-      = createAdaHandPositionExecutor(mEndEffectorBodyNode->getSkeleton());
+  auto robotSkeleton = mHandBaseBodyNode->getSkeleton();
+  std::vector<BodyNode*> bodyNodes;
+  bodyNodes.reserve(mHandBaseBodyNode->getNumChildBodyNodes());
+  for (size_t i = 0; i < mHandBaseBodyNode->getNumChildBodyNodes(); ++i)
+  {
+    bodyNodes.emplace_back(mHandBaseBodyNode->getChildBodyNode(i));
+  }
+
+  mHand = Group::create("Hand", bodyNodes);
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mHand.get());
+
+  mExecutor = createTrajectoryExecutor(robotSkeleton);
+
+  // TODO(Gilwoo): Use this to find the set point when grabbing object.
+  mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
 
   loadPreshapes(preshapesUri, retriever);
 
@@ -230,6 +251,8 @@ void AdaHand::ungrab()
 //==============================================================================
 std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
 {
+  using aikido::constraint::Satisfied;
+
   boost::optional<Eigen::VectorXd> preshape = getPreshape(preshapeName);
 
   if (!preshape)
@@ -239,7 +262,24 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
             << "' specified.";
     throw std::runtime_error(message.str());
   }
-  return mExecutor->execute(preshape.get());
+
+  auto goalState = mSpace->createState();
+  mSpace->convertPositionsToState(preshape.get(), goalState);
+
+  auto satisfied = std::make_shared<Satisfied>(mSpace);
+
+  // TODO(Gilwoo): passing nullptr as random seed because
+  // this shoud just use snap planner. It should be changed to
+  // explicitly call SnapPlanner
+  auto trajectory = aikido::robot::util::planToConfiguration(
+      mSpace, mHand, goalState, satisfied, nullptr, 1.0);
+
+  if (!trajectory)
+  {
+    throw std::runtime_error("Failed to find a plan for fingers.");
+  }
+
+  return mExecutor->execute(trajectory);
 }
 
 //==============================================================================
@@ -257,7 +297,7 @@ dart::dynamics::BodyNode* AdaHand::getEndEffectorBodyNode() const
 //==============================================================================
 dart::dynamics::BodyNode* AdaHand::getHandBaseBodyNode() const
 {
-  return mEndEffectorBodyNode.get();
+  return mHandBaseBodyNode.get();
 }
 
 //==============================================================================
@@ -337,35 +377,39 @@ AdaHand::EndEffectorTransformMap AdaHand::parseYAMLToEndEffectorTransforms(
 }
 
 //==============================================================================
-std::shared_ptr<aikido::control::PositionCommandExecutor>
-AdaHand::createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot)
+std::shared_ptr<aikido::control::TrajectoryExecutor>
+AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr& robot)
 {
-  using aikido::control::ros::RosPositionCommandExecutor;
+  using aikido::control::KinematicSimulationTrajectoryExecutor;
+  using aikido::control::ros::RosTrajectoryExecutor;
 
   if (mSimulation)
   {
-    return std::make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
-        robot, "/" + mName + "/");
+    return std::make_shared<KinematicSimulationTrajectoryExecutor>(robot);
   }
   else
   {
-    const std::string serverName
-        = "/" + mName + "_hand_controller/set_position";
-
-    std::vector<std::string> jointNames(2);
-    for (const auto kv : adaFingerJointNameToPositionIndexMap)
-    {
-      assert(kv.second < jointNames.size());
-      jointNames[kv.second] = kv.first;
-    }
-
-    return std::make_shared<RosPositionCommandExecutor>(
-        *mNode, serverName, jointNames);
+    // TODO (k):need to check trajectory_controller exists?
+    std::string serverName = "j2n6s200_hand_controller/follow_joint_trajectory";
+    return std::make_shared<RosTrajectoryExecutor>(
+        *mNode,
+        serverName,
+        rosTrajectoryInterpolationTimestep,
+        rosTrajectoryGoalTimeTolerance);
   }
+}
+
+//==============================================================================
+std::shared_ptr<aikido::control::PositionCommandExecutor>
+AdaHand::createSimPositionCommandExecutor(
+    const dart::dynamics::SkeletonPtr& robot)
+{
+
+  return std::make_shared<AdaHandKinematicSimulationPositionCommandExecutor>(
+      robot, "/" + mName + "/");
 }
 
 const std::unordered_map<std::string, size_t>
     AdaHand::adaFingerJointNameToPositionIndexMap
-    = {{"j2n6s200_link_finger_1", 0}, {"j2n6s200_link_finger_2", 1}};
-
+    = {{"j2n6s200_joint_finger_1", 0}, {"j2n6s200_joint_finger_2", 1}};
 } // namespace ada

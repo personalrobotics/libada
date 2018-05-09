@@ -7,11 +7,15 @@
 #include <Eigen/Core>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
+#include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/robot/GrabMetadata.hpp>
 #include <aikido/robot/Hand.hpp>
+#include <aikido/robot/Robot.hpp>
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
 #include <ros/ros.h>
+
+#include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
 namespace ada {
 
@@ -28,6 +32,9 @@ AIKIDO_DECLARE_POINTERS(AdaHand)
 class AdaHand : public aikido::robot::Hand
 {
 public:
+  const double rosTrajectoryInterpolationTimestep = 0.1;
+  const double rosTrajectoryGoalTimeTolerance = 5.0;
+
   /// Creates an instance of an AdaHand.
   ///
   /// When simulation is false, uses \c RosPositionCommandExecutor to send
@@ -44,8 +51,10 @@ public:
   /// \param[in] name Name of the hand, either "left" or "right" (ADA has one
   /// hand).
   /// \param[in] simulation True if running in simulation mode
+  /// \param[in] handBaseBodyNode Body node which is the root of all fingers.
   /// \param[in] endEffectorBodyNode End-effector body node. Must be the link
-  ///            that represents the palm of an AdaHand (i.e. \c hand_base).
+  ///            that represents the palm of an AdaHand (i.e. \c hand_base),
+  ///            for which inverse kinematics is solved.
   /// \param[in] selfCollisionFilter CollisionFilter used for self-collision
   ///            checking for the whole robot.
   /// \param[in] node ROS node. Required for running in real.
@@ -56,6 +65,7 @@ public:
   AdaHand(
       const std::string& name,
       bool simulation,
+      dart::dynamics::BodyNodePtr handBaseBodyNode,
       dart::dynamics::BodyNodePtr endEffectorBodyNode,
       std::shared_ptr<dart::collision::BodyNodeCollisionFilter>
           selfCollisionFilter,
@@ -127,8 +137,14 @@ private:
   /// Create controllers in real or simulation.
   ///
   /// \param[in] robot Robot to construct executor for
+  std::shared_ptr<aikido::control::TrajectoryExecutor> createTrajectoryExecutor(
+      const dart::dynamics::SkeletonPtr& robot);
+
+  /// Create a controller for simulated hand movement.
+  ///
+  /// \param[in] robot Robot to construct executor for
   std::shared_ptr<aikido::control::PositionCommandExecutor>
-  createAdaHandPositionExecutor(const dart::dynamics::SkeletonPtr& robot);
+  createSimPositionCommandExecutor(const dart::dynamics::SkeletonPtr& robot);
 
   /// Loads preshapes from YAML file (retrieved from \c preshapesUri).
   ///
@@ -148,17 +164,23 @@ private:
   /// \return preshape if it exists, boost::none if not
   boost::optional<Eigen::VectorXd> getPreshape(const std::string& preshapeName);
 
-  /// Name of the hand, either "left" or "right"
+  /// Name of the hand
   const std::string mName;
 
-  /// Hand MetaSkeleton consisting of the nodes rooted at \c
-  /// mEndEffectorBodyNode
-  dart::dynamics::BranchPtr mHand;
+  /// Hand metaskeleton consisting of the nodes rooted at \c
+  /// mHandBaseBodyNode.
+  dart::dynamics::GroupPtr mHand;
+
+  /// Statespace for the hand.
+  aikido::statespace::dart::MetaSkeletonStateSpacePtr mSpace;
 
   /// Whether hand is running in simulation mode
   const bool mSimulation;
 
-  /// End-effector body node
+  /// Body node which is the root link for all fingers
+  dart::dynamics::BodyNodePtr mHandBaseBodyNode;
+
+  /// End-effector body node, for which IK is created
   dart::dynamics::BodyNodePtr mEndEffectorBodyNode;
 
   /// CollisionFilter used for self-collision checking for the whole robot
@@ -166,7 +188,7 @@ private:
       mSelfCollisionFilter;
 
   /// Hand position command executor (may be real if simulation is False)
-  std::shared_ptr<aikido::control::PositionCommandExecutor> mExecutor;
+  std::shared_ptr<aikido::control::TrajectoryExecutor> mExecutor;
 
   /// Hand position command executor (always in simulation)
   std::shared_ptr<aikido::control::PositionCommandExecutor> mSimExecutor;
