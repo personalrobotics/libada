@@ -13,3 +13,5 @@ if(NOT DART_utils_FOUND)
   return()
 endif()
 
+libada_add_test(test_ikFast test_ikFast.cpp)
+target_link_libraries(test_ikFast "${PROJECT_NAME}")

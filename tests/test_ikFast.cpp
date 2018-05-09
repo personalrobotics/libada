@@ -1,8 +1,7 @@
 #include <dart/dart.hpp>
-#include <dart/io/urdf/urdf.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 #include <gtest/gtest.h>
 #include <libada/Ada.hpp>
-#include "TestHelpers.hpp"
 
 using namespace dart;
 
@@ -10,20 +9,22 @@ TEST(IkFast, TestIkSolver)
 {
   // TODO : Verify if IK is working
   // 1. Select a set of angles A.
-  // 2. Call the FK function from ikfast cpp -> gives SE(3) pose
+  // 2. Call the FK function from ikfast cpp -> gives SE(3) pose.
   // 3. Feed that into IK solver and see if one of solution matches initial set
-  // A
+  // A.
 }
 
 //==============================================================================
 TEST(IkFast, VerifyGeneratedAdaIkFast)
 {
-  io::DartLoader urdfParser;
-  urdfParser.addPackageDirectory("ada_description/robots");
-  auto ada = urdfParser.parseSkeleton("/robots/ada_with_camera_forque.urdf");
+  utils::DartLoader urdfParser;
+  auto retreiver = std::make_shared<aikido::io::CatkinResourceRetriever>();
+  auto ada = urdfParser.parseSkeleton(
+      "package://ada_description/robots/ada_with_camera_forque.urdf",
+      retreiver);
   EXPECT_NE(ada, nullptr);
 
-  auto eeBodyNode = ada->getBodyNode("/j2n6s200_end_effector");
+  auto eeBodyNode = ada->getBodyNode("j2n6s200_end_effector");
   auto ee = eeBodyNode->createEndEffector("ee");
   auto ik = ee->createIK();
   auto targetFrame
@@ -68,12 +69,13 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
   {
     EXPECT_EQ(solution.mConfig.size(), 6);
 
-    if (solution.mValidity != InverseKinematics::Analytical::VALID)
+    if (solution.mValidity != dynamics::InverseKinematics::Analytical::VALID)
       continue;
 
     ada->setPositions(dofs, solution.mConfig);
     Eigen::Isometry3d newTf = ee->getTransform();
-    EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
+    EXPECT_TRUE(
+        targetFrame->getTransform().matrix().isApprox(newTf.matrix(), 1e-2));
   }
 }
 
