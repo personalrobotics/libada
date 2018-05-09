@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
 #include <dart/dart.hpp>
 #include <dart/io/urdf/urdf.hpp>
-#include "TestHelpers.hpp"
+#include <gtest/gtest.h>
 #include <libada/Ada.hpp>
+#include "TestHelpers.hpp"
 
 using namespace dart;
 
@@ -11,7 +11,8 @@ TEST(IkFast, TestIkSolver)
   // TODO : Verify if IK is working
   // 1. Select a set of angles A.
   // 2. Call the FK function from ikfast cpp -> gives SE(3) pose
-  // 3. Feed that into IK solver and see if one of solution matches initial set A
+  // 3. Feed that into IK solver and see if one of solution matches initial set
+  // A
 }
 
 //==============================================================================
@@ -20,7 +21,7 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
   io::DartLoader urdfParser;
   urdfParser.addPackageDirectory("ada_description/robots");
   auto ada = urdfParser.parseSkeleton("/robots/ada_with_camera_forque.urdf");
-  EXPECT_NE(ada, nullptr);  
+  EXPECT_NE(ada, nullptr);
 
   auto eeBodyNode = ada->getBodyNode("/j2n6s200_end_effector");
   auto ee = eeBodyNode->createEndEffector("ee");
@@ -43,7 +44,7 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
   std::vector<std::size_t> ikFastDofs{0, 1, 2, 3, 4, 5};
 
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        libName, ikFastDofs, std::vector<std::size_t>());
+      libName, ikFastDofs, std::vector<std::size_t>());
   auto analytical = ik->getAnalytical();
   EXPECT_NE(analytical, nullptr);
   EXPECT_EQ(analytical->getDofs().size(), 6);
@@ -81,8 +82,10 @@ TEST(IkFast, VerifyLibadaLoadIkFast)
 {
   const bool adaReal = false;
   aikido::planner::WorldPtr env(new aikido::planner::World("test"));
-  dart::common::Uri adaUrdfUri{"package://ada_description/robots/ada_with_camera_forque.urdf"};
-  dart::common::Uri adaSrdfUri{"package://ada_description/robots/ada_with_camera_forque.srdf"};
+  dart::common::Uri adaUrdfUri{
+      "package://ada_description/robots/ada_with_camera_forque.urdf"};
+  dart::common::Uri adaSrdfUri{
+      "package://ada_description/robots/ada_with_camera_forque.srdf"};
   std::string endEffectorName = "j2n6s200_end_effector";
   ada::Ada robot(env, !adaReal, adaUrdfUri, adaSrdfUri, endEffectorName);
   EXPECT_NE(robot.getEndEffectorIkSolver(), nullptr);

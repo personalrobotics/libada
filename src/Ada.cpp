@@ -377,7 +377,8 @@ ConstAdaHandPtr Ada::getHand() const
 }
 
 //==============================================================================
-std::shared_ptr<dart::dynamics::InverseKinematics> Ada::getEndEffectorIkSolver() const
+std::shared_ptr<dart::dynamics::InverseKinematics> Ada::getEndEffectorIkSolver()
+    const
 {
   return mEndEffectorIk;
 }
@@ -625,7 +626,7 @@ void Ada::setupEndEffectors(
     std::cout << "[ERRPR] Failed to load the IK Solver" << std::endl;
     throw "Failed to load the IK Soler";
   }
-  
+
   // TODO: Tuning and set the error bounds for orientation and translation
   // Set bounds
   Eigen::Vector3d linearBounds
@@ -636,7 +637,7 @@ void Ada::setupEndEffectors(
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
-  
+
   // Store the IKFast solver
   mEndEffectorIk = ee->getIK();
 }
