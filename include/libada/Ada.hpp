@@ -236,6 +236,8 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
+  /// Switches controllers to trajectory executors.
+  /// The controllers must be switched to
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
   /// \param[in] metaSkeleton Metaskeleton to plan with.
@@ -263,12 +265,12 @@ public:
   /// trajectory executors. The controllers must be switched to
   /// trajectory executors before calling \c executeTrajectory
   /// \return true if all controllers have been successfully switched
-  bool switchFromGravityCompensationControllersToTrajectoryExecutors();
+  bool startTrajectoryExecutor();
 
   /// Switches controllers from trajectory executors to gravity compensation
   /// controllers.
   /// \return true if all controllers have been successfully switched
-  bool switchFromTrajectoryExecutorsToGravityCompensationControllers();
+  bool stopTrajectoryExecutor();
 
   /// Sets CRRTPlanner parameters.
   /// TODO: To be removed when PlannerAdapters are in place.
@@ -346,6 +348,7 @@ private:
   // Name of the End Effector in the URDF
   // might differ for different Ada configurations
   std::string mEndEffectorName;
+  std::string mHandBaseName;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;

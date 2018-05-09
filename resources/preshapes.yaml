@@ -1,10 +1,10 @@
 ---
 closed:
-    j2n6s200_link_finger_1: 1.4
-    j2n6s200_link_finger_2: 1.4
+    j2n6s200_joint_finger_1: 1.4
+    j2n6s200_joint_finger_2: 1.4
 open:
-    j2n6s200_link_finger_1: 0.0
-    j2n6s200_link_finger_2: 0.0
+    j2n6s200_joint_finger_1: 0.0
+    j2n6s200_joint_finger_2: 0.0
 partial_open:
-    j2n6s200_link_finger_1: 0.75
-    j2n6s200_link_finger_2: 0.75
+    j2n6s200_joint_finger_1: 0.75
+    j2n6s200_joint_finger_2: 0.75
