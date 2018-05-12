@@ -73,7 +73,9 @@ using dart::dynamics::SkeletonPtr;
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> trajectoryExecutors = {"trajectory_controller"};
+const std::vector<std::string> trajectoryExecutors = {
+  "trajectory_controller",
+  "j2n6s200_hand_controller"};
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
