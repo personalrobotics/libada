@@ -470,6 +470,21 @@ TrajectoryPtr Ada::planToNamedConfiguration(
   return mRobot->planToNamedConfiguration(name, collisionFree, timelimit);
 }
 
+std::unique_ptr<aikido::trajectory::Spline> Ada::planMinimumTimeViaConstraint(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const Eigen::VectorXd& goal,
+    const Eigen::VectorXd& via,
+    const Eigen::VectorXd& viaVelocity,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double& viaTime,
+    double maxPlanTime,
+    double maxDistanceBtwValidityChecks)
+{
+  return mRobot->planMinimumTimeViaConstraint(stateSpace, metaSkeleton, goal, via,
+    viaVelocity, collisionFree, viaTime, maxPlanTime, maxDistanceBtwValidityChecks);
+}
+
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {

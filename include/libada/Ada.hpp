@@ -236,6 +236,17 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
+  std::unique_ptr<aikido::trajectory::Spline> planMinimumTimeViaConstraint(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const Eigen::VectorXd& goal,
+      const Eigen::VectorXd& via,
+      const Eigen::VectorXd& viaVelocity,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double& viaTime,
+      double maxPlanTime,
+      double maxDistanceBtwValidityChecks);
+
   /// Switches controllers to trajectory executors.
   /// The controllers must be switched to
   /// Plans to a desired end-effector offset with fixed orientation.
