@@ -28,8 +28,8 @@ install(TARGETS adaIk
 #project(libadaIkfast)
 
 #set(sources
-#	SharedLibraryAdaIkFast.hpp
-#	SharedLibraryAdaIkFast.cpp
+#	AdaIkFast.hpp
+#	AdaIkFast.cpp
 #)
 #add_library(libadaIkfast SHARED ${sources})
 #target_link_libraries(libadaIkfast PUBLIC dart)
