@@ -53,15 +53,19 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
   auto ikfast = dynamic_cast<dynamics::SharedLibraryIkFast*>(analytical);
   EXPECT_NE(ikfast, nullptr);
 
-  // TODO
-  // 1. Set a specific TSR in our script
-  // 2. Use that to solve for IK using DART and ikfast
-  // 3. See if solution is "close" to atleast one of IKs from ikfast.
+//  // TODO
+//  // 1. Set a specific TSR in our script
+//  // 2. Use that to solve for IK using DART and ikfast
+//  // 3. See if solution is "close" to atleast one of IKs from ikfast.
 
   // Set up a target for IKFast
-  targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
+  targetFrame->setTranslation(Eigen::Vector3d(0.4, -0.142525, 0.102));
+  auto targetTF = targetFrame->getTransform().matrix();
+
+
   auto solutions = ikfast->getSolutions(targetFrame->getTransform());
   EXPECT_TRUE(!solutions.empty());
+  std::cout << solutions.size() << std::endl;
 
   const auto dofs = ikfast->getDofs();
 
@@ -73,9 +77,8 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
       continue;
 
     ada->setPositions(dofs, solution.mConfig);
-    Eigen::Isometry3d newTf = ee->getTransform();
-    EXPECT_TRUE(
-        targetFrame->getTransform().matrix().isApprox(newTf.matrix(), 1e-2));
+    auto newTf = ee->getTransform().matrix();
+    EXPECT_TRUE(targetTF.isApprox(newTf, 1e-2));
   }
 }
 
