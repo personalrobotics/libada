@@ -125,13 +125,13 @@ public:
 
   /// Returns self collision constraint
   aikido::constraint::dart::CollisionFreePtr getSelfCollisionConstraint(
-      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+      const aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const override;
 
   /// Returns self-collision constraint along with provided constraint
   /// \param[in] collisionFree Collision constraint
   aikido::constraint::TestablePtr getFullCollisionConstraint(
-      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+      const aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree)
       const override;

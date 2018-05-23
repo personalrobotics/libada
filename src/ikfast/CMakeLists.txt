@@ -13,6 +13,7 @@ add_compile_options(-std=c++11 -fPIC)
 add_library(adaIk SHARED ada_2018_05_08_ik.cpp)
 target_compile_definitions(adaIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
 target_compile_options(adaIk PRIVATE -w)
+#target_link_libraries(adaIk ${catkin_LIBRARIES} -llapack -lblas)
 
 # Copy libadaIk.so to devel/lib
 install(TARGETS adaIk

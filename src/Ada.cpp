@@ -326,7 +326,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 
 //==============================================================================
 CollisionFreePtr Ada::getSelfCollisionConstraint(
-    const MetaSkeletonStateSpacePtr& space,
+    const ConstMetaSkeletonStateSpacePtr& space,
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const
 {
   return mRobot->getSelfCollisionConstraint(space, metaSkeleton);
@@ -334,7 +334,7 @@ CollisionFreePtr Ada::getSelfCollisionConstraint(
 
 //==============================================================================
 TestablePtr Ada::getFullCollisionConstraint(
-    const MetaSkeletonStateSpacePtr& space,
+    const ConstMetaSkeletonStateSpacePtr& space,
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const CollisionFreePtr& collisionFree) const
 {
@@ -599,7 +599,7 @@ void Ada::setupEndEffectors(
 
   // Load IK Solver
   // TODO: instead of loading from a fixed location, use ResourceRetriever
-  std::string libName = "devel/lib/libadaIk";
+  std::string libName = "/home/adityavk/ada-ws/src/libada/src/ikfast/libik";
 
 #if DART_OS_LINUX
   libName += ".so";
@@ -624,7 +624,7 @@ void Ada::setupEndEffectors(
   if (!ikfast.isConfigured())
   {
     std::cout << "[ERRPR] Failed to load the IK Solver" << std::endl;
-    throw "Failed to load the IK Soler";
+    throw "Failed to load the IK Solver";
   }
 
   // TODO: Tuning and set the error bounds for orientation and translation

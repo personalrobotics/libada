@@ -34,7 +34,7 @@ TEST(IkFast, VerifyGeneratedAdaIkFast)
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
 
-  std::string libName = "devel/lib/libadaIk";
+  std::string libName = "/home/adityavk/ada-ws/src/libada/src/ikfast/libik";
 #if DART_OS_LINUX
   libName += ".so";
 #elif DART_OS_MACOS
