@@ -323,7 +323,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 
 //==============================================================================
 CollisionFreePtr Ada::getSelfCollisionConstraint(
-    const MetaSkeletonStateSpacePtr& space,
+    const ConstMetaSkeletonStateSpacePtr& space,
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton) const
 {
   return mRobot->getSelfCollisionConstraint(space, metaSkeleton);
@@ -331,7 +331,7 @@ CollisionFreePtr Ada::getSelfCollisionConstraint(
 
 //==============================================================================
 TestablePtr Ada::getFullCollisionConstraint(
-    const MetaSkeletonStateSpacePtr& space,
+    const ConstMetaSkeletonStateSpacePtr& space,
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const CollisionFreePtr& collisionFree) const
 {
