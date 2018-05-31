@@ -33,9 +33,9 @@
 namespace ada {
 
 dart::common::Uri defaultAdaUrdfUri{
-    "package://ada_description/robots/ada_with_camera.urdf"};
+    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
-    "package://ada_description/robots/ada_with_camera.srdf"};
+    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
 extern const std::vector<std::string> gravityCompensationControllers;
 extern const std::vector<std::string> trajectoryExecutors;
 
