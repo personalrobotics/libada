@@ -551,9 +551,9 @@ ConcreteManipulatorPtr Ada::configureArm(
   // provides no means of specifying acceleration limits
   // TODO : update acceleration limits by checking Kinova spec.
   arm->setAccelerationLowerLimits(
-      Eigen::VectorXd::Constant(arm->getNumDofs(), -2.0));
+      Eigen::VectorXd::Constant(arm->getNumDofs(), -10.0));
   arm->setAccelerationUpperLimits(
-      Eigen::VectorXd::Constant(arm->getNumDofs(), 2.0));
+      Eigen::VectorXd::Constant(arm->getNumDofs(), 10.0));
 
   auto manipulatorRobot = std::make_shared<ConcreteRobot>(
       armName,
@@ -579,6 +579,7 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 //==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits() const
 {
+  ROS_WARN_STREAM("Ada velocity limits: " << mRobot->getMetaSkeleton()->getVelocityUpperLimits());
   return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
 }
 
