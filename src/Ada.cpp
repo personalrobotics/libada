@@ -111,7 +111,6 @@ Ada::Ada(
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
 {
-  simulation = true; // temporarily set simulation to true
 
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
