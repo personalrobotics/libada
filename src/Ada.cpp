@@ -693,6 +693,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   Trajectory trajectory(Path(waypoints, MAX_DEVIATION), maxVelocities, maxAccelerations, TIME_STEP);
   if(trajectory.isValid()) 
   {
+    std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED" << std::endl;
     // create spline
     using dart::common::make_unique;
 
@@ -733,7 +734,10 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     }
 
     return outputTrajectory;
-   
+  }
+  else
+  {
+    std::cout << "TIME-OPTIMAL RETIMING FAILED" << std::endl;
   }
  
   return nullptr;
