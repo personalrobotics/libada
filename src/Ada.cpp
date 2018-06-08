@@ -646,11 +646,10 @@ bool Ada::switchControllers(
 
 std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path)
-{
-  double MAX_DEVIATION = 1e-4;
-  double TIME_STEP = 0.1;
-  
+    const aikido::trajectory::Trajectory* path,
+    double maxDeviation,
+    double timeStep)
+{  
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
   Eigen::VectorXd maxAccelerations(metaSkeleton->getNumDofs());
@@ -690,7 +689,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     }
   }
 
-  Trajectory trajectory(Path(waypoints, MAX_DEVIATION), maxVelocities, maxAccelerations, TIME_STEP);
+  Trajectory trajectory(Path(waypoints, maxDeviation), maxVelocities, maxAccelerations, timeStep);
   if(trajectory.isValid()) 
   {
     std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED" << std::endl;
@@ -708,7 +707,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const Eigen::VectorXd zeroPosition = Eigen::VectorXd::Zero(dimension);
     auto currState = stateSpace->createState();
     double currT = 0.0;
-    double nextT = TIME_STEP;
+    double nextT = timeStep;
     while(currT<trajectory.getDuration())
     {
       const double segmentDuration = nextT - currT;
@@ -729,8 +728,8 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       stateSpace->expMap(currentPosition, currState);
       outputTrajectory->addSegment(coefficients, segmentDuration, currState);
       
-      currT += TIME_STEP;
-      nextT += TIME_STEP;
+      currT += timeStep;
+      nextT += timeStep;
     }
 
     return outputTrajectory;

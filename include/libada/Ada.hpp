@@ -88,7 +88,9 @@ public:
 
   std::unique_ptr<aikido::trajectory::Spline> retimeTimeOptimalPath(
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path);
+      const aikido::trajectory::Trajectory* path,
+      double maxDeviation = 1e-2,
+      double timeStep = 0.1);
 
   /// Executes a trajectory
   /// \param[in] trajectory Timed trajectory to execute
