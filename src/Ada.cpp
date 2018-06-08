@@ -612,7 +612,8 @@ Ada::createTrajectoryExecutor()
   else
   {
     // TODO (k):need to check trajectory_controller exists?
-    std::string serverName = "move_until_touch_topic_controller/follow_joint_trajectory";
+    std::string serverName
+        = "move_until_touch_topic_controller/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
@@ -650,39 +651,42 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 {
   double MAX_DEVIATION = 1e-4;
   double TIME_STEP = 0.1;
-  
+
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
   Eigen::VectorXd maxAccelerations(metaSkeleton->getNumDofs());
-  for(std::size_t i=0; i<metaSkeleton->getNumDofs(); i++)
+  for (std::size_t i = 0; i < metaSkeleton->getNumDofs(); i++)
   {
-    maxVelocities(i) = std::min(std::abs(metaSkeleton->getVelocityUpperLimit(i)),
-                                std::abs(metaSkeleton->getVelocityLowerLimit(i)));
-    maxAccelerations(i) = std::min(std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
-                                std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
+    maxVelocities(i) = std::min(
+        std::abs(metaSkeleton->getVelocityUpperLimit(i)),
+        std::abs(metaSkeleton->getVelocityLowerLimit(i)));
+    maxAccelerations(i) = std::min(
+        std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
+        std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
   }
 
   // create waypoints from path
   std::list<Eigen::VectorXd> waypoints;
-  auto interpolated = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
+  auto interpolated
+      = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
   if (interpolated)
   {
-    
+
     Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for(std::size_t i=0; i<interpolated->getNumWaypoints(); i++)
+    for (std::size_t i = 0; i < interpolated->getNumWaypoints(); i++)
     {
       auto tmpState = interpolated->getWaypoint(i);
       interpolated->getStateSpace()->logMap(tmpState, tmpVec);
       waypoints.push_back(tmpVec);
     }
   }
-  
+
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
   {
     auto tmpState = path->getStateSpace()->createState();
     Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for(std::size_t i=0; i<spline->getNumWaypoints(); i++)
+    for (std::size_t i = 0; i < spline->getNumWaypoints(); i++)
     {
       spline->getWaypoint(i, tmpState);
       spline->getStateSpace()->logMap(tmpState, tmpVec);
@@ -690,8 +694,12 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     }
   }
 
-  Trajectory trajectory(Path(waypoints, MAX_DEVIATION), maxVelocities, maxAccelerations, TIME_STEP);
-  if(trajectory.isValid()) 
+  Trajectory trajectory(
+      Path(waypoints, MAX_DEVIATION),
+      maxVelocities,
+      maxAccelerations,
+      TIME_STEP);
+  if (trajectory.isValid())
   {
     std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED" << std::endl;
     // create spline
@@ -703,13 +711,13 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     auto outputTrajectory = make_unique<aikido::trajectory::Spline>(stateSpace);
 
     using CubicSplineProblem = aikido::common::
-      SplineProblem<double, int, 4, Eigen::Dynamic, Eigen::Dynamic>;
+        SplineProblem<double, int, 4, Eigen::Dynamic, Eigen::Dynamic>;
 
     const Eigen::VectorXd zeroPosition = Eigen::VectorXd::Zero(dimension);
     auto currState = stateSpace->createState();
     double currT = 0.0;
     double nextT = TIME_STEP;
-    while(currT<trajectory.getDuration())
+    while (currT < trajectory.getDuration())
     {
       const double segmentDuration = nextT - currT;
       Eigen::VectorXd currentPosition = trajectory.getPosition(currT);
@@ -728,7 +736,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 
       stateSpace->expMap(currentPosition, currState);
       outputTrajectory->addSegment(coefficients, segmentDuration, currState);
-      
+
       currT += TIME_STEP;
       nextT += TIME_STEP;
     }
@@ -739,7 +747,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   {
     std::cout << "TIME-OPTIMAL RETIMING FAILED" << std::endl;
   }
- 
+
   return nullptr;
 }
 
