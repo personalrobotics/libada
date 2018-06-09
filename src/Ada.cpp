@@ -608,7 +608,8 @@ Ada::createTrajectoryExecutor()
   else
   {
     // TODO (k):need to check trajectory_controller exists?
-    std::string serverName = "move_until_touch_topic_controller/follow_joint_trajectory";
+    std::string serverName
+        = "move_until_touch_topic_controller/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
