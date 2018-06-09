@@ -105,7 +105,7 @@ AdaHand::AdaHand(
   mExecutor = createTrajectoryExecutor(robotSkeleton);
 
   // TODO(Gilwoo): Use this to find the set point when grabbing object.
-  mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
+  // mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
 
   loadPreshapes(preshapesUri, retriever);
 
