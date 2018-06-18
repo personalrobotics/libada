@@ -32,11 +32,8 @@
 
 namespace ada {
 
-dart::common::Uri defaultAdaUrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
-dart::common::Uri defaultAdaSrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
-extern const std::vector<std::string> gravityCompensationControllers;
+extern dart::common::Uri defaultAdaUrdfUri;
+extern dart::common::Uri defaultAdaSrdfUri;
 extern const std::vector<std::string> trajectoryExecutors;
 
 class Ada final : public aikido::robot::Robot
