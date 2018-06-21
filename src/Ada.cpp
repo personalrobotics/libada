@@ -75,6 +75,9 @@ dart::common::Uri defaultAdaUrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.srdf"};
+std::vector<std::string> possibleTrajectoryExecutors{
+  "trajectory_controller", "rewd_trajectory_controller", "move_until_touch_topic_controller", "j2n6s200_hand_controller"
+};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
@@ -481,7 +484,14 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor}, std::vector<std::string>());
+  // make sure that no other controllers are running and conflicting with the ones we are about to start
+  std::vector<std::string> controllersToStop;
+  for (auto& controller : possibleTrajectoryExecutors) {
+    if (controller != mArmTrajectoryExecutor && controller != mHandTrajectoryExecutor) {
+      controllersToStop.push_back(controller);
+    }
+  }
+  return switchControllers(std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor}, controllersToStop);
 }
 
 //==============================================================================

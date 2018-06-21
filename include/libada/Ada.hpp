@@ -34,6 +34,7 @@ namespace ada {
 
 extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
+extern std::vector<std::string> possibleTrajectoryExecutors;
 
 class Ada final : public aikido::robot::Robot
 {
@@ -259,14 +260,14 @@ public:
       double positionTolerance,
       double angularTolerance);
 
-  /// Switches controllers from gravity compensation controllers to
-  /// trajectory executors. The controllers must be switched to
+  /// Switches controllers. The controllers must be switched to
   /// trajectory executors before calling \c executeTrajectory
+  /// Makes sure that no other controllers are running and conflicting
+  /// with the ones we are about to start.
   /// \return true if all controllers have been successfully switched
   bool startTrajectoryExecutor();
 
-  /// Switches controllers from trajectory executors to gravity compensation
-  /// controllers.
+  /// Turns off controllers
   /// \return true if all controllers have been successfully switched
   bool stopTrajectoryExecutor();
 
