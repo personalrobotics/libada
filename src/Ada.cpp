@@ -484,20 +484,18 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {
-  // make sure that no other controllers are running and conflicting with the ones we are about to start
-  std::vector<std::string> controllersToStop;
-  for (auto& controller : possibleTrajectoryExecutors) {
-    if (controller != mArmTrajectoryExecutor && controller != mHandTrajectoryExecutor) {
-      controllersToStop.push_back(controller);
-    }
-  }
-  return switchControllers(std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor}, controllersToStop);
+  return switchControllers(
+      std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor},
+      std::vector<std::string>());
 }
 
 //==============================================================================
 bool Ada::stopTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>(), std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor});
+  return switchControllers(
+      std::vector<std::string>(),
+      std::vector<std::string>{mArmTrajectoryExecutor,
+                               mHandTrajectoryExecutor});
 }
 
 //=============================================================================
@@ -647,8 +645,8 @@ bool Ada::switchControllers(
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
-  if (mControllerServiceClient->call(srv))
-    return srv.response.ok;
+  if (mControllerServiceClient->call(srv) && srv.response.ok)
+    return true;
   else
     throw std::runtime_error("SwitchController failed.");
 }
