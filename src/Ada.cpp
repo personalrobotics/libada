@@ -107,13 +107,11 @@ Ada::Ada(
     const dart::common::Uri& adaSrdfUri,
     const std::string& endEffectorName,
     const std::string& armTrajectoryExecutor,
-    const std::string& handTrajectoryExecutor,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
   , mArmTrajectoryExecutor(armTrajectoryExecutor)
-  , mHandTrajectoryExecutor(handTrajectoryExecutor)
   , mCollisionResolution(collisionResolution)
   , mRng(rngSeed)
   , mSmootherFeasibilityCheckResolution(1e-3)
