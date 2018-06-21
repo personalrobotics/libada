@@ -68,7 +68,7 @@ public:
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
       const std::string& endEffectorName = "j2n6s200_end_effector",
-      const std::string& armTrajectoryExecutor = "trajectory_controller",
+      const std::string& armTrajectoryExecutorName = "trajectory_controller",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
@@ -349,8 +349,8 @@ private:
   std::string mHandBaseName;
 
   // Names of the trajectory executors
-  std::string mArmTrajectoryExecutor;
-  const std::string mHandTrajectoryExecutor = "j2n6s200_hand_controller";
+  std::string mArmTrajectoryExecutorName;
+  const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;

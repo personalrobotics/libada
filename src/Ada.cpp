@@ -76,8 +76,10 @@ dart::common::Uri defaultAdaUrdfUri{
 dart::common::Uri defaultAdaSrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.srdf"};
 std::vector<std::string> possibleTrajectoryExecutors{
-  "trajectory_controller", "rewd_trajectory_controller", "move_until_touch_topic_controller", "j2n6s200_hand_controller"
-};
+    "trajectory_controller",
+    "rewd_trajectory_controller",
+    "move_until_touch_topic_controller",
+    "j2n6s200_hand_controller"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
@@ -106,12 +108,12 @@ Ada::Ada(
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
     const std::string& endEffectorName,
-    const std::string& armTrajectoryExecutor,
+    const std::string& armTrajectoryExecutorName,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
-  , mArmTrajectoryExecutor(armTrajectoryExecutor)
+  , mArmTrajectoryExecutorName(armTrajectoryExecutorName)
   , mCollisionResolution(collisionResolution)
   , mRng(rngSeed)
   , mSmootherFeasibilityCheckResolution(1e-3)
@@ -483,7 +485,8 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 bool Ada::startTrajectoryExecutor()
 {
   return switchControllers(
-      std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor},
+      std::vector<std::string>{mArmTrajectoryExecutorName,
+                               mHandTrajectoryExecutorName},
       std::vector<std::string>());
 }
 
@@ -492,8 +495,8 @@ bool Ada::stopTrajectoryExecutor()
 {
   return switchControllers(
       std::vector<std::string>(),
-      std::vector<std::string>{mArmTrajectoryExecutor,
-                               mHandTrajectoryExecutor});
+      std::vector<std::string>{mArmTrajectoryExecutorName,
+                               mHandTrajectoryExecutorName});
 }
 
 //=============================================================================
@@ -617,7 +620,7 @@ Ada::createTrajectoryExecutor()
   {
     // TODO (k):need to check trajectory_controller exists?
     std::string serverName
-        = mArmTrajectoryExecutor + "/follow_joint_trajectory";
+        = mArmTrajectoryExecutorName + "/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
