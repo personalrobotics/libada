@@ -481,13 +481,18 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor}, std::vector<std::string>());
+  return switchControllers(
+      std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor},
+      std::vector<std::string>());
 }
 
 //==============================================================================
 bool Ada::stopTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>(), std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor});
+  return switchControllers(
+      std::vector<std::string>(),
+      std::vector<std::string>{mArmTrajectoryExecutor,
+                               mHandTrajectoryExecutor});
 }
 
 //=============================================================================
