@@ -34,7 +34,6 @@ namespace ada {
 
 extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
-extern const std::vector<std::string> trajectoryExecutors;
 
 class Ada final : public aikido::robot::Robot
 {
@@ -68,6 +67,8 @@ public:
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
       const std::string& endEffectorName = "j2n6s200_end_effector",
+      const std::string& armTrajectoryExecutor = "trajectory_controller",
+      const std::string& handTrajectoryExecutor = "j2n6s200_hand_controller",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
@@ -346,6 +347,10 @@ private:
   // might differ for different Ada configurations
   std::string mEndEffectorName;
   std::string mHandBaseName;
+
+  // Names of the trajectory executors
+  std::string mArmTrajectoryExecutor;
+  std::string mHandTrajectoryExecutor;
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;

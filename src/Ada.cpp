@@ -78,8 +78,6 @@ dart::common::Uri defaultAdaSrdfUri{
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> trajectoryExecutors
-    = {"move_until_touch_topic_controller", "j2n6s200_hand_controller"};
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -105,10 +103,14 @@ Ada::Ada(
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
     const std::string& endEffectorName,
+    const std::string& armTrajectoryExecutor,
+    const std::string& handTrajectoryExecutor,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
+  , mArmTrajectoryExecutor(armTrajectoryExecutor)
+  , mHandTrajectoryExecutor(handTrajectoryExecutor)
   , mCollisionResolution(collisionResolution)
   , mRng(rngSeed)
   , mSmootherFeasibilityCheckResolution(1e-3)
@@ -479,13 +481,13 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {
-  return switchControllers(trajectoryExecutors, std::vector<std::string>());
+  return switchControllers(std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor}, std::vector<std::string>());
 }
 
 //==============================================================================
 bool Ada::stopTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>(), trajectoryExecutors);
+  return switchControllers(std::vector<std::string>(), std::vector<std::string>{mArmTrajectoryExecutor, mHandTrajectoryExecutor});
 }
 
 //=============================================================================
@@ -609,7 +611,7 @@ Ada::createTrajectoryExecutor()
   {
     // TODO (k):need to check trajectory_controller exists?
     std::string serverName
-        = "move_until_touch_topic_controller/follow_joint_trajectory";
+        = mArmTrajectoryExecutor + "/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
