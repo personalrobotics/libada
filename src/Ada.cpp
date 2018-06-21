@@ -75,14 +75,17 @@ dart::common::Uri defaultAdaUrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.srdf"};
-std::vector<std::string> possibleTrajectoryExecutors{
-    "trajectory_controller",
-    "rewd_trajectory_controller",
-    "move_until_touch_topic_controller",
-    "j2n6s200_hand_controller"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
+
+// arm trajectory controllers that are meant to be used by ada.
+// needs to be consistent with the configurations in ada_launch
+const std::vector<std::string> availableArmTrajectoryExecutorNames{
+  "trajectory_controller",
+  "rewd_trajectory_controller",
+  "move_until_touch_topic_controller"
+};
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -122,6 +125,17 @@ Ada::Ada(
   , mEndEffectorName(endEffectorName)
 {
   simulation = true; // temporarily set simulation to true
+
+  bool armTrajectoryExecutorNameValid = false;
+  for (const auto& name : availableArmTrajectoryExecutorNames) {
+    if (mArmTrajectoryExecutorName == name) {
+      armTrajectoryExecutorNameValid = true;
+      break;
+    }
+  }
+  if (!armTrajectoryExecutorNameValid) {
+    throw std::runtime_error("Arm Trajectory Controller is not valid!");
+  }
 
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
