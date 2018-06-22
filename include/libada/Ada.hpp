@@ -308,6 +308,11 @@ private:
       const std::vector<std::string>& stopControllers);
 
   const bool mSimulation;
+
+  // Names of the trajectory executors
+  const std::string mArmTrajectoryExecutorName;
+  const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
+  
   double mCollisionResolution;
 
   /// Random generator
@@ -347,10 +352,6 @@ private:
   // might differ for different Ada configurations
   std::string mEndEffectorName;
   std::string mHandBaseName;
-
-  // Names of the trajectory executors
-  const std::string mArmTrajectoryExecutorName;
-  const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
