@@ -312,7 +312,7 @@ private:
   // Names of the trajectory executors
   const std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
-  
+
   double mCollisionResolution;
 
   /// Random generator

@@ -1,10 +1,10 @@
 #include "libada/Ada.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <mutex>
 #include <stdexcept>
 #include <string>
-#include <algorithm>
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/constraint/CyclicSampleable.hpp>
@@ -83,10 +83,9 @@ const dart::common::Uri namedConfigurationsUri{
 // arm trajectory controllers that are meant to be used by ada.
 // needs to be consistent with the configurations in ada_launch
 const std::vector<std::string> availableArmTrajectoryExecutorNames{
-  "trajectory_controller",
-  "rewd_trajectory_controller",
-  "move_until_touch_topic_controller"
-};
+    "trajectory_controller",
+    "rewd_trajectory_controller",
+    "move_until_touch_topic_controller"};
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -127,7 +126,12 @@ Ada::Ada(
 {
   simulation = true; // temporarily set simulation to true
 
-  if (std::find(availableArmTrajectoryExecutorNames.begin(), availableArmTrajectoryExecutorNames.end(), mArmTrajectoryExecutorName) == availableArmTrajectoryExecutorNames.end()) {
+  if (std::find(
+          availableArmTrajectoryExecutorNames.begin(),
+          availableArmTrajectoryExecutorNames.end(),
+          mArmTrajectoryExecutorName)
+      == availableArmTrajectoryExecutorNames.end())
+  {
     throw std::runtime_error("Arm Trajectory Controller is not valid!");
   }
 
