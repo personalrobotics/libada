@@ -349,7 +349,7 @@ private:
   std::string mHandBaseName;
 
   // Names of the trajectory executors
-  std::string mArmTrajectoryExecutorName;
+  const std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   // The robot arm

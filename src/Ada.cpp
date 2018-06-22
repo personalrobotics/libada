@@ -4,6 +4,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <algorithm>
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/constraint/CyclicSampleable.hpp>
@@ -126,14 +127,7 @@ Ada::Ada(
 {
   simulation = true; // temporarily set simulation to true
 
-  bool armTrajectoryExecutorNameValid = false;
-  for (const auto& name : availableArmTrajectoryExecutorNames) {
-    if (mArmTrajectoryExecutorName == name) {
-      armTrajectoryExecutorNameValid = true;
-      break;
-    }
-  }
-  if (!armTrajectoryExecutorNameValid) {
+  if (std::find(availableArmTrajectoryExecutorNames.begin(), availableArmTrajectoryExecutorNames.end(), mArmTrajectoryExecutorName) == availableArmTrajectoryExecutorNames.end()) {
     throw std::runtime_error("Arm Trajectory Controller is not valid!");
   }
 
