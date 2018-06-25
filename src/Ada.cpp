@@ -1,5 +1,6 @@
 #include "libada/Ada.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <mutex>
 #include <stdexcept>
@@ -78,8 +79,13 @@ dart::common::Uri defaultAdaSrdfUri{
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
-const std::vector<std::string> trajectoryExecutors
-    = {"move_until_touch_topic_controller", "j2n6s200_hand_controller"};
+
+// arm trajectory controllers that are meant to be used by ada.
+// needs to be consistent with the configurations in ada_launch
+const std::vector<std::string> availableArmTrajectoryExecutorNames{
+    "trajectory_controller",
+    "rewd_trajectory_controller",
+    "move_until_touch_topic_controller"};
 
 namespace {
 BodyNodePtr getBodyNodeOrThrow(
@@ -105,10 +111,12 @@ Ada::Ada(
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
     const std::string& endEffectorName,
+    const std::string& armTrajectoryExecutorName,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
+  , mArmTrajectoryExecutorName(armTrajectoryExecutorName)
   , mCollisionResolution(collisionResolution)
   , mRng(rngSeed)
   , mSmootherFeasibilityCheckResolution(1e-3)
@@ -117,6 +125,15 @@ Ada::Ada(
   , mEndEffectorName(endEffectorName)
 {
   simulation = true; // temporarily set simulation to true
+
+  if (std::find(
+          availableArmTrajectoryExecutorNames.begin(),
+          availableArmTrajectoryExecutorNames.end(),
+          mArmTrajectoryExecutorName)
+      == availableArmTrajectoryExecutorNames.end())
+  {
+    throw std::runtime_error("Arm Trajectory Controller is not valid!");
+  }
 
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
@@ -479,13 +496,19 @@ TrajectoryPtr Ada::planToNamedConfiguration(
 //==============================================================================
 bool Ada::startTrajectoryExecutor()
 {
-  return switchControllers(trajectoryExecutors, std::vector<std::string>());
+  return switchControllers(
+      std::vector<std::string>{mArmTrajectoryExecutorName,
+                               mHandTrajectoryExecutorName},
+      std::vector<std::string>());
 }
 
 //==============================================================================
 bool Ada::stopTrajectoryExecutor()
 {
-  return switchControllers(std::vector<std::string>(), trajectoryExecutors);
+  return switchControllers(
+      std::vector<std::string>(),
+      std::vector<std::string>{mArmTrajectoryExecutorName,
+                               mHandTrajectoryExecutorName});
 }
 
 //=============================================================================
@@ -609,7 +632,7 @@ Ada::createTrajectoryExecutor()
   {
     // TODO (k):need to check trajectory_controller exists?
     std::string serverName
-        = "move_until_touch_topic_controller/follow_joint_trajectory";
+        = mArmTrajectoryExecutorName + "/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
@@ -635,8 +658,8 @@ bool Ada::switchControllers(
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
-  if (mControllerServiceClient->call(srv))
-    return srv.response.ok;
+  if (mControllerServiceClient->call(srv) && srv.response.ok)
+    return true;
   else
     throw std::runtime_error("SwitchController failed.");
 }
