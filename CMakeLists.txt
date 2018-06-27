@@ -57,6 +57,8 @@ find_package(srdfdom REQUIRED)
 
 find_package(urdf REQUIRED)
 
+find_package(magi REQUIRED)
+
 
 #================================================================================
 # Compiler settings
@@ -105,6 +107,7 @@ target_link_libraries(libada
   PUBLIC
     ${DART_LIBRARIES}
     ${aikido_LIBRARIES}
+    magi
   PRIVATE
     ${roslib_LIBRARIES}
     ${srdfdom_LIBRARIES}

@@ -7,6 +7,7 @@
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/robot/util.hpp>
+#include <magi/action/PlanToConfigurationAction.hpp>
 
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
@@ -280,6 +281,38 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
   }
 
   return mExecutor->execute(trajectory);
+}
+
+//==============================================================================
+std::unique_ptr<magi::action::Action> AdaHand::getExecutePreshapeAction(const std::string& preshapeName)
+{
+  using aikido::constraint::Satisfied;
+
+  boost::optional<Eigen::VectorXd> preshape = getPreshape(preshapeName);
+
+  if (!preshape)
+  {
+    std::stringstream message;
+    message << "[Hand::executePreshape] Unknown preshape name '" << preshapeName
+            << "' specified.";
+    throw std::runtime_error(message.str());
+  }
+
+  auto satisfied = std::make_shared<Satisfied>(mSpace);
+
+  double timeout = 1.0;
+  double collisionCheckResolution = 1e-2;
+
+  return make_unique<magi::action::PlanToConfigurationAction>(mExecutor, 
+                                                              nullptr,
+                                                              mHandBaseBodyNode->getSkeleton(),
+                                                              getMetaSkeleton(),
+                                                              mSpace,
+                                                              satisfied,
+                                                              preshape.get(),
+                                                              timeout,
+                                                              collisionCheckResolution
+                                                              );
 }
 
 //==============================================================================

@@ -4,16 +4,17 @@
 #include <memory>
 #include <unordered_map>
 
+#include <boost/optional.hpp>
 #include <Eigen/Core>
+#include <dart/dart.hpp>
+#include <ros/ros.h>
 #include <aikido/common/pointers.hpp>
 #include <aikido/control/PositionCommandExecutor.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/robot/GrabMetadata.hpp>
 #include <aikido/robot/Hand.hpp>
 #include <aikido/robot/Robot.hpp>
-#include <boost/optional.hpp>
-#include <dart/dart.hpp>
-#include <ros/ros.h>
+#include <magi/action/Action.hpp>
 
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
@@ -116,6 +117,12 @@ public:
 
   boost::optional<Eigen::Isometry3d> getEndEffectorTransform(
       const std::string& objectType) const;
+
+  /// Set the hand to the corresponding preshape (from \c preshapesUri).
+  /// \param[in] _preshapeName Name of preshape (e.g. "open")
+  /// \return future, which will be set to a runtime_error if execution fails.
+  std::unique_ptr<magi::action::Action> getExecutePreshapeAction(
+      const std::string& _preshapeName);
 
 private:
   /// Schema description for preshapes YAML file.
