@@ -264,6 +264,74 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
 }
 
 //==============================================================================
+aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const aikido::trajectory::Trajectory* path)
+{
+  auto interpolated = dynamic_cast<const Interpolated*>(path);
+  auto interpolator = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>((interpolated->getInterpolator()).get());
+  auto numWaypoints = interpolated->getNumWaypoints();
+
+  auto space = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(metaSkeleton.get());
+
+  // Create a new statespace with appropriate subspaces
+  std::cout << "Creating a new compound space" << std::endl;
+  std::vector<aikido::statespace::ConstStateSpacePtr> subspaces;
+  for (int i = 0; i < path->getStateSpace()->getDimension(); ++i)
+  {
+    subspaces.emplace_back(std::make_shared<aikido::statespace::R1>());
+  }
+  auto compoundSpace = std::make_shared<const aikido::statespace::CartesianProduct>(subspaces);
+
+  // Create the corresponding interpolator
+  std::cout << "Creating a new interpolator" << std::endl;
+  auto compoundInterpolator = std::make_shared<aikido::statespace::GeodesicInterpolator>(compoundSpace);
+
+  // Create the new trajectory
+  std::cout << "Creating a new trajectory" << std::endl;
+  auto returnTrajectory = std::make_shared<aikido::trajectory::Interpolated>(compoundSpace, compoundInterpolator);
+
+  // Add the first waypoint
+  std::cout << "Adding the first waypoint" << std::endl;
+  Eigen::VectorXd position(mSpace->getDimension());
+  auto state = mSpace->createState();
+  space->copyState(interpolated->getWaypoint(0), state);
+  space->convertStateToPositions(state, position);
+
+  aikido::statespace::CartesianProduct::ScopedState s1 = compoundSpace->createState();
+  Eigen::VectorXd pos(1);
+  std::cout << "Position is: " << position << std::endl;
+  for (auto i = 0; i < position.size(); ++i)
+  {
+    pos << position[i];
+    s1.getSubStateHandle<aikido::statespace::R1>(i).setValue(pos);
+  }
+  returnTrajectory->addWaypoint(0, s1);
+
+  std::cout << "Adding subsequent points" << std::endl;
+  for (int i = 0; i < numWaypoints - 1; ++i)
+  {
+    auto currWaypoint = interpolated->getWaypoint(i);
+    auto nextWaypoint = interpolated->getWaypoint(i+1);
+    auto diff = interpolator->getTangentVector(currWaypoint, nextWaypoint);
+    space->copyState(currWaypoint, state);
+    space->convertStateToPositions(state, position);
+    position += diff;
+
+    std::cout << "Position is: " << position << std::endl;
+
+    for (auto j = 0; j < position.size(); ++j)
+    {
+      pos << position[j];
+      s1.getSubStateHandle<aikido::statespace::R1>(j).setValue(pos);
+    }
+    returnTrajectory->addWaypoint(i+1, s1);
+  }
+
+  return returnTrajectory;
+}
+
+//==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
 {
   return mRobot->executeTrajectory(trajectory);

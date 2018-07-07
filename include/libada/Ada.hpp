@@ -89,6 +89,10 @@ public:
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path) override;
 
+  aikido::trajectory::TrajectoryPtr convertTrajectory(
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const aikido::trajectory::Trajectory* path);
+
   /// Executes a trajectory
   /// \param[in] trajectory Timed trajectory to execute
   std::future<void> executeTrajectory(
