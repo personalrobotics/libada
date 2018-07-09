@@ -282,6 +282,7 @@ public:
   void setVectorFieldPlannerParameters(
       const aikido::robot::util::VectorFieldPlannerParameters& vfParameters);
 
+  std::shared_ptr<aikido::control::TrajectoryExecutor> getTrajectoryExecutor();
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
