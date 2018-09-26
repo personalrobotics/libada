@@ -8,3 +8,6 @@ open:
 partial_open:
     j2n6s200_joint_finger_1: 0.75
     j2n6s200_joint_finger_2: 0.75
+almost_closed:
+    j2n6s200_joint_finger_1: 1.1
+    j2n6s200_joint_finger_2: 1.1
