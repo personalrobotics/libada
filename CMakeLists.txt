@@ -37,6 +37,7 @@ find_package(aikido 0.0.2 REQUIRED
     control_ros
     distance
     planner
+    planner_kinodynamic
     planner_ompl
     planner_parabolic
     planner_vectorfield

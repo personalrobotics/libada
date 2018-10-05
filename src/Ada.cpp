@@ -460,12 +460,13 @@ TrajectoryPtr Ada::planToTSR(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const dart::dynamics::BodyNodePtr& bn,
     const TSRPtr& tsr,
+    const Eigen::VectorXd& nominalPosition,
     const CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials)
 {
   return mRobot->planToTSR(
-      space, metaSkeleton, bn, tsr, collisionFree, timelimit, maxNumTrials);
+      space, metaSkeleton, bn, tsr, nominalPosition, collisionFree, timelimit, maxNumTrials);
 }
 
 //==============================================================================
