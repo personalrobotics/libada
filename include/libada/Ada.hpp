@@ -91,6 +91,13 @@ public:
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path);
 
+  /// Converts trajectory to maintain revolute joint continuity.
+  /// \param[in] metaskeleton Skeleton of the robot.
+  /// \param[in] path Trajectory containing SO(2) joints
+  aikido::trajectory::TrajectoryPtr convertTrajectory(
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const aikido::trajectory::Trajectory* path);
+
   /// Executes a trajectory
   /// \param[in] trajectory Timed trajectory to execute
   std::future<void> executeTrajectory(
