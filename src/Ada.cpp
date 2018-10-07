@@ -296,30 +296,39 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
 {
 
   auto interpolated = dynamic_cast<const Interpolated*>(path);
-  auto interpolator = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>((interpolated->getInterpolator()).get());
+  auto interpolator
+      = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>(
+          (interpolated->getInterpolator()).get());
   auto numWaypoints = interpolated->getNumWaypoints();
-   auto space = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(metaSkeleton.get());
-   // Create a new statespace with appropriate subspaces
+  auto space
+      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
+          metaSkeleton.get());
+  // Create a new statespace with appropriate subspaces
   std::cout << "Creating a new compound space" << std::endl;
   std::vector<aikido::statespace::ConstStateSpacePtr> subspaces;
   for (std::size_t i = 0; i < path->getStateSpace()->getDimension(); ++i)
   {
     subspaces.emplace_back(std::make_shared<aikido::statespace::R1>());
   }
-  auto compoundSpace = std::make_shared<const aikido::statespace::CartesianProduct>(subspaces);
+  auto compoundSpace
+      = std::make_shared<const aikido::statespace::CartesianProduct>(subspaces);
   // Create the corresponding interpolator
   std::cout << "Creating a new interpolator" << std::endl;
-  auto compoundInterpolator = std::make_shared<aikido::statespace::GeodesicInterpolator>(compoundSpace);
+  auto compoundInterpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(
+          compoundSpace);
   // Create the new trajectory
   std::cout << "Creating a new trajectory" << std::endl;
-  auto returnTrajectory = std::make_shared<aikido::trajectory::Interpolated>(space, compoundInterpolator);
-   // Add the first waypoint
+  auto returnTrajectory = std::make_shared<aikido::trajectory::Interpolated>(
+      space, compoundInterpolator);
+  // Add the first waypoint
   std::cout << "Adding the first waypoint" << std::endl;
   Eigen::VectorXd position(mSpace->getDimension());
   auto state = mSpace->createState();
   space->copyState(interpolated->getWaypoint(0), state);
   space->convertStateToPositions(state, position);
-   aikido::statespace::CartesianProduct::ScopedState s1 = compoundSpace->createState();
+  aikido::statespace::CartesianProduct::ScopedState s1
+      = compoundSpace->createState();
   Eigen::VectorXd pos(1);
   std::cout << "Position is: " << position << std::endl;
   for (auto i = 0; i < position.size(); ++i)
@@ -328,24 +337,24 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
     s1.getSubStateHandle<aikido::statespace::R1>(i).setValue(pos);
   }
   returnTrajectory->addWaypoint(0, s1);
-   std::cout << "Adding subsequent points" << std::endl;
+  std::cout << "Adding subsequent points" << std::endl;
   for (std::size_t i = 0; i < numWaypoints - 1; ++i)
   {
     auto currWaypoint = interpolated->getWaypoint(i);
-    auto nextWaypoint = interpolated->getWaypoint(i+1);
+    auto nextWaypoint = interpolated->getWaypoint(i + 1);
     auto diff = interpolator->getTangentVector(currWaypoint, nextWaypoint);
     space->copyState(currWaypoint, state);
     space->convertStateToPositions(state, position);
     position += diff;
-     std::cout << "Position is: " << position << std::endl;
-     for (auto j = 0; j < position.size(); ++j)
+    std::cout << "Position is: " << position << std::endl;
+    for (auto j = 0; j < position.size(); ++j)
     {
       pos << position[j];
       s1.getSubStateHandle<aikido::statespace::R1>(j).setValue(pos);
     }
-    returnTrajectory->addWaypoint(i+1, s1);
+    returnTrajectory->addWaypoint(i + 1, s1);
   }
-   return returnTrajectory;
+  return returnTrajectory;
 }
 
 //==============================================================================
@@ -525,7 +534,14 @@ TrajectoryPtr Ada::planToTSR(
     size_t maxNumTrials)
 {
   return mRobot->planToTSR(
-      space, metaSkeleton, bn, tsr, nominalPosition, collisionFree, timelimit, maxNumTrials);
+      space,
+      metaSkeleton,
+      bn,
+      tsr,
+      nominalPosition,
+      collisionFree,
+      timelimit,
+      maxNumTrials);
 }
 
 //==============================================================================
@@ -728,7 +744,8 @@ bool Ada::switchControllers(
     throw std::runtime_error("SwitchController failed.");
 }
 
-std::shared_ptr<aikido::control::TrajectoryExecutor> Ada::getTrajectoryExecutor()
+std::shared_ptr<aikido::control::TrajectoryExecutor>
+Ada::getTrajectoryExecutor()
 {
   return mTrajectoryExecutor;
 }
@@ -739,39 +756,42 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 {
   double MAX_DEVIATION = 1e-4;
   double TIME_STEP = 0.1;
-  
+
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
   Eigen::VectorXd maxAccelerations(metaSkeleton->getNumDofs());
-  for(std::size_t i=0; i<metaSkeleton->getNumDofs(); i++)
+  for (std::size_t i = 0; i < metaSkeleton->getNumDofs(); i++)
   {
-    maxVelocities(i) = std::min(std::abs(metaSkeleton->getVelocityUpperLimit(i)),
-                                std::abs(metaSkeleton->getVelocityLowerLimit(i)));
-    maxAccelerations(i) = std::min(std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
-                                std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
+    maxVelocities(i) = std::min(
+        std::abs(metaSkeleton->getVelocityUpperLimit(i)),
+        std::abs(metaSkeleton->getVelocityLowerLimit(i)));
+    maxAccelerations(i) = std::min(
+        std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
+        std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
   }
 
   // create waypoints from path
   std::list<Eigen::VectorXd> waypoints;
-  auto interpolated = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
+  auto interpolated
+      = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
   if (interpolated)
   {
-    
+
     Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for(std::size_t i=0; i<interpolated->getNumWaypoints(); i++)
+    for (std::size_t i = 0; i < interpolated->getNumWaypoints(); i++)
     {
       auto tmpState = interpolated->getWaypoint(i);
       interpolated->getStateSpace()->logMap(tmpState, tmpVec);
       waypoints.push_back(tmpVec);
     }
   }
-  
+
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
   {
     auto tmpState = path->getStateSpace()->createState();
     Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for(std::size_t i=0; i<spline->getNumWaypoints(); i++)
+    for (std::size_t i = 0; i < spline->getNumWaypoints(); i++)
     {
       spline->getWaypoint(i, tmpState);
       spline->getStateSpace()->logMap(tmpState, tmpVec);
@@ -779,8 +799,12 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     }
   }
 
-  Trajectory trajectory(Path(waypoints, MAX_DEVIATION), maxVelocities, maxAccelerations, TIME_STEP);
-  if(trajectory.isValid()) 
+  Trajectory trajectory(
+      Path(waypoints, MAX_DEVIATION),
+      maxVelocities,
+      maxAccelerations,
+      TIME_STEP);
+  if (trajectory.isValid())
   {
     std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED" << std::endl;
     // create spline
@@ -792,13 +816,13 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     auto outputTrajectory = make_unique<aikido::trajectory::Spline>(stateSpace);
 
     using CubicSplineProblem = aikido::common::
-      SplineProblem<double, int, 4, Eigen::Dynamic, Eigen::Dynamic>;
+        SplineProblem<double, int, 4, Eigen::Dynamic, Eigen::Dynamic>;
 
     const Eigen::VectorXd zeroPosition = Eigen::VectorXd::Zero(dimension);
     auto currState = stateSpace->createState();
     double currT = 0.0;
     double nextT = TIME_STEP;
-    while(currT<trajectory.getDuration())
+    while (currT < trajectory.getDuration())
     {
       const double segmentDuration = nextT - currT;
       Eigen::VectorXd currentPosition = trajectory.getPosition(currT);
@@ -817,7 +841,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 
       stateSpace->expMap(currentPosition, currState);
       outputTrajectory->addSegment(coefficients, segmentDuration, currState);
-      
+
       currT += TIME_STEP;
       nextT += TIME_STEP;
     }
@@ -828,7 +852,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   {
     std::cout << "TIME-OPTIMAL RETIMING FAILED" << std::endl;
   }
- 
+
   return nullptr;
 }
 

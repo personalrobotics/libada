@@ -294,11 +294,11 @@ public:
   void setVectorFieldPlannerParameters(
       const aikido::robot::util::VectorFieldPlannerParameters& vfParameters);
 
-
   // mRobotSkeleton stores the full skeleton of all components (arm and hand)
   dart::dynamics::SkeletonPtr mRobotSkeleton;
 
   std::shared_ptr<aikido::control::TrajectoryExecutor> getTrajectoryExecutor();
+
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
