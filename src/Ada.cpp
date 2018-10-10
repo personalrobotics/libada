@@ -788,20 +788,57 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   std::list<Eigen::VectorXd> waypoints;
   auto interpolated
       = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
+
+  auto space
+      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
+          metaSkeleton.get());
+
+  Eigen::VectorXd position(metaSkeleton->getNumDofs());
   if (interpolated)
   {
+    auto state = space->createState();
+    
+    auto interpolator
+      = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>(
+          (interpolated->getInterpolator()).get());
 
-    Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for (std::size_t i = 0; i < interpolated->getNumWaypoints(); i++)
+    auto firstPoint = interpolated->getWaypoint(0);
+    space->copyState(firstPoint, state);
+    space->convertStateToPositions(state, position);
+    waypoints.push_back(position);
+
+
+    for (std::size_t i = 0; i < interpolated->getNumWaypoints() - 1; ++i)
     {
-      auto tmpState = interpolated->getWaypoint(i);
-      interpolated->getInterpolator()->getStateSpace()->logMap(tmpState, tmpVec);
-      waypoints.push_back(tmpVec);
-      std::cout << tmpVec.transpose() << std::endl;
+      auto currWaypoint = interpolated->getWaypoint(i);
+      auto nextWaypoint = interpolated->getWaypoint(i + 1);
+      space->copyState(nextWaypoint, state);
+      space->convertStateToPositions(state, position);
+
+      auto diff = interpolator->getTangentVector(currWaypoint, nextWaypoint);
+      space->copyState(currWaypoint, state);
+      space->convertStateToPositions(state, position);
+      position += diff;
+      waypoints.push_back(position);
     }
+
+    std::cout << "The configurations pushed for timing are: " << std::endl;
+    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
+    {
+      std::cout << (*iter).transpose() << std::endl;
+    }
+    std::cin.get();
+
+
+//    Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
+//    for (std::size_t i = 0; i < interpolated->getNumWaypoints(); i++)
+//    {
+//      auto tmpState = interpolated->getWaypoint(i);
+//      interpolated->getInterpolator()->getStateSpace()->logMap(tmpState, tmpVec);
+//      waypoints.push_back(tmpVec);
+//      std::cout << tmpVec.transpose() << std::endl;
+//    }
   }
-  std::cout << "Those were the ones pushed" << std::endl;
-  std::cin.get();
 
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
