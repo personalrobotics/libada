@@ -1,7 +1,7 @@
 ---
 closed:
-    j2n6s200_joint_finger_1: 1.4
-    j2n6s200_joint_finger_2: 1.4
+    j2n6s200_joint_finger_1: 1.6
+    j2n6s200_joint_finger_2: 1.6
 open:
     j2n6s200_joint_finger_1: 0.0
     j2n6s200_joint_finger_2: 0.0
