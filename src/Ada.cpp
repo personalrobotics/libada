@@ -160,9 +160,10 @@ Ada::Ada(
 
   // TODO: Read from robot configuration.
   mRobotSkeleton->setAccelerationLowerLimits(
-      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -2.0));
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -20.0));
   mRobotSkeleton->setAccelerationUpperLimits(
-      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), 2.0));
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), 20.0));
+  std::cout << "Ada init meta acc limits 1: " << mRobotSkeleton->getAccelerationUpperLimits().transpose() << std::endl;
 
   // Define the collision detector and groups
   auto collisionDetector = FCLCollisionDetector::create();
@@ -215,6 +216,7 @@ Ada::Ada(
   }
 
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
+  std::cout << "Ada init meta acc limits 2: " << mRobotSkeleton->getAccelerationUpperLimits().transpose() << std::endl;
 
   mTrajectoryExecutor = createTrajectoryExecutor();
 
@@ -260,6 +262,8 @@ Ada::Ada(
       mTrajectoryExecutor,
       collisionDetector,
       selfCollisionFilter);
+  std::cout << "Ada init robo acc limits: " << getAccelerationLimits().transpose() << std::endl;
+  std::cout << "Ada init meta acc limits: " << mRobotSkeleton->getAccelerationUpperLimits().transpose() << std::endl;
   mRobot->setCRRTPlannerParameters(crrtParams);
 
   // TODO: When the named configurations are set in resources.
@@ -267,6 +271,7 @@ Ada::Ada(
   // auto namedConfigurations = parseYAMLToNamedConfigurations(
   //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
   // mRobot->setNamedConfigurations(namedConfigurations);
+
 
   mThread = make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
@@ -674,9 +679,9 @@ ConcreteManipulatorPtr Ada::configureArm(
   // provides no means of specifying acceleration limits
   // TODO : update acceleration limits by checking Kinova spec.
   arm->setAccelerationLowerLimits(
-      Eigen::VectorXd::Constant(arm->getNumDofs(), -2.0));
+      Eigen::VectorXd::Constant(arm->getNumDofs(), -20.0));
   arm->setAccelerationUpperLimits(
-      Eigen::VectorXd::Constant(arm->getNumDofs(), 2.0));
+      Eigen::VectorXd::Constant(arm->getNumDofs(), 20.0));
 
   auto manipulatorRobot = std::make_shared<ConcreteRobot>(
       armName,
@@ -783,6 +788,8 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
         std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
         std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
   }
+  std::cout << "maxVels: " << maxVelocities.matrix().transpose() << std::endl;
+  std::cout << "maxAccs: " << maxAccelerations.matrix().transpose() << std::endl;
 
   // create waypoints from path
   std::list<Eigen::VectorXd> waypoints;
