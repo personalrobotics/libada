@@ -802,24 +802,22 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>(
           (interpolated->getInterpolator()).get());
 
+    // Push the first point
     auto firstPoint = interpolated->getWaypoint(0);
     space->copyState(firstPoint, state);
     space->convertStateToPositions(state, position);
     waypoints.push_back(position);
 
-
+    Eigen::VectorXd previousPosition(space->getDimension());
     for (std::size_t i = 0; i < interpolated->getNumWaypoints() - 1; ++i)
     {
-      auto currWaypoint = interpolated->getWaypoint(i);
-      auto nextWaypoint = interpolated->getWaypoint(i + 1);
-      space->copyState(nextWaypoint, state);
-      space->convertStateToPositions(state, position);
+        space->convertPositionsToState(position, state);
 
-      auto diff = interpolator->getTangentVector(currWaypoint, nextWaypoint);
-      space->copyState(currWaypoint, state);
-      space->convertStateToPositions(state, position);
-      position += diff;
-      waypoints.push_back(position);
+        auto nextWaypoint = interpolated->getWaypoint(i + 1);
+        auto diff = interpolator->getTangentVector(state, nextWaypoint);
+
+        position += diff;
+        waypoints.push_back(position);
     }
 
     std::cout << "The configurations pushed for timing are: " << std::endl;
