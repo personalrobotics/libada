@@ -77,9 +77,9 @@ using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
 dart::common::Uri defaultAdaUrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
+    "package://ada_description/robots_urdf/ada_with_camera_forque.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
+    "package://ada_description/robots_urdf/ada_with_camera_forque.srdf"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
