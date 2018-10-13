@@ -828,16 +828,6 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       std::cout << (*iter).transpose() << std::endl;
     }
     std::cin.get();
-
-
-//    Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-//    for (std::size_t i = 0; i < interpolated->getNumWaypoints(); i++)
-//    {
-//      auto tmpState = interpolated->getWaypoint(i);
-//      interpolated->getInterpolator()->getStateSpace()->logMap(tmpState, tmpVec);
-//      waypoints.push_back(tmpVec);
-//      std::cout << tmpVec.transpose() << std::endl;
-//    }
   }
 
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
