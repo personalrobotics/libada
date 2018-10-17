@@ -768,7 +768,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path)
 {
-  double MAX_DEVIATION = 1e-5;
+  double MAX_DEVIATION = 1e-3;
   double TIME_STEP = 0.002;
 
   // get max velocities and accelerantions
