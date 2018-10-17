@@ -833,12 +833,41 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   {
     auto tmpState = path->getStateSpace()->createState();
     Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-    for (std::size_t i = 0; i < spline->getNumWaypoints(); i++)
+
+    spline->getWaypoint(0, tmpState);
+    spline->getStateSpace()->logMap(tmpState, tmpVec);
+    waypoints.push_back(tmpVec);
+
+    auto interpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(
+          space);
+
+    for (std::size_t i = 0; i < spline->getNumWaypoints() - 1; ++i)
     {
-      spline->getWaypoint(i, tmpState);
-      spline->getStateSpace()->logMap(tmpState, tmpVec);
+      auto state = spline->getStateSpace()->createState();
+      spline->getStateSpace()->expMap(tmpVec, tmpState);
+      spline->getWaypoint(i + 1, state);
+      auto diff = interpolator->getTangentVector(tmpState, state);
+      for (int citer = 0; citer < diff.size(); ++citer)
+      {
+          if (diff(i) > M_PI)
+          {
+              diff(i) = 2*M_PI - diff(i);
+          }
+          if (diff(i) < -M_PI)
+          {
+              diff(i) = 2*M_PI + diff(i);
+          }
+      }
+      tmpVec += diff;
       waypoints.push_back(tmpVec);
     }
+    std::cout << "The configurations pushed for timing are: " << std::endl;
+    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
+    {
+      std::cout << (*iter).transpose() << std::endl;
+    }
+    std::cin.get();
   }
 
   Trajectory trajectory(
