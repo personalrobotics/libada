@@ -826,7 +826,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 //      std::cout << (*iter).transpose() << std::endl;
 //    }
 //    std::cin.get();
-//  }
+  }
 
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
@@ -868,7 +868,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 //      std::cout << (*iter).transpose() << std::endl;
 //    }
 //    std::cin.get();
-//  }
+  }
 
   Trajectory trajectory(
       Path(waypoints, MAX_DEVIATION),
