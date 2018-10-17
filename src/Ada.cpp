@@ -768,8 +768,8 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path)
 {
-  double MAX_DEVIATION = 1e-5;
-  double TIME_STEP = 0.01;
+  double MAX_DEVIATION = 1e-3;
+  double TIME_STEP = 0.001;
 
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
@@ -783,6 +783,9 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
         std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
         std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
   }
+
+  std::cout << "MAX VEL: " << maxVelocities.transpose() << std::endl;
+  std::cout << "MAX ACCCEL: " << maxAccelerations.transpose() << std::endl;
 
   // create waypoints from path
   std::list<Eigen::VectorXd> waypoints;
@@ -866,7 +869,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       TIME_STEP);
   if (trajectory.isValid())
   {
-    std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED" << std::endl;
+    std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED " << trajectory.getDuration() << std::endl;
     // create spline
     using dart::common::make_unique;
 
