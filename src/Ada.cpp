@@ -797,7 +797,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   if (interpolated)
   {
     auto state = space->createState();
-    
+
     auto interpolator
       = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>(
           (interpolated->getInterpolator()).get());
@@ -820,13 +820,13 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
         waypoints.push_back(position);
     }
 
-    std::cout << "The configurations pushed for timing are: " << std::endl;
-    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
-    {
-      std::cout << (*iter).transpose() << std::endl;
-    }
-    std::cin.get();
-  }
+//    std::cout << "The configurations pushed for timing are: " << std::endl;
+//    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
+//    {
+//      std::cout << (*iter).transpose() << std::endl;
+//    }
+//    std::cin.get();
+//  }
 
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
@@ -862,13 +862,13 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       tmpVec += diff;
       waypoints.push_back(tmpVec);
     }
-    std::cout << "The configurations pushed for timing are: " << std::endl;
-    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
-    {
-      std::cout << (*iter).transpose() << std::endl;
-    }
-    std::cin.get();
-  }
+//    std::cout << "The configurations pushed for timing are: " << std::endl;
+//    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
+//    {
+//      std::cout << (*iter).transpose() << std::endl;
+//    }
+//    std::cin.get();
+//  }
 
   Trajectory trajectory(
       Path(waypoints, MAX_DEVIATION),
