@@ -769,7 +769,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const aikido::trajectory::Trajectory* path)
 {
   double MAX_DEVIATION = 1e-5;
-  double TIME_STEP = 0.01;
+  double TIME_STEP = 0.002;
 
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
