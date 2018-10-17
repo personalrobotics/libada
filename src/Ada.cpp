@@ -826,7 +826,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 //      std::cout << (*iter).transpose() << std::endl;
 //    }
 //    std::cin.get();
-//  }
+  }
 
   auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
   if (spline)
@@ -848,17 +848,6 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
       spline->getStateSpace()->expMap(tmpVec, tmpState);
       spline->getWaypoint(i + 1, state);
       auto diff = interpolator->getTangentVector(tmpState, state);
-      for (int citer = 0; citer < diff.size(); ++citer)
-      {
-          if (diff(i) > M_PI)
-          {
-              diff(i) = 2*M_PI - diff(i);
-          }
-          if (diff(i) < -M_PI)
-          {
-              diff(i) = 2*M_PI + diff(i);
-          }
-      }
       tmpVec += diff;
       waypoints.push_back(tmpVec);
     }
@@ -868,7 +857,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 //      std::cout << (*iter).transpose() << std::endl;
 //    }
 //    std::cin.get();
-//  }
+  }
 
   Trajectory trajectory(
       Path(waypoints, MAX_DEVIATION),
