@@ -299,6 +299,10 @@ public:
 
   std::shared_ptr<aikido::control::TrajectoryExecutor> getTrajectoryExecutor();
 
+  bool switchControllers(
+      const std::vector<std::string>& startControllers,
+      const std::vector<std::string>& stopControllers, std::string trajectoryExecutorToUse = "");
+
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
@@ -317,17 +321,12 @@ private:
   /// Compute acceleration limits from the MetaSkeleton
   Eigen::VectorXd getAccelerationLimits() const;
 
-  std::shared_ptr<aikido::control::TrajectoryExecutor>
-  createTrajectoryExecutor();
-
-  bool switchControllers(
-      const std::vector<std::string>& startControllers,
-      const std::vector<std::string>& stopControllers);
+  std::shared_ptr<aikido::control::TrajectoryExecutor>createTrajectoryExecutor(std::string controllerName);
 
   const bool mSimulation;
 
   // Names of the trajectory executors
-  const std::string mArmTrajectoryExecutorName;
+  std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   double mCollisionResolution;
@@ -355,7 +354,7 @@ private:
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;
   std::unique_ptr<aikido::common::ExecutorThread> mJointStateThread;
 
-  std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
+  std::unordered_map<std::string, std::shared_ptr<aikido::control::TrajectoryExecutor>> mTrajectoryExecutors;
 
   // Name of the first link of the arm in the URDF
   std::string mArmBaseName;
@@ -376,6 +375,8 @@ private:
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
+
+  std::string trajectoryExecutorToUse;
 };
 
 } // namespace ada

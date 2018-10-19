@@ -216,7 +216,9 @@ Ada::Ada(
 
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
 
-  mTrajectoryExecutor = createTrajectoryExecutor();
+  for (std::string trajectoryExecutorName : availableArmTrajectoryExecutorNames) {
+    mTrajectoryExecutors[trajectoryExecutorName] = createTrajectoryExecutor(trajectoryExecutorName);
+  }
 
   // TODO: change Smoother/Timer to not take a testable in constructor.
   auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
@@ -245,7 +247,7 @@ Ada::Ada(
   mArm = configureArm(
       "j2n6s200",
       retriever,
-      mTrajectoryExecutor,
+      mTrajectoryExecutors[mArmTrajectoryExecutorName],
       collisionDetector,
       selfCollisionFilter);
   mArm->setCRRTPlannerParameters(crrtParams);
@@ -257,7 +259,7 @@ Ada::Ada(
       mRobotSkeleton,
       mSimulation,
       cloneRNG(),
-      mTrajectoryExecutor,
+      mTrajectoryExecutors[mArmTrajectoryExecutorName],
       collisionDetector,
       selfCollisionFilter);
   mRobot->setCRRTPlannerParameters(crrtParams);
@@ -375,7 +377,7 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
 //==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
 {
-  return mRobot->executeTrajectory(trajectory);
+  return mTrajectoryExecutors.at(mArmTrajectoryExecutorName)->execute(trajectory);
 }
 
 //==============================================================================
@@ -713,7 +715,7 @@ Eigen::VectorXd Ada::getAccelerationLimits() const
 
 //==============================================================================
 std::shared_ptr<aikido::control::TrajectoryExecutor>
-Ada::createTrajectoryExecutor()
+Ada::createTrajectoryExecutor(std::string controllerName)
 {
   using aikido::control::KinematicSimulationTrajectoryExecutor;
   using aikido::control::ros::RosTrajectoryExecutor;
@@ -726,7 +728,7 @@ Ada::createTrajectoryExecutor()
   else
   {
     std::string serverName
-        = mArmTrajectoryExecutorName + "/follow_joint_trajectory";
+        = controllerName + "/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
@@ -738,8 +740,12 @@ Ada::createTrajectoryExecutor()
 //==============================================================================
 bool Ada::switchControllers(
     const std::vector<std::string>& startControllers,
-    const std::vector<std::string>& stopControllers)
+    const std::vector<std::string>& stopControllers, std::string trajectoryExecutorToUse)
 {
+  if (trajectoryExecutorToUse == "") {
+      trajectoryExecutorToUse = mArmTrajectoryExecutorName;
+  }
+
   if (!mNode)
     throw std::runtime_error("Ros node has not been instantiated.");
 
@@ -752,16 +758,18 @@ bool Ada::switchControllers(
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
-  if (mControllerServiceClient->call(srv) && srv.response.ok)
+  if (mControllerServiceClient->call(srv) && srv.response.ok) {
+    mArmTrajectoryExecutorName = trajectoryExecutorToUse;
     return true;
-  else
+  } else {
     throw std::runtime_error("SwitchController failed.");
+  }
 }
 
 std::shared_ptr<aikido::control::TrajectoryExecutor>
 Ada::getTrajectoryExecutor()
 {
-  return mTrajectoryExecutor;
+  return mTrajectoryExecutors[mArmTrajectoryExecutorName];
 }
 
 std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
@@ -769,7 +777,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const aikido::trajectory::Trajectory* path)
 {
   double MAX_DEVIATION = 1e-3;
-  double TIME_STEP = 0.001;
+  double TIME_STEP = 0.01;
 
   // get max velocities and accelerantions
   Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
