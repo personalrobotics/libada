@@ -29,5 +29,5 @@
   <export>
     <build_type>cmake</build_type>
   </export>
-  <test_depend>pr_ordata</test_depend>
+  <test_depend>pr_assets</test_depend>
 </package>
