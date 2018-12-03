@@ -234,7 +234,7 @@ Ada::Ada(
       20,
       1e-4);
   VectorFieldPlannerParameters vfParams(
-      0.2, 0.001, 0.004, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.1);
+      0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   // Setting arm base and end names
   mArmBaseName = "j2n6s200_link_base";
