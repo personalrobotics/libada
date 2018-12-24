@@ -23,6 +23,7 @@
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -33,9 +34,6 @@
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <srdfdom/model.h>
 #include <urdf/model.h>
-
-#include "external/optimal_trajectory_following/Path.h"
-#include "external/optimal_trajectory_following/Trajectory.h"
 
 namespace ada {
 
@@ -77,9 +75,9 @@ using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
 dart::common::Uri defaultAdaUrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera_forque.urdf"};
+    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera_forque.srdf"};
+    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
@@ -764,6 +762,7 @@ Ada::getTrajectoryExecutor()
   return mTrajectoryExecutor;
 }
 
+//==============================================================================
 std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path)
@@ -784,144 +783,32 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
         std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
   }
 
-  std::cout << "MAX VEL: " << maxVelocities.transpose() << std::endl;
-  std::cout << "MAX ACCCEL: " << maxAccelerations.transpose() << std::endl;
-
-  // create waypoints from path
-  std::list<Eigen::VectorXd> waypoints;
   auto interpolated
       = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
 
-  auto space
-      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
-          metaSkeleton.get());
-
-  Eigen::VectorXd position(metaSkeleton->getNumDofs());
   if (interpolated)
   {
-    auto state = space->createState();
-
-    auto interpolator
-      = dynamic_cast<const aikido::statespace::GeodesicInterpolator*>(
-          (interpolated->getInterpolator()).get());
-
-    // Push the first point
-    auto firstPoint = interpolated->getWaypoint(0);
-    space->copyState(firstPoint, state);
-    space->convertStateToPositions(state, position);
-    waypoints.push_back(position);
-
-    Eigen::VectorXd previousPosition(space->getDimension());
-    for (std::size_t i = 0; i < interpolated->getNumWaypoints() - 1; ++i)
-    {
-        space->convertPositionsToState(position, state);
-
-        auto nextWaypoint = interpolated->getWaypoint(i + 1);
-        auto diff = interpolator->getTangentVector(state, nextWaypoint);
-
-        position += diff;
-        waypoints.push_back(position);
-    }
-
-//    std::cout << "The configurations pushed for timing are: " << std::endl;
-//    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
-//    {
-//      std::cout << (*iter).transpose() << std::endl;
-//    }
-//    std::cin.get();
-  }
-
-  auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
-  if (spline)
-  {
-    auto tmpState = path->getStateSpace()->createState();
-    Eigen::VectorXd tmpVec(metaSkeleton->getNumDofs());
-
-    spline->getWaypoint(0, tmpState);
-    spline->getStateSpace()->logMap(tmpState, tmpVec);
-    waypoints.push_back(tmpVec);
-
-    auto interpolator
-      = std::make_shared<aikido::statespace::GeodesicInterpolator>(
-          space);
-
-    for (std::size_t i = 0; i < spline->getNumWaypoints() - 1; ++i)
-    {
-      auto state = spline->getStateSpace()->createState();
-      spline->getStateSpace()->expMap(tmpVec, tmpState);
-      spline->getWaypoint(i + 1, state);
-      auto diff = interpolator->getTangentVector(tmpState, state);
-      tmpVec += diff;
-      waypoints.push_back(tmpVec);
-    }
-//    std::cout << "The configurations pushed for timing are: " << std::endl;
-//    for (auto iter = waypoints.begin(); iter != waypoints.end(); ++iter)
-//    {
-//      std::cout << (*iter).transpose() << std::endl;
-//    }
-//    std::cin.get();
-  }
-
-  Trajectory trajectory(
-      Path(waypoints, MAX_DEVIATION),
+    return aikido::planner::kunzretimer::computeKunzTiming(
+      *interpolated,
       maxVelocities,
       maxAccelerations,
-      TIME_STEP);
-  if (trajectory.isValid())
-  {
-    std::cout << "TIME-OPTIMAL RETIMING SUCCEEDED " << trajectory.getDuration() << std::endl;
-    // create spline
-    using dart::common::make_unique;
-
-    std::size_t dimension = metaSkeleton->getNumDofs();
-
-    auto stateSpace = path->getStateSpace();
-    std::vector<aikido::statespace::ConstStateSpacePtr> subspaces;
-    for (std::size_t i = 0; i < path->getStateSpace()->getDimension(); ++i)
-    {
-      subspaces.emplace_back(std::make_shared<aikido::statespace::R1>());
-    }
-    auto compoundSpace
-        = std::make_shared<const aikido::statespace::CartesianProduct>(subspaces);
-
-    auto outputTrajectory = make_unique<aikido::trajectory::Spline>(stateSpace);
-
-    using CubicSplineProblem = aikido::common::
-        SplineProblem<double, int, 4, Eigen::Dynamic, Eigen::Dynamic>;
-
-    const Eigen::VectorXd zeroPosition = Eigen::VectorXd::Zero(dimension);
-    auto currState = compoundSpace->createState();
-    double currT = 0.0;
-    double nextT = TIME_STEP;
-    while (currT < trajectory.getDuration())
-    {
-      const double segmentDuration = nextT - currT;
-      Eigen::VectorXd currentPosition = trajectory.getPosition(currT);
-      Eigen::VectorXd nextPosition = trajectory.getPosition(nextT);
-      Eigen::VectorXd currentVelocity = trajectory.getVelocity(currT);
-      Eigen::VectorXd nextVelocity = trajectory.getVelocity(nextT);
-
-      CubicSplineProblem problem(
-          Eigen::Vector2d{0., segmentDuration}, 4, dimension);
-      problem.addConstantConstraint(1, 0, zeroPosition);
-      problem.addConstantConstraint(0, 1, currentVelocity);
-      problem.addConstantConstraint(1, 0, nextPosition - currentPosition);
-      problem.addConstantConstraint(1, 1, nextVelocity);
-      const auto solution = problem.fit();
-      const auto coefficients = solution.getCoefficients().front();
-
-      compoundSpace->expMap(currentPosition, currState);
-      outputTrajectory->addSegment(coefficients, segmentDuration, currState);
-
-      currT += TIME_STEP;
-      nextT += TIME_STEP;
-    }
-
-    return outputTrajectory;
+      MAX_DEVIATION,
+      TIME_STEP
+    );
   }
-  else
+
+  auto spline
+    = dynamic_cast<const aikido::trajectory::Spline*>(path);
+
+  if (spline)
   {
-    std::cout << "TIME-OPTIMAL RETIMING FAILED" << std::endl;
+    return aikido::planner::kunzretimer::computeKunzTiming(
+      *spline,
+      maxVelocities,
+      maxAccelerations,
+      MAX_DEVIATION,
+      TIME_STEP
+    );
   }
 
   return nullptr;

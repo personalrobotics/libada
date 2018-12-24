@@ -76,8 +76,6 @@ set(sources
   src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
   src/AdaHand.cpp
   src/Ada.cpp
-  src/external/optimal_trajectory_following/Path.cpp
-  src/external/optimal_trajectory_following/Trajectory.cpp
 )
 
 
