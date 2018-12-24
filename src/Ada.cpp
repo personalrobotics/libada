@@ -553,7 +553,7 @@ TrajectoryPtr Ada::planToTSR(
       metaSkeleton,
       bn,
       tsr,
-      nominalPosition,
+      //nominalPosition, TODO: [GL] do want this in aikido?
       collisionFree,
       timelimit,
       maxNumTrials);
