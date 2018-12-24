@@ -294,10 +294,8 @@ public:
   void setVectorFieldPlannerParameters(
       const aikido::robot::util::VectorFieldPlannerParameters& vfParameters);
 
-  // mRobotSkeleton stores the full skeleton of all components (arm and hand)
-  dart::dynamics::SkeletonPtr mRobotSkeleton;
-
-  std::shared_ptr<aikido::control::TrajectoryExecutor> getTrajectoryExecutor();
+  /// \return TrajectoryExecutor.
+  aikido::control::TrajectoryExecutorPtr getTrajectoryExecutor();
 
 private:
   // Named Configurations are read from a YAML file
@@ -348,6 +346,9 @@ private:
 
   // mRobot is a wrapper around the meta skeleton
   aikido::robot::ConcreteRobotPtr mRobot;
+
+  // mRobotSkeleton stores the full skeleton of all components (arm and hand)
+  dart::dynamics::SkeletonPtr mRobotSkeleton;
 
   std::unique_ptr<::ros::NodeHandle> mNode;
 

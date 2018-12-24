@@ -756,8 +756,8 @@ bool Ada::switchControllers(
     throw std::runtime_error("SwitchController failed.");
 }
 
-std::shared_ptr<aikido::control::TrajectoryExecutor>
-Ada::getTrajectoryExecutor()
+//==============================================================================
+aikido::control::TrajectoryExecutorPtr Ada::getTrajectoryExecutor()
 {
   return mTrajectoryExecutor;
 }
