@@ -78,7 +78,6 @@ set(sources
   src/Ada.cpp
 )
 
-
 add_library(libada SHARED ${sources})
 
 target_include_directories(libada PUBLIC
