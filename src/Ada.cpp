@@ -1,4 +1,5 @@
 #include "libada/Ada.hpp"
+#include "libada/util.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -20,10 +21,10 @@
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/PlanningResult.hpp>
 #include <aikido/planner/SnapPlanner.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
-#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -249,6 +250,8 @@ Ada::Ada(
   mArm->setCRRTPlannerParameters(crrtParams);
   mArm->setVectorFieldPlannerParameters(vfParams);
 
+  mArmSpace = mArm->getStateSpace();
+
   // Set up the concrete robot from the meta skeleton
   mRobot = std::make_shared<ConcreteRobot>(
       "adaRobot",
@@ -339,7 +342,6 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
     s1.getSubStateHandle<aikido::statespace::R1>(i).setValue(pos);
   }
   returnTrajectory->addWaypoint(0, s1);
-
 
   for (std::size_t i = 0; i < numWaypoints - 1; ++i)
   {
@@ -544,7 +546,7 @@ TrajectoryPtr Ada::planToTSR(
       metaSkeleton,
       bn,
       tsr,
-      //nominalPosition, TODO: [GL] do want this in aikido?
+      // nominalPosition, TODO: [GL] do want this in aikido?
       collisionFree,
       timelimit,
       maxNumTrials);
@@ -782,29 +784,255 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
   if (interpolated)
   {
     return aikido::planner::kunzretimer::computeKunzTiming(
-      *interpolated,
-      maxVelocities,
-      maxAccelerations,
-      MAX_DEVIATION,
-      TIME_STEP
-    );
+        *interpolated,
+        maxVelocities,
+        maxAccelerations,
+        MAX_DEVIATION,
+        TIME_STEP);
   }
 
-  auto spline
-    = dynamic_cast<const aikido::trajectory::Spline*>(path);
+  auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
 
   if (spline)
   {
     return aikido::planner::kunzretimer::computeKunzTiming(
-      *spline,
-      maxVelocities,
-      maxAccelerations,
-      MAX_DEVIATION,
-      TIME_STEP
-    );
+        *spline, maxVelocities, maxAccelerations, MAX_DEVIATION, TIME_STEP);
   }
 
   return nullptr;
 }
 
-} // adamSmootherFeasibilityCheckResolution
+//==============================================================================
+aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
+    const aikido::constraint::dart::TSR& tsr,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::VectorXd& nominalConfiguration)
+{
+  auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
+
+  return planToTSR(
+      mArmSpace,
+      mArm->getMetaSkeleton(),
+      mHand->getEndEffectorBodyNode(),
+      goalTSR,
+      nominalConfiguration,
+      collisionFree,
+      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
+      util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
+}
+
+//==============================================================================
+bool Ada::moveArmToTSR(
+    const aikido::constraint::dart::TSR& tsr,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const std::vector<double>& velocityLimits,
+    const Eigen::VectorXd& nominalConfiguration,
+    TrajectoryPostprocessType postprocessType)
+{
+  auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
+
+  auto trajectory = planToTSR(
+      mArmSpace,
+      mArm->getMetaSkeleton(),
+      mHand->getEndEffectorBodyNode(),
+      goalTSR,
+      nominalConfiguration,
+      collisionFree,
+      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
+      util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
+
+  return moveArmOnTrajectory(
+      trajectory, collisionFree, postprocessType, velocityLimits);
+}
+
+//==============================================================================
+bool Ada::moveArmToEndEffectorOffset(
+    const Eigen::Vector3d& direction,
+    double length,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+{
+  return moveArmOnTrajectory(
+      planArmToEndEffectorOffset(direction, length, collisionFree),
+      collisionFree,
+      KUNZ);
+}
+
+//==============================================================================
+aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
+    const Eigen::Vector3d& direction,
+    double length,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+{
+  Eigen::IOFormat CommaInitFmt(
+      Eigen::StreamPrecision,
+      Eigen::DontAlignCols,
+      ", ",
+      ", ",
+      "",
+      "",
+      " << ",
+      ";");
+  auto defaultPose = mArm->getMetaSkeleton()->getPositions();
+  ROS_INFO_STREAM("Current configuration" << defaultPose.format(CommaInitFmt));
+  ROS_INFO_STREAM(
+      "Plan to end effector offset state: "
+      << mArm->getMetaSkeleton()->getPositions().matrix().transpose());
+  ROS_INFO_STREAM(
+      "Plan to end effector offset direction: "
+      << direction.matrix().transpose()
+      << ",  length: "
+      << length);
+
+  auto skeleton = mArm->getMetaSkeleton();
+
+  std::vector<int> indices{0, 3, 4, 5};
+  std::vector<double> tempLower{-12.56, -12.56, -12.56, -12.56};
+  std::vector<double> tempUpper{12.56, 12.56, 12.56, 12.56};
+  auto llimits = skeleton->getPositionLowerLimits();
+  auto ulimits = skeleton->getPositionUpperLimits();
+  for (int i = 0; i < indices.size(); ++i)
+  {
+    llimits(indices[i]) = tempLower[i];
+    ulimits(indices[i]) = tempUpper[i];
+  }
+  skeleton->setPositionLowerLimits(llimits);
+  skeleton->setPositionUpperLimits(ulimits);
+
+  auto space
+      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
+          skeleton.get());
+
+  auto trajectory = planToEndEffectorOffset(
+      space,
+      skeleton,
+      mHand->getEndEffectorBodyNode(),
+      collisionFree,
+      direction,
+      length,
+      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
+      util::getRosParam<double>(
+          "/planning/endEffectorOffset/positionTolerance", *mNode.get()),
+      util::getRosParam<double>(
+          "/planning/endEffectorOffset/angularTolerance", *mNode.get()));
+
+  for (std::size_t i = 0; i < indices.size(); ++i)
+  {
+    llimits(indices[i]) = -dart::math::constantsd::inf();
+    ulimits(indices[i]) = dart::math::constantsd::inf();
+  }
+  skeleton->setPositionLowerLimits(llimits);
+  skeleton->setPositionUpperLimits(ulimits);
+
+  return trajectory;
+}
+
+//==============================================================================
+bool Ada::moveArmToConfiguration(
+    const Eigen::Vector6d& configuration,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+{
+  auto trajectory = planToConfiguration(
+      mArmSpace,
+      mArm->getMetaSkeleton(),
+      configuration,
+      collisionFree,
+      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()));
+
+  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ);
+}
+
+//==============================================================================
+bool Ada::moveArmOnTrajectory(
+    aikido::trajectory::TrajectoryPtr trajectory,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    TrajectoryPostprocessType postprocessType,
+    std::vector<double> smoothVelocityLimits)
+{
+  if (!trajectory)
+  {
+    throw std::runtime_error("Trajectory execution failed: Empty trajectory.");
+  }
+
+  std::vector<aikido::constraint::ConstTestablePtr> constraints;
+
+  if (collisionFree)
+  {
+    constraints.push_back(collisionFree);
+  }
+  auto testable = std::make_shared<aikido::constraint::TestableIntersection>(
+      mArmSpace, constraints);
+
+  aikido::trajectory::TrajectoryPtr timedTrajectory;
+
+  auto armSkeleton = mArm->getMetaSkeleton();
+
+  switch (postprocessType)
+  {
+    case RETIME:
+      timedTrajectory = retimePath(armSkeleton, trajectory.get());
+      break;
+
+    case SMOOTH:
+      if (smoothVelocityLimits.size() == 6)
+      {
+        Eigen::Vector6d velocityLimits;
+        velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
+            smoothVelocityLimits[2], smoothVelocityLimits[3],
+            smoothVelocityLimits[4], smoothVelocityLimits[5];
+        Eigen::VectorXd previousLowerLimits
+            = mArm->getMetaSkeleton()->getVelocityLowerLimits();
+        Eigen::VectorXd previousUpperLimits
+            = mArm->getMetaSkeleton()->getVelocityUpperLimits();
+        armSkeleton->setVelocityLowerLimits(-velocityLimits);
+        armSkeleton->setVelocityUpperLimits(velocityLimits);
+        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
+        armSkeleton->setVelocityLowerLimits(previousLowerLimits);
+        armSkeleton->setVelocityUpperLimits(previousUpperLimits);
+      }
+      else
+      {
+        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
+      }
+      break;
+
+    case KUNZ:
+      timedTrajectory = retimeTimeOptimalPath(armSkeleton, trajectory.get());
+
+      if (!timedTrajectory)
+      {
+        throw std::runtime_error("Retiming failed");
+        // If using time-optimal retining failed, back to parabolic timing
+        timedTrajectory = retimePath(armSkeleton, trajectory.get());
+      }
+      break;
+
+    default:
+      throw std::invalid_argument("Unexpected trajectory post processing type");
+  }
+
+  auto future = executeTrajectory(std::move(timedTrajectory));
+  try
+  {
+    future.get();
+  }
+  catch (const std::exception& e)
+  {
+    ROS_INFO_STREAM("Trajectory execution failed: " << e.what());
+    return false;
+  }
+  return true;
+}
+
+//==============================================================================
+void Ada::openHand()
+{
+  mHand->executePreshape("open").wait();
+}
+
+//==============================================================================
+void Ada::closeHand()
+{
+  mHand->executePreshape("closed").wait();
+}
+
+} // namespace ada

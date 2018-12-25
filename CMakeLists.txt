@@ -25,7 +25,7 @@ endif()
 
 include(ExternalProject)
 
-find_package(DART 6.3 REQUIRED
+find_package(DART 6.6.0 REQUIRED
   OPTIONAL_COMPONENTS utils
 )
 
@@ -76,6 +76,7 @@ set(sources
   src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
   src/AdaHand.cpp
   src/Ada.cpp
+  src/util.cpp
 )
 
 add_library(libada SHARED ${sources})

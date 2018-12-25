@@ -36,6 +36,13 @@ extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
+enum TrajectoryPostprocessType
+{
+  RETIME,
+  SMOOTH,
+  KUNZ
+};
+
 class Ada final : public aikido::robot::Robot
 {
 public:
@@ -297,6 +304,57 @@ public:
   /// \return TrajectoryExecutor.
   aikido::control::TrajectoryExecutorPtr getTrajectoryExecutor();
 
+  // Convenient functions for moving the arm
+  aikido::trajectory::TrajectoryPtr planArmToTSR(
+      const aikido::constraint::dart::TSR& tsr,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0));
+
+  /// Moves the end effector to a TSR.
+  /// Throws a runtime_error if no trajectory could be found.
+  /// \return True if the trajectory was completed successfully.
+  bool moveArmToTSR(
+      const aikido::constraint::dart::TSR& tsr,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      const std::vector<double>& velocityLimits = std::vector<double>(),
+      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
+      TrajectoryPostprocessType postprocessType = KUNZ);
+
+  /// Moves the end effector along a certain position offset.
+  /// Throws a runtime_error if no trajectory could be found.
+  /// \return True if the trajectory was completed successfully.
+  bool moveArmToEndEffectorOffset(
+      const Eigen::Vector3d& direction,
+      double length,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+
+  aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
+      const Eigen::Vector3d& direction,
+      double length,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+
+  /// Moves the robot to a configuration.
+  /// Throws a runtime_error if no trajectory could be found.
+  /// \return True if the trajectory was completed successfully.
+  bool moveArmToConfiguration(
+      const Eigen::Vector6d& configuration,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+
+  /// Postprocesses and executes a trjectory.
+  /// Throws runtime_error if the trajectory is empty.
+  /// \return True if the trajectory was completed successfully.
+  bool moveArmOnTrajectory(
+      aikido::trajectory::TrajectoryPtr trajectory,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      TrajectoryPostprocessType postprocessType = SMOOTH,
+      std::vector<double> smoothVelocityLimits = std::vector<double>());
+
+  /// Opens Ada's hand
+  void openHand();
+
+  /// Closes Ada's hand
+  void closeHand();
+
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
@@ -371,6 +429,7 @@ private:
 
   // The robot arm
   aikido::robot::ConcreteManipulatorPtr mArm;
+  aikido::statespace::dart::MetaSkeletonStateSpacePtr mArmSpace;
 
   // The hand
   AdaHandPtr mHand;
