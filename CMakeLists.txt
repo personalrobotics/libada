@@ -114,6 +114,33 @@ target_link_libraries(libada
 )
 
 #================================================================================
+# Testing
+#
+
+set_property(GLOBAL PROPERTY LIBADA_TESTS)
+function(libada_add_test target_name)
+  add_executable("${target_name}" ${ARGN})
+  add_test("${target_name}" "${target_name}")
+
+  target_link_libraries("${target_name}" gtest gtest_main)
+
+  set_property(GLOBAL APPEND PROPERTY LIBADA_TESTS "${target_name}")
+endfunction()
+
+option(LIBADA_BUILD_TESTS "Build libada unit tests" ON)
+if(LIBADA_BUILD_TESTS)
+  enable_testing()
+  include(cmake/External_GTest.cmake)
+  include_directories(${GTEST_INCLUDE_DIRS})
+  add_subdirectory(tests)
+endif()
+
+# Targets to mimic a Catkin package.
+get_property(all_tests GLOBAL PROPERTY LIBADA_TESTS)
+add_custom_target(tests DEPENDS ${all_tests})
+add_custom_target(run_tests COMMAND "${CMAKE_CTEST_COMMAND}")
+
+#================================================================================
 # Installation
 #
 

@@ -305,7 +305,6 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
           metaSkeleton.get());
 
   // Create a new statespace with appropriate subspaces
-  std::cout << "Creating a new compound space" << std::endl;
   std::vector<aikido::statespace::ConstStateSpacePtr> subspaces;
   for (std::size_t i = 0; i < path->getStateSpace()->getDimension(); ++i)
   {
@@ -316,18 +315,15 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
       = std::make_shared<const aikido::statespace::CartesianProduct>(subspaces);
 
   // Create the corresponding interpolator
-  std::cout << "Creating a new interpolator" << std::endl;
   auto compoundInterpolator
       = std::make_shared<aikido::statespace::GeodesicInterpolator>(
           compoundSpace);
 
   // Create the new trajectory
-  std::cout << "Creating a new trajectory" << std::endl;
   auto returnTrajectory = std::make_shared<aikido::trajectory::Interpolated>(
       space, compoundInterpolator);
 
   // Add the first waypoint
-  std::cout << "Adding the first waypoint" << std::endl;
   Eigen::VectorXd position(mSpace->getDimension());
   auto state = mSpace->createState();
   space->copyState(interpolated->getWaypoint(0), state);
@@ -351,14 +347,11 @@ aikido::trajectory::TrajectoryPtr Ada::convertTrajectory(
     auto nextWaypoint = interpolated->getWaypoint(i + 1);
     space->copyState(nextWaypoint, state);
     space->convertStateToPositions(state, position);
-    std::cout << "Old position is: " << position.transpose() << std::endl;
-
 
     auto diff = interpolator->getTangentVector(currWaypoint, nextWaypoint);
     space->copyState(currWaypoint, state);
     space->convertStateToPositions(state, position);
     position += diff;
-    std::cout << "New position is: " << position.transpose() << std::endl;
     for (auto j = 0; j < position.size(); ++j)
     {
       pos << position[j];
