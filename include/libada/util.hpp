@@ -1,12 +1,11 @@
 #ifndef LIBADA_UTIL_HPP_
 #define LIBADA_UTIL_HPP_
 
-#include <Eigen/Dense>
-#include <ros/ros.h>
-
 #include <aikido/trajectory/Interpolated.hpp>
 #include <aikido/trajectory/Spline.hpp>
 #include <aikido/trajectory/Trajectory.hpp>
+#include <Eigen/Dense>
+#include <ros/ros.h>
 
 namespace ada {
 namespace util {

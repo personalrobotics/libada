@@ -7,7 +7,6 @@
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <aikido/trajectory/Interpolated.hpp>
 #include <aikido/trajectory/util.hpp>
-
 #include <dart/common/StlHelpers.hpp>
 
 namespace ada {
@@ -94,6 +93,11 @@ aikido::trajectory::UniqueSplinePtr posePostprocessingForSO2(
     waypoints.push_back(tmpVec);
   }
 
+  // TODO (avk): this will convert everything back to the 
+  // original representation making this function moot.
+  // since we want all the timing etc. to happen in the 
+  // R-space, create a new statespace and use the relevant
+  // space and interpolator. (see the logic in retime/aikido).
   auto interpolated = std::make_shared<aikido::trajectory::Interpolated>(
       spline.getStateSpace(), interpolator);
 

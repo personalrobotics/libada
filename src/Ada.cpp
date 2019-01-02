@@ -83,14 +83,15 @@ dart::common::Uri defaultAdaSrdfUri{
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 
-// arm trajectory controllers that are meant to be used by ada.
-// needs to be consistent with the configurations in ada_launch
+// Arm trajectory controllers that are meant to be used by ADA.
+// Needs to be consistent with the configurations in ada_launch.
 const std::vector<std::string> availableArmTrajectoryExecutorNames{
     "trajectory_controller",
     "rewd_trajectory_controller",
     "move_until_touch_topic_controller"};
 
 namespace {
+
 BodyNodePtr getBodyNodeOrThrow(
     const SkeletonPtr& skeleton, const std::string& bodyNodeName)
 {
@@ -536,7 +537,6 @@ TrajectoryPtr Ada::planToTSR(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const dart::dynamics::BodyNodePtr& bn,
     const TSRPtr& tsr,
-    const Eigen::VectorXd& nominalPosition,
     const CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials)
@@ -546,7 +546,6 @@ TrajectoryPtr Ada::planToTSR(
       metaSkeleton,
       bn,
       tsr,
-      // nominalPosition, TODO: [GL] do want this in aikido?
       collisionFree,
       timelimit,
       maxNumTrials);
@@ -805,8 +804,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
 //==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    const Eigen::VectorXd& nominalConfiguration)
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
 {
   auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
 
@@ -815,7 +813,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
       mArm->getMetaSkeleton(),
       mHand->getEndEffectorBodyNode(),
       goalTSR,
-      nominalConfiguration,
       collisionFree,
       util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
       util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
@@ -826,7 +823,6 @@ bool Ada::moveArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     const std::vector<double>& velocityLimits,
-    const Eigen::VectorXd& nominalConfiguration,
     TrajectoryPostprocessType postprocessType)
 {
   auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
@@ -836,7 +832,6 @@ bool Ada::moveArmToTSR(
       mArm->getMetaSkeleton(),
       mHand->getEndEffectorBodyNode(),
       goalTSR,
-      nominalConfiguration,
       collisionFree,
       util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
       util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
