@@ -38,11 +38,12 @@ Eigen::Isometry3d createIsometry(
 }
 
 //==============================================================================
-Eigen::Isometry3d createIsometry(std::vector<double> vec)
+Eigen::Isometry3d createIsometry(const std::vector<double>& vec)
 {
   if (vec.size() < 6)
   {
-    throw std::runtime_error("Vector size to small: " + vec.size());
+    throw std::runtime_error(
+      "Expected size of vector is 6, received " + vec.size());
   }
   return createIsometry(vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
 }
