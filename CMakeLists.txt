@@ -26,7 +26,7 @@ endif()
 include(ExternalProject)
 
 find_package(DART 6.6.0 REQUIRED
-  OPTIONAL_COMPONENTS utils
+  COMPONENTS utils utils-urdf optimizer-nlopt
 )
 
 find_package(aikido 0.0.2 REQUIRED
