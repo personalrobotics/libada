@@ -7,3 +7,5 @@
 # Executables
 *.out
 
+# Build directory
+build/
