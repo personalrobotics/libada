@@ -5,6 +5,7 @@
 #include <future>
 #include <memory>
 
+#include <Eigen/Core>
 #include <actionlib/client/simple_action_client.h>
 #include <aikido/common/ExecutorThread.hpp>
 #include <aikido/common/RNG.hpp>
@@ -25,7 +26,6 @@
 #include <aikido/trajectory/Trajectory.hpp>
 #include <boost/optional.hpp>
 #include <dart/dart.hpp>
-#include <Eigen/Core>
 #include <ros/ros.h>
 
 #include "libada/AdaHand.hpp"
@@ -96,9 +96,10 @@ public:
 
   /// \copydoc Robot::retimePathWithKunzTimer
   std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunzTimer(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path,
-    double maxDeviation, double timestep);
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const aikido::trajectory::Trajectory* path,
+      double maxDeviation,
+      double timestep);
 
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.
@@ -291,7 +292,6 @@ public:
 
   /// \return TrajectoryExecutor.
   aikido::control::TrajectoryExecutorPtr getTrajectoryExecutor();
-
 
   // TODO (avk): Should the planning methods be private
   // and only expose moveTo methods?

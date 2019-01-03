@@ -42,7 +42,7 @@ Eigen::Isometry3d createIsometry(const std::vector<double>& vec)
   if (vec.size() < 6)
   {
     throw std::runtime_error(
-      "Expected size of vector is 6, received " + vec.size());
+        "Expected size of vector is 6, received " + vec.size());
   }
   return createIsometry(vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
 }
@@ -93,9 +93,9 @@ aikido::trajectory::UniqueSplinePtr posePostprocessingForSO2(
     waypoints.push_back(tmpVec);
   }
 
-  // TODO (avk): this will convert everything back to the 
+  // TODO (avk): this will convert everything back to the
   // original representation making this function moot.
-  // since we want all the timing etc. to happen in the 
+  // since we want all the timing etc. to happen in the
   // R-space, create a new statespace and use the relevant
   // space and interpolator. (see the logic in retime/aikido).
   auto interpolated = std::make_shared<aikido::trajectory::Interpolated>(

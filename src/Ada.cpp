@@ -295,9 +295,11 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
 std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunzTimer(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path,
-    double maxDeviation, double timestep)
+    double maxDeviation,
+    double timestep)
 {
-  return mRobot->retimePathWithKunzTimer(metaSkeleton, path, maxDeviation, timestep);
+  return mRobot->retimePathWithKunzTimer(
+      metaSkeleton, path, maxDeviation, timestep);
 }
 
 //==============================================================================
@@ -476,13 +478,7 @@ TrajectoryPtr Ada::planToTSR(
     size_t maxNumTrials)
 {
   return mRobot->planToTSR(
-      space,
-      metaSkeleton,
-      bn,
-      tsr,
-      collisionFree,
-      timelimit,
-      maxNumTrials);
+      space, metaSkeleton, bn, tsr, collisionFree, timelimit, maxNumTrials);
 }
 
 //==============================================================================
@@ -884,7 +880,8 @@ bool Ada::moveArmOnTrajectory(
       double MAX_DEVIATION = 1e-3;
       double TIME_STEP = 0.001;
 
-      timedTrajectory = retimePathWithKunzTimer(armSkeleton, trajectory.get(), MAX_DEVIATION, TIME_STEP);
+      timedTrajectory = retimePathWithKunzTimer(
+          armSkeleton, trajectory.get(), MAX_DEVIATION, TIME_STEP);
 
       if (!timedTrajectory)
       {
