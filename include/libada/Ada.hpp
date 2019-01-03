@@ -94,10 +94,11 @@ public:
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path) override;
 
-  /// TODO (avk): Docstring / is this in aikido?
-  std::unique_ptr<aikido::trajectory::Spline> retimeTimeOptimalPath(
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path);
+  /// \copydoc Robot::retimePathWithKunzTimer
+  std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunzTimer(
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const aikido::trajectory::Trajectory* path,
+    double maxDeviation, double timestep);
 
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.

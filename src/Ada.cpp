@@ -292,6 +292,15 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
 }
 
 //==============================================================================
+std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunzTimer(
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const aikido::trajectory::Trajectory* path,
+    double maxDeviation, double timestep)
+{
+  return mRobot->retimePathWithKunzTimer(metaSkeleton, path, maxDeviation, timestep);
+}
+
+//==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
 {
   return mRobot->executeTrajectory(trajectory);
@@ -682,51 +691,6 @@ aikido::control::TrajectoryExecutorPtr Ada::getTrajectoryExecutor()
 }
 
 //==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimeTimeOptimalPath(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path)
-{
-  double MAX_DEVIATION = 1e-3;
-  double TIME_STEP = 0.001;
-
-  // get max velocities and accelerantions
-  Eigen::VectorXd maxVelocities(metaSkeleton->getNumDofs());
-  Eigen::VectorXd maxAccelerations(metaSkeleton->getNumDofs());
-  for (std::size_t i = 0; i < metaSkeleton->getNumDofs(); i++)
-  {
-    maxVelocities(i) = std::min(
-        std::abs(metaSkeleton->getVelocityUpperLimit(i)),
-        std::abs(metaSkeleton->getVelocityLowerLimit(i)));
-    maxAccelerations(i) = std::min(
-        std::abs(metaSkeleton->getAccelerationUpperLimit(i)),
-        std::abs(metaSkeleton->getAccelerationLowerLimit(i)));
-  }
-
-  auto interpolated
-      = dynamic_cast<const aikido::trajectory::Interpolated*>(path);
-
-  if (interpolated)
-  {
-    return aikido::planner::kunzretimer::computeKunzTiming(
-        *interpolated,
-        maxVelocities,
-        maxAccelerations,
-        MAX_DEVIATION,
-        TIME_STEP);
-  }
-
-  auto spline = dynamic_cast<const aikido::trajectory::Spline*>(path);
-
-  if (spline)
-  {
-    return aikido::planner::kunzretimer::computeKunzTiming(
-        *spline, maxVelocities, maxAccelerations, MAX_DEVIATION, TIME_STEP);
-  }
-
-  return nullptr;
-}
-
-//==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree)
@@ -916,7 +880,11 @@ bool Ada::moveArmOnTrajectory(
       break;
 
     case KUNZ:
-      timedTrajectory = retimeTimeOptimalPath(armSkeleton, trajectory.get());
+    {
+      double MAX_DEVIATION = 1e-3;
+      double TIME_STEP = 0.001;
+
+      timedTrajectory = retimePathWithKunzTimer(armSkeleton, trajectory.get(), MAX_DEVIATION, TIME_STEP);
 
       if (!timedTrajectory)
       {
@@ -925,6 +893,7 @@ bool Ada::moveArmOnTrajectory(
         timedTrajectory = retimePath(armSkeleton, trajectory.get());
       }
       break;
+    }
 
     default:
       throw std::invalid_argument("Unexpected trajectory post processing type");
