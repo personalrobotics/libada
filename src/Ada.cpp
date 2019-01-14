@@ -90,6 +90,15 @@ const std::vector<std::string> availableArmTrajectoryExecutorNames{
     "rewd_trajectory_controller",
     "move_until_touch_topic_controller"};
 
+Eigen::IOFormat CommaInitFmt(
+    Eigen::StreamPrecision,
+    Eigen::DontAlignCols,
+    ", ",
+    ", ",
+    "",
+    "",
+    " << ",
+    ";");
 namespace {
 
 BodyNodePtr getBodyNodeOrThrow(
@@ -475,10 +484,18 @@ TrajectoryPtr Ada::planToTSR(
     const TSRPtr& tsr,
     const CollisionFreePtr& collisionFree,
     double timelimit,
-    size_t maxNumTrials)
+    size_t maxNumTrials,
+    const Eigen::VectorXd& nominalPosition)
 {
   return mRobot->planToTSR(
-      space, metaSkeleton, bn, tsr, collisionFree, timelimit, maxNumTrials);
+      space,
+      metaSkeleton,
+      bn,
+      tsr,
+      collisionFree,
+      timelimit,
+      maxNumTrials,
+      nominalPosition);
 }
 
 //==============================================================================
@@ -689,7 +706,9 @@ aikido::control::TrajectoryExecutorPtr Ada::getTrajectoryExecutor()
 //==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    size_t maxNumTrials)
 {
   auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
 
@@ -699,14 +718,18 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
       mHand->getEndEffectorBodyNode(),
       goalTSR,
       collisionFree,
-      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
-      util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
+      timelimit,
+      maxNumTrials
+      );
 }
 
 //==============================================================================
 bool Ada::moveArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    size_t maxNumTrials,
+    const Eigen::VectorXd& nominalConfiguration,
     const std::vector<double>& velocityLimits,
     TrajectoryPostprocessType postprocessType)
 {
@@ -718,8 +741,12 @@ bool Ada::moveArmToTSR(
       mHand->getEndEffectorBodyNode(),
       goalTSR,
       collisionFree,
-      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
-      util::getRosParam<int>("/planning/maxNumberOfTrials", *mNode.get()));
+      timelimit,
+      maxNumTrials,
+      nominalConfiguration);
+
+  if (!trajectory)
+    return false;
 
   return moveArmOnTrajectory(
       trajectory, collisionFree, postprocessType, velocityLimits);
@@ -729,29 +756,31 @@ bool Ada::moveArmToTSR(
 bool Ada::moveArmToEndEffectorOffset(
     const Eigen::Vector3d& direction,
     double length,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance,
+    const std::vector<double>& velocityLimits)
 {
   return moveArmOnTrajectory(
-      planArmToEndEffectorOffset(direction, length, collisionFree),
+      planArmToEndEffectorOffset(
+        direction, length, collisionFree,
+        timelimit, positionTolerance, angularTolerance, velocityLimits),
       collisionFree,
-      KUNZ);
+      KUNZ,
+      velocityLimits);
 }
 
 //==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     const Eigen::Vector3d& direction,
     double length,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance,
+    const std::vector<double>& velocityLimits)
 {
-  Eigen::IOFormat CommaInitFmt(
-      Eigen::StreamPrecision,
-      Eigen::DontAlignCols,
-      ", ",
-      ", ",
-      "",
-      "",
-      " << ",
-      ";");
   auto defaultPose = mArm->getMetaSkeleton()->getPositions();
   ROS_INFO_STREAM("Current configuration" << defaultPose.format(CommaInitFmt));
   ROS_INFO_STREAM(
@@ -778,22 +807,16 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
   skeleton->setPositionLowerLimits(llimits);
   skeleton->setPositionUpperLimits(ulimits);
 
-  auto space
-      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
-          skeleton.get());
-
   auto trajectory = planToEndEffectorOffset(
-      space,
+      mArm->getStateSpace(),
       skeleton,
       mHand->getEndEffectorBodyNode(),
       collisionFree,
       direction,
       length,
-      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()),
-      util::getRosParam<double>(
-          "/planning/endEffectorOffset/positionTolerance", *mNode.get()),
-      util::getRosParam<double>(
-          "/planning/endEffectorOffset/angularTolerance", *mNode.get()));
+      timelimit,
+      positionTolerance,
+      angularTolerance);
 
   for (std::size_t i = 0; i < indices.size(); ++i)
   {
@@ -809,14 +832,15 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 //==============================================================================
 bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree)
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit)
 {
   auto trajectory = planToConfiguration(
       mArmSpace,
       mArm->getMetaSkeleton(),
       configuration,
       collisionFree,
-      util::getRosParam<double>("/planning/timeoutSeconds", *mNode.get()));
+      timelimit);
 
   return moveArmOnTrajectory(trajectory, collisionFree, KUNZ);
 }

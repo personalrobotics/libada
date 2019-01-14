@@ -12,8 +12,9 @@ namespace util {
 
 /// Displays a message and waits for the user to press the enter key.
 /// \param[in] The message to display.
+/// \param[in] terminate_system if True, terminate when "n" is entered.
 /// \return False if the user entered 'n'.
-bool waitForUser(const std::string& msg);
+bool waitForUser(const std::string& msg, bool terminate_system=false);
 
 /// Loads and returns a ros parameter.
 /// Throws a runtime_error if the parameter is not set.

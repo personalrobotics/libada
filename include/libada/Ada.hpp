@@ -212,7 +212,8 @@ public:
       const aikido::constraint::dart::TSRPtr& tsr,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
-      size_t maxNumTrials);
+      size_t maxNumTrials,
+      const Eigen::VectorXd& nominalPosition = Eigen::VectorXd(0));
 
   /// Returns a Trajectory that moves the configuration of the metakeleton such
   /// that the specified bodynode is set to a sample in a goal TSR and
@@ -301,7 +302,9 @@ public:
   /// \return trajectory if the planning is successful.
   aikido::trajectory::TrajectoryPtr planArmToTSR(
       const aikido::constraint::dart::TSR& tsr,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      size_t maxNumTrials);
 
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
@@ -309,6 +312,9 @@ public:
   bool moveArmToTSR(
       const aikido::constraint::dart::TSR& tsr,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      size_t maxNumTrials,
+      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
       const std::vector<double>& velocityLimits = std::vector<double>(),
       TrajectoryPostprocessType postprocessType = KUNZ);
 
@@ -318,7 +324,11 @@ public:
   aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
       const Eigen::Vector3d& direction,
       double length,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance,
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Moves the end effector along a certain position offset.
   /// Throws a runtime_error if no trajectory could be found.
@@ -326,14 +336,19 @@ public:
   bool moveArmToEndEffectorOffset(
       const Eigen::Vector3d& direction,
       double length,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance,
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Moves the robot to a configuration.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return True if the trajectory was completed successfully.
   bool moveArmToConfiguration(
       const Eigen::Vector6d& configuration,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree);
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit);
 
   /// Postprocesses and executes a trajectory.
   /// Throws runtime_error if the trajectory is empty.

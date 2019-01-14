@@ -13,11 +13,19 @@ namespace ada {
 namespace util {
 
 //==============================================================================
-bool waitForUser(const std::string& msg)
+bool waitForUser(const std::string& msg, bool terminate_system)
 {
-  ROS_INFO((msg + " Press [ENTER]").c_str());
+  ROS_INFO((msg + "\nPress [ENTER] to continue, [n] to terminate.").c_str());
   char input = ' ';
   std::cin.get(input);
+  if (terminate_system)
+  {
+    if (input == 'n')
+    {
+      std::cout << "Terminate with user input [n]" << std::endl;
+      exit(0);
+    }
+  }
   return input != 'n';
 }
 
