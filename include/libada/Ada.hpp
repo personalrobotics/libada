@@ -213,7 +213,8 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       size_t maxNumTrials,
-      const Eigen::VectorXd& nominalPosition = Eigen::VectorXd(0));
+      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
+      const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
   /// Returns a Trajectory that moves the configuration of the metakeleton such
   /// that the specified bodynode is set to a sample in a goal TSR and
@@ -304,7 +305,9 @@ public:
       const aikido::constraint::dart::TSR& tsr,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
-      size_t maxNumTrials);
+      size_t maxNumTrials,
+      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
+      const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
@@ -315,6 +318,7 @@ public:
       double timelimit,
       size_t maxNumTrials,
       const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
+      const aikido::distance::ConfigurationRankerPtr& ranker = nullptr,
       const std::vector<double>& velocityLimits = std::vector<double>(),
       TrajectoryPostprocessType postprocessType = KUNZ);
 

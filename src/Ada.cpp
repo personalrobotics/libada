@@ -485,7 +485,8 @@ TrajectoryPtr Ada::planToTSR(
     const CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
-    const Eigen::VectorXd& nominalPosition)
+    const Eigen::VectorXd& nominalPosition,
+    const aikido::distance::ConfigurationRankerPtr& ranker)
 {
   return mRobot->planToTSR(
       space,
@@ -495,7 +496,8 @@ TrajectoryPtr Ada::planToTSR(
       collisionFree,
       timelimit,
       maxNumTrials,
-      nominalPosition);
+      nominalPosition,
+      ranker);
 }
 
 //==============================================================================
@@ -708,7 +710,10 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
-    size_t maxNumTrials)
+    size_t maxNumTrials,
+    const Eigen::VectorXd& nominalConfiguration,
+    const aikido::distance::ConfigurationRankerPtr& ranker)
+
 {
   auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
 
@@ -719,8 +724,9 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
       goalTSR,
       collisionFree,
       timelimit,
-      maxNumTrials
-      );
+      maxNumTrials,
+      nominalConfiguration,
+      ranker);
 }
 
 //==============================================================================
@@ -730,20 +736,17 @@ bool Ada::moveArmToTSR(
     double timelimit,
     size_t maxNumTrials,
     const Eigen::VectorXd& nominalConfiguration,
+    const aikido::distance::ConfigurationRankerPtr& ranker,
     const std::vector<double>& velocityLimits,
     TrajectoryPostprocessType postprocessType)
 {
-  auto goalTSR = std::make_shared<aikido::constraint::dart::TSR>(tsr);
-
-  auto trajectory = planToTSR(
-      mArmSpace,
-      mArm->getMetaSkeleton(),
-      mHand->getEndEffectorBodyNode(),
-      goalTSR,
+  auto trajectory = planArmToTSR(
+      tsr,
       collisionFree,
       timelimit,
       maxNumTrials,
-      nominalConfiguration);
+      nominalConfiguration,
+      ranker);
 
   if (!trajectory)
     return false;
@@ -764,8 +767,13 @@ bool Ada::moveArmToEndEffectorOffset(
 {
   return moveArmOnTrajectory(
       planArmToEndEffectorOffset(
-        direction, length, collisionFree,
-        timelimit, positionTolerance, angularTolerance, velocityLimits),
+          direction,
+          length,
+          collisionFree,
+          timelimit,
+          positionTolerance,
+          angularTolerance,
+          velocityLimits),
       collisionFree,
       KUNZ,
       velocityLimits);
