@@ -244,31 +244,6 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
-  /// Switches controllers to trajectory executors.
-  /// The controllers must be switched to
-  /// Plans to a desired end-effector offset with fixed orientation.
-  /// \param[in] space The StateSpace for the metaskeleton.
-  /// \param[in] metaSkeleton Metaskeleton to plan with.
-  /// \param[in] body Bodynode for the end effector.
-  /// \param[in] collisionFree CollisionFree constraint to check.
-  /// Self-collision is checked by default.
-  /// \param[in] direction Direction unit vector in the world frame.
-  /// \param[in] distance Distance distance to move, in meters.
-  /// \param[in] timelimit Timelimit for planning.
-  /// \param[in] positionTolerance Constraint tolerance in meters.
-  /// \param[in] angularTolerance Constraint tolerance in radians.
-  /// \return Output trajectory
-  aikido::trajectory::TrajectoryPtr planToEndEffectorOffset(
-      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const dart::dynamics::BodyNodePtr& body,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      const Eigen::Vector3d& direction,
-      double distance,
-      double timelimit,
-      double positionTolerance,
-      double angularTolerance);
-
   /// Switches controllers. The controllers must be switched to
   /// trajectory executors before calling \c executeTrajectory
   /// Makes sure that no other controllers are running and conflicting
@@ -322,8 +297,19 @@ public:
       const std::vector<double>& velocityLimits = std::vector<double>(),
       TrajectoryPostprocessType postprocessType = KUNZ);
 
-  /// Plans the end effector to move along a certain offset.
-  /// Throws a runtime_error if no trajectory could be found.
+  /// Plans to a desired end-effector offset with fixed orientation.
+  /// \param[in] space The StateSpace for the metaskeleton.
+  /// \param[in] metaSkeleton Metaskeleton to plan with.
+  /// \param[in] body Bodynode for the end effector.
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// Self-collision is checked by default.
+  /// \param[in] direction Direction unit vector in the world frame.
+  /// \param[in] distance Distance distance to move, in meters.
+  /// \param[in] timelimit Timelimit for planning.
+  /// \param[in] positionTolerance Constraint tolerance in meters.
+  /// \param[in] angularTolerance Constraint tolerance in radians.
+  /// \return Output trajectory
+
   /// \return trajectory if the planning is successful.
   aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
       const Eigen::Vector3d& direction,

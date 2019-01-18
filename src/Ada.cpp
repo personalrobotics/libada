@@ -548,30 +548,6 @@ bool Ada::stopTrajectoryExecutor()
 }
 
 //=============================================================================
-TrajectoryPtr Ada::planToEndEffectorOffset(
-    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const dart::dynamics::BodyNodePtr& body,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    const Eigen::Vector3d& direction,
-    double distance,
-    double timelimit,
-    double positionTolerance,
-    double angularTolerance)
-{
-  return mArm->planToEndEffectorOffset(
-      space,
-      metaSkeleton,
-      body,
-      collisionFree,
-      direction,
-      distance,
-      timelimit,
-      positionTolerance,
-      angularTolerance);
-}
-
-//=============================================================================
 void Ada::setCRRTPlannerParameters(const CRRTPlannerParameters& crrtParameters)
 {
   mRobot->setCRRTPlannerParameters(crrtParameters);
@@ -765,15 +741,20 @@ bool Ada::moveArmToEndEffectorOffset(
     double angularTolerance,
     const std::vector<double>& velocityLimits)
 {
-  return moveArmOnTrajectory(
-      planArmToEndEffectorOffset(
+  auto traj = planArmToEndEffectorOffset(
           direction,
           length,
           collisionFree,
           timelimit,
           positionTolerance,
           angularTolerance,
-          velocityLimits),
+          velocityLimits);
+
+  if (!traj)
+    return false;
+
+  return moveArmOnTrajectory(
+      traj,
       collisionFree,
       KUNZ,
       velocityLimits);
@@ -803,19 +784,21 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
   auto skeleton = mArm->getMetaSkeleton();
 
   std::vector<int> indices{0, 3, 4, 5};
-  std::vector<double> tempLower{-12.56, -12.56, -12.56, -12.56};
-  std::vector<double> tempUpper{12.56, 12.56, 12.56, 12.56};
-  auto llimits = skeleton->getPositionLowerLimits();
+  std::vector<double> tempLower{-6.28, -6.28, -6.28, -6.28};
+  std::vector<double> tempUpper{6.28, 6.28, 6.28, 6.28};  auto llimits = skeleton->getPositionLowerLimits();
   auto ulimits = skeleton->getPositionUpperLimits();
+  Eigen::VectorXd tempUpperLimits(ulimits);
+  Eigen::VectorXd tempLowerLimits(llimits);
+
   for (int i = 0; i < indices.size(); ++i)
   {
-    llimits(indices[i]) = tempLower[i];
-    ulimits(indices[i]) = tempUpper[i];
+    tempLowerLimits(indices[i]) = tempLower[i];
+    tempUpperLimits(indices[i]) = tempUpper[i];
   }
-  skeleton->setPositionLowerLimits(llimits);
-  skeleton->setPositionUpperLimits(ulimits);
-
-  auto trajectory = planToEndEffectorOffset(
+  skeleton->setPositionLowerLimits(tempLowerLimits);
+  skeleton->setPositionUpperLimits(tempUpperLimits);
+  
+  auto trajectory = mArm->planToEndEffectorOffset(
       mArm->getStateSpace(),
       skeleton,
       mHand->getEndEffectorBodyNode(),
@@ -826,11 +809,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
       positionTolerance,
       angularTolerance);
 
-  for (std::size_t i = 0; i < indices.size(); ++i)
-  {
-    llimits(indices[i]) = -dart::math::constantsd::inf();
-    ulimits(indices[i]) = dart::math::constantsd::inf();
-  }
   skeleton->setPositionLowerLimits(llimits);
   skeleton->setPositionUpperLimits(ulimits);
 
