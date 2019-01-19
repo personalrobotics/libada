@@ -742,22 +742,18 @@ bool Ada::moveArmToEndEffectorOffset(
     const std::vector<double>& velocityLimits)
 {
   auto traj = planArmToEndEffectorOffset(
-          direction,
-          length,
-          collisionFree,
-          timelimit,
-          positionTolerance,
-          angularTolerance,
-          velocityLimits);
+      direction,
+      length,
+      collisionFree,
+      timelimit,
+      positionTolerance,
+      angularTolerance,
+      velocityLimits);
 
   if (!traj)
     return false;
 
-  return moveArmOnTrajectory(
-      traj,
-      collisionFree,
-      KUNZ,
-      velocityLimits);
+  return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
 }
 
 //==============================================================================
@@ -785,7 +781,8 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 
   std::vector<int> indices{0, 3, 4, 5};
   std::vector<double> tempLower{-6.28, -6.28, -6.28, -6.28};
-  std::vector<double> tempUpper{6.28, 6.28, 6.28, 6.28};  auto llimits = skeleton->getPositionLowerLimits();
+  std::vector<double> tempUpper{6.28, 6.28, 6.28, 6.28};
+  auto llimits = skeleton->getPositionLowerLimits();
   auto ulimits = skeleton->getPositionUpperLimits();
   Eigen::VectorXd tempUpperLimits(ulimits);
   Eigen::VectorXd tempLowerLimits(llimits);
@@ -797,7 +794,7 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
   }
   skeleton->setPositionLowerLimits(tempLowerLimits);
   skeleton->setPositionUpperLimits(tempUpperLimits);
-  
+
   auto trajectory = mArm->planToEndEffectorOffset(
       mArm->getStateSpace(),
       skeleton,
@@ -917,6 +914,57 @@ bool Ada::moveArmOnTrajectory(
     return false;
   }
   return true;
+}
+
+//==============================================================================
+bool Ada::moveArmWithEndEffectorTwist(
+    const Eigen::Vector6d& twists,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double durations,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance,
+    TrajectoryPostprocessType postprocessType,
+    std::vector<double> velocityLimits)
+{
+  return moveArmOnTrajectory(
+      planWithEndEffectorTwist(
+          mArmSpace,
+          mArm->getMetaSkeleton(),
+          mHand->getEndEffectorBodyNode(),
+          collisionFree,
+          twists,
+          durations,
+          timelimit,
+          positionTolerance,
+          angularTolerance),
+      collisionFree,
+      postprocessType,
+      velocityLimits);
+}
+
+//=============================================================================
+TrajectoryPtr Ada::planWithEndEffectorTwist(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+    const dart::dynamics::BodyNodePtr& body,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector6d& twists,
+    double durations,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  return mArm->planWithEndEffectorTwist(
+      space,
+      metaSkeleton,
+      body,
+      twists,
+      durations,
+      collisionFree,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
 }
 
 //==============================================================================

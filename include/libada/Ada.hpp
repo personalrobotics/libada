@@ -349,6 +349,41 @@ public:
       TrajectoryPostprocessType postprocessType = SMOOTH,
       std::vector<double> smoothVelocityLimits = std::vector<double>());
 
+  bool moveArmWithEndEffectorTwist(
+      const Eigen::Vector6d& twists,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double durations,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance,
+      TrajectoryPostprocessType postprocessType = SMOOTH,
+      std::vector<double> velocityLimits = std::vector<double>());
+
+  /// Switches controllers to trajectory executors.
+  /// The controllers must be switched to
+  /// Plans to a desired end-effector offset with fixed orientation.
+  /// \param[in] space The StateSpace for the metaskeleton.
+  /// \param[in] metaSkeleton Metaskeleton to plan with.
+  /// \param[in] body Bodynode for the end effector.
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// Self-collision is checked by default.
+  /// \param[in] direction Direction unit vector in the world frame.
+  /// \param[in] distance Distance distance to move, in meters.
+  /// \param[in] timelimit Timelimit for planning.
+  /// \param[in] positionTolerance Constraint tolerance in meters.
+  /// \param[in] angularTolerance Constraint tolerance in radians.
+  /// \return Output trajectory
+  aikido::trajectory::TrajectoryPtr planWithEndEffectorTwist(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const dart::dynamics::BodyNodePtr& body,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      const Eigen::Vector6d& twists,
+      double durations,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance);
+
   /// Opens Ada's hand
   void openHand();
 
