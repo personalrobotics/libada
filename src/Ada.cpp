@@ -783,21 +783,17 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 
   auto skeleton = mArm->getMetaSkeleton();
 
-  std::vector<int> indices{0, 3, 4, 5};
-  std::vector<double> tempLower{-6.28, -6.28, -6.28, -6.28};
-  std::vector<double> tempUpper{6.28, 6.28, 6.28, 6.28};  auto llimits = skeleton->getPositionLowerLimits();
-  auto ulimits = skeleton->getPositionUpperLimits();
-  Eigen::VectorXd tempUpperLimits(ulimits);
-  Eigen::VectorXd tempLowerLimits(llimits);
 
-  for (int i = 0; i < indices.size(); ++i)
+  auto llimits = skeleton->getPositionLowerLimits();
+  auto ulimits = skeleton->getPositionUpperLimits();
+  if (velocityLimits.size() == skeleton->getNumDofs())
   {
-    tempLowerLimits(indices[i]) = tempLower[i];
-    tempUpperLimits(indices[i]) = tempUpper[i];
+    Eigen::Vector6d upperLimits(velocityLimits.data());
+
+    skeleton->setPositionLowerLimits(upperLimits * -1);
+    skeleton->setPositionUpperLimits(upperLimits);
   }
-  skeleton->setPositionLowerLimits(tempLowerLimits);
-  skeleton->setPositionUpperLimits(tempUpperLimits);
-  
+
   auto trajectory = mArm->planToEndEffectorOffset(
       mArm->getStateSpace(),
       skeleton,
@@ -809,8 +805,11 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
       positionTolerance,
       angularTolerance);
 
-  skeleton->setPositionLowerLimits(llimits);
-  skeleton->setPositionUpperLimits(ulimits);
+  if (velocityLimits.size() == skeleton->getNumDofs())
+  {
+    skeleton->setPositionLowerLimits(llimits);
+    skeleton->setPositionUpperLimits(ulimits);
+  }
 
   return trajectory;
 }
