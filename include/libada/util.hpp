@@ -52,8 +52,9 @@ Eigen::Isometry3d createIsometry(const std::vector<double>& vec);
 Eigen::MatrixXd createBwMatrixForTSR(
     double horizontalTolerance,
     double verticalTolerance,
-    double yawMin,
-    double yawMax);
+    double yawTolerance,
+    double pitchTolerance = 0.0,
+    double rollTolerance = 0.0);
 
 /// TODO (avk): Docstring.
 aikido::trajectory::UniqueSplinePtr posePostprocessingForSO2(

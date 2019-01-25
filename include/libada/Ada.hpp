@@ -213,7 +213,6 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       size_t maxNumTrials,
-      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
   /// Returns a Trajectory that moves the configuration of the metakeleton such
@@ -281,7 +280,6 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       size_t maxNumTrials,
-      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
   /// Moves the end effector to a TSR.
@@ -292,7 +290,6 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       size_t maxNumTrials,
-      const Eigen::VectorXd& nominalConfiguration = Eigen::VectorXd(0),
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr,
       const std::vector<double>& velocityLimits = std::vector<double>(),
       TrajectoryPostprocessType postprocessType = KUNZ);

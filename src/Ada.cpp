@@ -148,6 +148,7 @@ Ada::Ada(
     throw std::runtime_error("Arm Trajectory Controller is not valid!");
   }
 
+  std::cout << "Arm Executor " << armTrajectoryExecutorName << std::endl;
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
 
@@ -485,7 +486,6 @@ TrajectoryPtr Ada::planToTSR(
     const CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
-    const Eigen::VectorXd& nominalPosition,
     const aikido::distance::ConfigurationRankerPtr& ranker)
 {
   return mRobot->planToTSR(
@@ -496,7 +496,6 @@ TrajectoryPtr Ada::planToTSR(
       collisionFree,
       timelimit,
       maxNumTrials,
-      nominalPosition,
       ranker);
 }
 
@@ -687,7 +686,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
-    const Eigen::VectorXd& nominalConfiguration,
     const aikido::distance::ConfigurationRankerPtr& ranker)
 
 {
@@ -701,7 +699,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
       collisionFree,
       timelimit,
       maxNumTrials,
-      nominalConfiguration,
       ranker);
 }
 
@@ -711,7 +708,6 @@ bool Ada::moveArmToTSR(
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
-    const Eigen::VectorXd& nominalConfiguration,
     const aikido::distance::ConfigurationRankerPtr& ranker,
     const std::vector<double>& velocityLimits,
     TrajectoryPostprocessType postprocessType)
@@ -721,7 +717,6 @@ bool Ada::moveArmToTSR(
       collisionFree,
       timelimit,
       maxNumTrials,
-      nominalConfiguration,
       ranker);
 
   if (!trajectory)
