@@ -9,24 +9,22 @@
 #include <aikido/trajectory/util.hpp>
 #include <dart/common/StlHelpers.hpp>
 
+
 namespace ada {
 namespace util {
 
 //==============================================================================
-bool waitForUser(const std::string& msg, bool terminate_system)
+void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada)
 {
-  ROS_INFO((msg + "\nPress [ENTER] to continue, [n] to terminate.").c_str());
-  char input = ' ';
-  std::cin.get(input);
-  if (terminate_system)
+  ROS_INFO((msg + "\nPress [y] to continue, [n] to terminate.").c_str());
+  char input;
+  std::cin.clear();
+  std::cin >> input;
+  if (input == 'n')
   {
-    if (input == 'n')
-    {
-      std::cout << "Terminate with user input [n]" << std::endl;
-      exit(0);
-    }
+    ROS_INFO_STREAM("Terminate with user input " << input);
+    ada->stopTrajectoryExecutor();
   }
-  return input != 'n';
 }
 
 //==============================================================================

@@ -806,6 +806,10 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     skeleton->setPositionUpperLimits(ulimits);
   }
 
+  if (!trajectory)
+  {
+    std::cout << "Ada failed to plan" << std::endl;
+  }
   return trajectory;
 }
 
