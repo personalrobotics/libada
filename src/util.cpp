@@ -55,19 +55,20 @@ Eigen::Isometry3d createIsometry(const std::vector<double>& vec)
 
 //==============================================================================
 Eigen::MatrixXd createBwMatrixForTSR(
-    double horizontalTolerance,
-    double verticalTolerance,
+    double xTolerance,
+    double yTolerance,
+    double zTolerance,
     double yawTolerance,
     double pitchTolerance,
     double rollTolerance)
 {
   Eigen::MatrixXd bw = Eigen::Matrix<double, 6, 2>::Zero();
-  bw(0, 0) = -horizontalTolerance;
-  bw(0, 1) = horizontalTolerance;
-  bw(1, 0) = -horizontalTolerance;
-  bw(1, 1) = horizontalTolerance;
-  bw(2, 0) = -verticalTolerance;
-  bw(2, 1) = verticalTolerance;
+  bw(0, 0) = -xTolerance;
+  bw(0, 1) = xTolerance;
+  bw(1, 0) = -yTolerance;
+  bw(1, 1) = yTolerance;
+  bw(2, 0) = -zTolerance;
+  bw(2, 1) = zTolerance;
   bw(3, 0) = - rollTolerance;
   bw(3, 1) = rollTolerance;
   bw(4, 0) = - pitchTolerance;

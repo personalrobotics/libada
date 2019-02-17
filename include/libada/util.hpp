@@ -13,9 +13,9 @@ namespace ada {
 namespace util {
 
 /// Displays a message and waits for the user to press the enter key.
-/// \param[in] The message to display.
-/// \param[in] terminate_system if True, terminate when "n" is entered.
-/// \return False if the user entered 'n'.
+/// Terminates if 'n' is pressed.
+/// \param[in] msg The message to display.
+/// \param[in] ada Ada currently being active.
 void waitForUser(const std::string& msg,
     const std::shared_ptr<Ada>& ada);
 
@@ -47,14 +47,16 @@ Eigen::Isometry3d createIsometry(
 Eigen::Isometry3d createIsometry(const std::vector<double>& vec);
 
 /// Convenience function to create the Bw Matrix that is needed for TSRs.
-/// TODO (avk): Clarify what Bw matrix is. Why only these tolerances.
-/// \param[in] horizontalTolerance
-/// \param[in] verticalTolerance
-/// \param[in] yawMin
-/// \param[in] yawMax
+/// \param[in] xTolerance
+/// \param[in] yTolerance
+/// \param[in] zTolerance
+/// \param[in] yawTolerance
+/// \param[in] pitchTolerance
+/// \param[in] rollTolerance
 Eigen::MatrixXd createBwMatrixForTSR(
-    double horizontalTolerance,
-    double verticalTolerance,
+    double xTolerance,
+    double yTolerance,
+    double zTolerenace,
     double yawTolerance,
     double pitchTolerance = 0.0,
     double rollTolerance = 0.0);
