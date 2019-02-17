@@ -295,8 +295,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
     double maxDeviation,
     double timestep)
 {
-  return mRobot->retimePathWithKunz(
-      metaSkeleton, path, maxDeviation, timestep);
+  return mRobot->retimePathWithKunz(metaSkeleton, path, maxDeviation, timestep);
 }
 
 //==============================================================================
@@ -699,12 +698,8 @@ bool Ada::moveArmToTSR(
     const std::vector<double>& velocityLimits,
     TrajectoryPostprocessType postprocessType)
 {
-  auto trajectory = planArmToTSR(
-      tsr,
-      collisionFree,
-      timelimit,
-      maxNumTrials,
-      ranker);
+  auto trajectory
+      = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
 
   if (!trajectory)
     return false;
@@ -724,22 +719,18 @@ bool Ada::moveArmToEndEffectorOffset(
     const std::vector<double>& velocityLimits)
 {
   auto traj = planArmToEndEffectorOffset(
-          direction,
-          length,
-          collisionFree,
-          timelimit,
-          positionTolerance,
-          angularTolerance,
-          velocityLimits);
+      direction,
+      length,
+      collisionFree,
+      timelimit,
+      positionTolerance,
+      angularTolerance,
+      velocityLimits);
 
   if (!traj)
     return false;
 
-  return moveArmOnTrajectory(
-      traj,
-      collisionFree,
-      KUNZ,
-      velocityLimits);
+  return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
 }
 
 //==============================================================================

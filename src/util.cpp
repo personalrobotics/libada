@@ -9,7 +9,6 @@
 #include <aikido/trajectory/util.hpp>
 #include <dart/common/StlHelpers.hpp>
 
-
 namespace ada {
 namespace util {
 
@@ -69,9 +68,9 @@ Eigen::MatrixXd createBwMatrixForTSR(
   bw(1, 1) = yTolerance;
   bw(2, 0) = -zTolerance;
   bw(2, 1) = zTolerance;
-  bw(3, 0) = - rollTolerance;
+  bw(3, 0) = -rollTolerance;
   bw(3, 1) = rollTolerance;
-  bw(4, 0) = - pitchTolerance;
+  bw(4, 0) = -pitchTolerance;
   bw(4, 1) = pitchTolerance;
   bw(5, 0) = -yawTolerance;
   bw(5, 1) = yawTolerance;
