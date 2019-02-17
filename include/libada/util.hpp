@@ -59,10 +59,6 @@ Eigen::MatrixXd createBwMatrixForTSR(
     double pitchTolerance = 0.0,
     double rollTolerance = 0.0);
 
-/// TODO (avk): Docstring.
-aikido::trajectory::UniqueSplinePtr posePostprocessingForSO2(
-    const aikido::trajectory::Spline& input);
-
 } // namespace util
 } // namespace ada
 

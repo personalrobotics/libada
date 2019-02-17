@@ -105,11 +105,11 @@ public:
       const aikido::trajectory::Trajectory* path) override;
 
   /// \copydoc Robot::retimePathWithKunzTimer
-  std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunzTimer(
+  std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunz(
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path,
       double maxDeviation,
-      double timestep);
+      double timestep) override;
 
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.

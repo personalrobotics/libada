@@ -77,50 +77,6 @@ Eigen::MatrixXd createBwMatrixForTSR(
 
   return bw;
 }
-//==============================================================================
-aikido::trajectory::UniqueSplinePtr posePostprocessingForSO2(
-    const aikido::trajectory::Spline& spline)
-{
-
-  auto tmpState = spline.getStateSpace()->createState();
-  Eigen::VectorXd tmpVec(spline.getStateSpace()->getDimension());
-
-  std::vector<Eigen::VectorXd> waypoints;
-  spline.getWaypoint(0, tmpState);
-  spline.getStateSpace()->logMap(tmpState, tmpVec);
-  waypoints.push_back(tmpVec);
-
-  auto interpolator
-      = std::make_shared<aikido::statespace::GeodesicInterpolator>(
-          spline.getStateSpace());
-
-  for (std::size_t i = 0; i < spline.getNumWaypoints() - 1; ++i)
-  {
-    auto state = spline.getStateSpace()->createState();
-    spline.getStateSpace()->expMap(tmpVec, tmpState);
-    spline.getWaypoint(i + 1, state);
-    auto diff = interpolator->getTangentVector(tmpState, state);
-    tmpVec += diff;
-    waypoints.push_back(tmpVec);
-  }
-
-  // TODO (avk): this will convert everything back to the
-  // original representation making this function moot.
-  // since we want all the timing etc. to happen in the
-  // R-space, create a new statespace and use the relevant
-  // space and interpolator. (see the logic in retime/aikido).
-  auto interpolated = std::make_shared<aikido::trajectory::Interpolated>(
-      spline.getStateSpace(), interpolator);
-
-  auto newState = spline.getStateSpace()->createState();
-  for (size_t i = 0; i < waypoints.size(); i++)
-  {
-    spline.getStateSpace()->expMap(waypoints[i], newState);
-    interpolated->addWaypoint(i, newState);
-  }
-
-  return aikido::trajectory::convertToSpline(*interpolated);
-}
 
 } // namespace util
 } // namespace ada

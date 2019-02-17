@@ -289,7 +289,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
 }
 
 //==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunzTimer(
+std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path,
     double maxDeviation,
@@ -857,7 +857,7 @@ bool Ada::moveArmOnTrajectory(
 
     case KUNZ:
     {
-      timedTrajectory = retimePathWithKunzTimer(
+      timedTrajectory = retimePathWithKunz(
           armSkeleton, trajectory.get(), kunzMaxDeviation, kunzTimeStep);
 
       if (!timedTrajectory)
