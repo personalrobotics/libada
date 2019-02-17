@@ -24,7 +24,6 @@
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
-#include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -90,15 +89,6 @@ const std::vector<std::string> availableArmTrajectoryExecutorNames{
     "rewd_trajectory_controller",
     "move_until_touch_topic_controller"};
 
-Eigen::IOFormat CommaInitFmt(
-    Eigen::StreamPrecision,
-    Eigen::DontAlignCols,
-    ", ",
-    ", ",
-    "",
-    "",
-    " << ",
-    ";");
 namespace {
 
 BodyNodePtr getBodyNodeOrThrow(
@@ -228,9 +218,8 @@ Ada::Ada(
 
   mTrajectoryExecutor = createTrajectoryExecutor();
 
-  // TODO: change Smoother/Timer to not take a testable in constructor.
-  auto testable = std::make_shared<aikido::constraint::Satisfied>(mSpace);
-
+  // TODO: (GL) Ideally this should be set in the header as const but since
+  // it requires mRng I am keeping it here.
   // Create default parameters (otherwise, they are undefined by default in
   // aikido). These parameters are taken mainly from the default constructors of
   // the structs (aikido/robot/util.hpp) and one of the herb demos.
@@ -243,8 +232,6 @@ Ada::Ada(
       0.1,
       20,
       1e-4);
-  VectorFieldPlannerParameters vfParams(
-      0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   // Setting arm base and end names
   mArmBaseName = "j2n6s200_link_base";
@@ -308,7 +295,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunzTimer(
     double maxDeviation,
     double timestep)
 {
-  return mRobot->retimePathWithKunzTimer(
+  return mRobot->retimePathWithKunz(
       metaSkeleton, path, maxDeviation, timestep);
 }
 
@@ -766,18 +753,7 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     const std::vector<double>& velocityLimits)
 {
   auto defaultPose = mArm->getMetaSkeleton()->getPositions();
-  ROS_INFO_STREAM("Current configuration" << defaultPose.format(CommaInitFmt));
-  ROS_INFO_STREAM(
-      "Plan to end effector offset state: "
-      << mArm->getMetaSkeleton()->getPositions().matrix().transpose());
-  ROS_INFO_STREAM(
-      "Plan to end effector offset direction: "
-      << direction.matrix().transpose()
-      << ",  length: "
-      << length);
-
   auto skeleton = mArm->getMetaSkeleton();
-
 
   auto llimits = skeleton->getPositionLowerLimits();
   auto ulimits = skeleton->getPositionUpperLimits();
@@ -806,10 +782,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     skeleton->setPositionUpperLimits(ulimits);
   }
 
-  if (!trajectory)
-  {
-    std::cout << "Ada failed to plan" << std::endl;
-  }
   return trajectory;
 }
 
@@ -856,11 +828,11 @@ bool Ada::moveArmOnTrajectory(
 
   switch (postprocessType)
   {
-    case RETIME:
+    case PARABOLIC_RETIME:
       timedTrajectory = retimePath(armSkeleton, trajectory.get());
       break;
 
-    case SMOOTH:
+    case PARABOLIC_SMOOTH:
       if (smoothVelocityLimits.size() == 6)
       {
         Eigen::Vector6d velocityLimits;
@@ -885,17 +857,18 @@ bool Ada::moveArmOnTrajectory(
 
     case KUNZ:
     {
-      double MAX_DEVIATION = 1e-3;
-      double TIME_STEP = 0.001;
-
       timedTrajectory = retimePathWithKunzTimer(
-          armSkeleton, trajectory.get(), MAX_DEVIATION, TIME_STEP);
+          armSkeleton, trajectory.get(), kunzMaxDeviation, kunzTimeStep);
+
+      if (!timedTrajectory)
+      {
+        // If using time-optimal retining failed, back to parabolic timing
+        timedTrajectory = retimePath(armSkeleton, trajectory.get());
+      }
 
       if (!timedTrajectory)
       {
         throw std::runtime_error("Retiming failed");
-        // If using time-optimal retining failed, back to parabolic timing
-        timedTrajectory = retimePath(armSkeleton, trajectory.get());
       }
       break;
     }
@@ -911,7 +884,6 @@ bool Ada::moveArmOnTrajectory(
   }
   catch (const std::exception& e)
   {
-    ROS_INFO_STREAM("Trajectory execution failed: " << e.what());
     return false;
   }
   return true;

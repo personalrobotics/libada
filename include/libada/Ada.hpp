@@ -17,6 +17,7 @@
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/parabolic/ParabolicSmoother.hpp>
 #include <aikido/planner/parabolic/ParabolicTimer.hpp>
+#include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -39,10 +40,11 @@ extern std::vector<std::string> possibleTrajectoryExecutors;
 // TODO (avk): Docstring.
 enum TrajectoryPostprocessType
 {
-  RETIME,
-  SMOOTH,
+  PARABOLIC_RETIME,
+  PARABOLIC_SMOOTH,
   KUNZ
 };
+
 
 class Ada final : public aikido::robot::Robot
 {
@@ -59,6 +61,14 @@ public:
   // TODO(tapo) parameter.
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
+
+  // kunz parameters
+  const double kunzMaxDeviation = 1e-3;
+  const double kunzTimeStep = 1e-3;
+
+  const aikido::robot::util::VectorFieldPlannerParameters vfParams
+    = aikido::robot::util::VectorFieldPlannerParameters(
+        0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   /// Construct the ada metaskeleton using a URI.
   /// \param[in] env World (either for planning, post-processing, or executing).
@@ -272,16 +282,6 @@ public:
   // TODO (avk): Should the planning methods be private
   // and only expose moveTo methods?
 
-  /// Plans the end effector to a TSR.
-  /// Throws a runtime_error if no trajectory could be found.
-  /// \return trajectory if the planning is successful.
-  aikido::trajectory::TrajectoryPtr planArmToTSR(
-      const aikido::constraint::dart::TSR& tsr,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit,
-      size_t maxNumTrials,
-      const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
-
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return True if the trajectory was completed successfully.
@@ -293,29 +293,6 @@ public:
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr,
       const std::vector<double>& velocityLimits = std::vector<double>(),
       TrajectoryPostprocessType postprocessType = KUNZ);
-
-  /// Plans to a desired end-effector offset with fixed orientation.
-  /// \param[in] space The StateSpace for the metaskeleton.
-  /// \param[in] metaSkeleton Metaskeleton to plan with.
-  /// \param[in] body Bodynode for the end effector.
-  /// \param[in] collisionFree CollisionFree constraint to check.
-  /// Self-collision is checked by default.
-  /// \param[in] direction Direction unit vector in the world frame.
-  /// \param[in] distance Distance distance to move, in meters.
-  /// \param[in] timelimit Timelimit for planning.
-  /// \param[in] positionTolerance Constraint tolerance in meters.
-  /// \param[in] angularTolerance Constraint tolerance in radians.
-  /// \return Output trajectory
-
-  /// \return trajectory if the planning is successful.
-  aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
-      const Eigen::Vector3d& direction,
-      double length,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit,
-      double positionTolerance,
-      double angularTolerance,
-      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Moves the end effector along a certain position offset.
   /// Throws a runtime_error if no trajectory could be found.
@@ -343,7 +320,7 @@ public:
   bool moveArmOnTrajectory(
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      TrajectoryPostprocessType postprocessType = SMOOTH,
+      TrajectoryPostprocessType postprocessType,
       std::vector<double> smoothVelocityLimits = std::vector<double>());
 
   /// Opens Ada's hand
@@ -379,6 +356,37 @@ private:
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
+
+  /// Plans the end effector to a TSR.
+  /// Throws a runtime_error if no trajectory could be found.
+  /// \return trajectory if the planning is successful.
+  aikido::trajectory::TrajectoryPtr planArmToTSR(
+      const aikido::constraint::dart::TSR& tsr,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      size_t maxNumTrials,
+      const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
+
+  /// Plans to a desired end-effector offset with fixed orientation.
+  /// \param[in] space The StateSpace for the metaskeleton.
+  /// \param[in] metaSkeleton Metaskeleton to plan with.
+  /// \param[in] body Bodynode for the end effector.
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// \param[in] direction Direction unit vector in the world frame.
+  /// \param[in] distance Distance distance to move, in meters.
+  /// \param[in] timelimit Timelimit for planning.
+  /// \param[in] positionTolerance Constraint tolerance in meters.
+  /// \param[in] angularTolerance Constraint tolerance in radians.
+  /// \return Output trajectory
+  /// \return trajectory if the planning is successful.
+  aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
+      const Eigen::Vector3d& direction,
+      double length,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance,
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   // TODO (avk) : Docstring missing.
   const bool mSimulation;
