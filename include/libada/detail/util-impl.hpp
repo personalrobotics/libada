@@ -12,5 +12,6 @@ T getRosParam(const std::string& paramName, const ros::NodeHandle& nh)
   }
   return value;
 }
-}
-}
+} // namespace util
+} // namespace ada
+

@@ -37,7 +37,8 @@ extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
-// TODO (avk): Docstring.
+/// Enum for postprocessors.
+/// TODO Remove this once aikido supports this.
 enum TrajectoryPostprocessType
 {
   PARABOLIC_RETIME,
@@ -214,7 +215,7 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit);
 
-  /// \copydoc Robot::planToTSR.
+  /// \copydoc ConcreteRobot::planToTSR.
   aikido::trajectory::TrajectoryPtr planToTSR(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -225,15 +226,7 @@ public:
       size_t maxNumTrials,
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
-  /// Returns a Trajectory that moves the configuration of the metakeleton such
-  /// that the specified bodynode is set to a sample in a goal TSR and
-  /// the trajectory is constrained to a constraint TSR
-  /// \param[in] space The StateSpace for the metaskeleton
-  /// \param[in] body Bodynode whose frame is meant for TSR
-  /// \param[in] goalTsr The goal TSR to move to
-  /// \param[in] constraintTsr The constraint TSR for the trajectory
-  /// \return Trajectory to a sample in TSR, or nullptr if planning fails.
-  /// TODO (avk): /// \copydoc Robot::planToTSRwithTrajctoryConstraint?
+  /// \copydoc ConcreteRobot::planToTSRwithTrajctoryConstraint
   aikido::trajectory::TrajectoryPtr planToTSRwithTrajectoryConstraint(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
@@ -264,9 +257,7 @@ public:
   /// \return true if all controllers have been successfully switched
   bool stopTrajectoryExecutor();
 
-  /// Sets CRRTPlanner parameters.
-  /// TODO: To be removed when PlannerAdapters are in place.
-  /// \param[in] crrtParameters CRRT planner parameters
+  /// \copydoc ConcreteRobot::setCRRTPlannerParameters
   void setCRRTPlannerParameters(
       const aikido::robot::util::CRRTPlannerParameters& crrtParameters);
 
@@ -278,9 +269,6 @@ public:
 
   /// \return TrajectoryExecutor.
   aikido::control::TrajectoryExecutorPtr getTrajectoryExecutor();
-
-  // TODO (avk): Should the planning methods be private
-  // and only expose moveTo methods?
 
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
