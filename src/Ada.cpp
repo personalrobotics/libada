@@ -853,7 +853,7 @@ bool Ada::moveArmOnTrajectory(
 
       if (!timedTrajectory)
       {
-        // If using time-optimal retining failed, back to parabolic timing
+        // If using kunz retimer fails, fall back to parabolic timing
         timedTrajectory = retimePath(armSkeleton, trajectory.get());
       }
 
