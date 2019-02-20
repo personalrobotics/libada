@@ -25,11 +25,11 @@ endif()
 
 include(ExternalProject)
 
-find_package(DART 6.6.0 REQUIRED
+find_package(DART 6.6.2 REQUIRED
   OPTIONAL_COMPONENTS utils
 )
 
-find_package(aikido 0.0.2 REQUIRED
+find_package(aikido 0.3.0 REQUIRED
   COMPONENTS
     common
     constraint
