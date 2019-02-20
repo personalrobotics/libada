@@ -166,34 +166,18 @@ install(FILES "package.xml"
 # Formatting
 #
 
-find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-3.8)
+include(ClangFormat)
+clang_format_setup_version(3.8)
 
 if(CLANG_FORMAT_EXECUTABLE)
-  message(STATUS "Found clang-format.")
 
   file(GLOB_RECURSE ALL_SOURCE_FILES
     LIST_DIRECTORIES false
     include/*.h include/*.hpp src/*.c src/*.cpp tests/*.cpp tests/*.hpp)
-  list(LENGTH ALL_SOURCE_FILES NUM_SOURCE_FILES)
 
-  add_custom_target(format
-    COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${NUM_SOURCE_FILES} files..."
-    COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${ALL_SOURCE_FILES}
-    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  clang_format_add_sources(${ALL_SOURCE_FILES})
 
-  add_custom_target(check-format
-    COMMAND ${CMAKE_COMMAND} -E echo "Checking code style of"
-            "${NUM_SOURCE_FILES} files... "
-    COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh
-            ${CLANG_FORMAT_EXECUTABLE} ${ALL_SOURCE_FILES}
-    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-else()
-  message(STATUS "Looking for clang-format - NOT found, please install "
-      "clang-format to enable automatic code formatting.")
+  clang_format_add_targets()
 endif()
 
 # This custom target doesn't affect building libada but is only for
