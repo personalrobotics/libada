@@ -167,7 +167,7 @@ install(FILES "package.xml"
 #
 
 include(ClangFormat)
-clang_format_setup_version(3.8)
+clang_format_setup(VERSION 3.8)
 
 if(CLANG_FORMAT_EXECUTABLE)
 
