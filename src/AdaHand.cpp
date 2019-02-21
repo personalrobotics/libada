@@ -41,7 +41,7 @@ void disablePairwiseSelfCollision(
 {
 #ifndef NDEBUG
   dtinfo << "Disabling collision between " << rootNode->getName() << " and "
-            << singleNode->getName() << std::endl;
+         << singleNode->getName() << std::endl;
 #endif
 
   selfCollisionFilter->addBodyNodePairToBlackList(rootNode, singleNode);
@@ -60,7 +60,7 @@ void enablePairwiseSelfCollision(
 {
 #ifndef NDEBUG
   dtinfo << "Enabling collision between " << rootNode->getName() << " and "
-            << singleNode->getName() << std::endl;
+         << singleNode->getName() << std::endl;
 #endif
   selfCollisionFilter->removeBodyNodePairFromBlackList(rootNode, singleNode);
   for (std::size_t i = 0; i < rootNode->getNumChildBodyNodes(); ++i)
@@ -247,7 +247,7 @@ void AdaHand::ungrab()
   if (newName != oldName)
   {
     dtwarn << "[Hand::ungrab] Released object was renamed from \"" << oldName
-              << "\" to \"" << newName << "\"" << std::endl;
+           << "\" to \"" << newName << "\"" << std::endl;
   }
 
   mGrabMetadata.reset();

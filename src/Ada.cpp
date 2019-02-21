@@ -88,7 +88,7 @@ dart::common::Uri defaultAdaSrdfUri{
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
 
-// Arm trajectory controllers that are meant to be used by ADA.
+// Arm trajectory controllers that are meant to be used by Ada.
 // Needs to be consistent with the configurations in ada_launch.
 const std::vector<std::string> availableArmTrajectoryExecutorNames{
     "trajectory_controller",
@@ -191,8 +191,8 @@ Ada::Ada(
     auto body1 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link2_);
 
 #ifndef NDEBUG
-    dtinfo << "Disabled collisions between " << disabledPair.link1_
-              << " and " << disabledPair.link2_ << std::endl;
+    dtinfo << "Disabled collisions between " << disabledPair.link1_ << " and "
+           << disabledPair.link2_ << std::endl;
 #endif
 
     selfCollisionFilter->addBodyNodePairToBlackList(body0, body1);

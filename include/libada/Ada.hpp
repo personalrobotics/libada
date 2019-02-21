@@ -38,7 +38,7 @@ extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
 /// Enum for postprocessors.
-/// TODO Remove this once aikido supports this.
+/// TODO: Remove this once aikido supports this.
 enum TrajectoryPostprocessType
 {
   PARABOLIC_RETIME,
@@ -389,7 +389,7 @@ private:
   const std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
-  // TODO (avk) : Docstring missing.
+  // Collision resolution.
   double mCollisionResolution;
 
   /// Random generator
@@ -405,7 +405,7 @@ private:
   // World associated with this robot.
   aikido::planner::WorldPtr mWorld;
 
-  // TODO (avk) : Docstring missing.
+  // Statespace of Ada.
   aikido::statespace::dart::MetaSkeletonStateSpacePtr mSpace;
 
   // mRobot is a wrapper around the meta skeleton
@@ -417,9 +417,13 @@ private:
   // Ros node associated with this robot.
   std::unique_ptr<::ros::NodeHandle> mNode;
 
-  // TODO (avk) : Docstring missing.
+  // Ros controller service client.
   std::unique_ptr<::ros::ServiceClient> mControllerServiceClient;
+
+  // Ros joint state client.
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;
+
+  // Thread for updating joint state from the Ros joint state client.
   std::unique_ptr<aikido::common::ExecutorThread> mJointStateThread;
 
   // Trajectory executor.
