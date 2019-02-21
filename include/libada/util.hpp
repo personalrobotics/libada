@@ -49,9 +49,9 @@ Eigen::Isometry3d createIsometry(const std::vector<double>& vec);
 /// \param[in] xTolerance
 /// \param[in] yTolerance
 /// \param[in] zTolerance
-/// \param[in] yawTolerance
-/// \param[in] pitchTolerance
 /// \param[in] rollTolerance
+/// \param[in] pitchTolerance
+/// \param[in] yawTolerance
 Eigen::MatrixXd createBwMatrixForTSR(
     double xTolerance,
     double yTolerance,
