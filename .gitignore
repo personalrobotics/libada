@@ -10,3 +10,5 @@ build/
 # Executables
 *.out
 
+# Build directory
+build/
