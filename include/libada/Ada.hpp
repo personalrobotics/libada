@@ -328,8 +328,7 @@ public:
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       double positionTolerance,
-      double angularTolerance,
-      const std::vector<double>& velocityLimits = std::vector<double>());
+      double angularTolerance);
 
   /// Opens Ada's hand
   void openHand();
@@ -341,7 +340,13 @@ private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
 
-  // TODO (avk) : Docstring missing.
+  /// Constructs the arm and the hand, and the manipulator.
+  /// \param[in] armName Name of the arm.
+  /// \param[in] retriever Resource retriever.
+  /// \param[in] executor Trajectory executor for the arm
+  /// \param[in] collisionDetector Collision detector for the manipulator.
+  /// \param[in] selfCollisionFilter Self collision filter for the manipulator.
+  /// \return Manipulator robot with Ada's arm and hand.
   aikido::robot::ConcreteManipulatorPtr configureArm(
       const std::string& armName,
       const dart::common::ResourceRetrieverPtr& retriever,
@@ -356,11 +361,13 @@ private:
   /// Compute acceleration limits from the MetaSkeleton
   Eigen::VectorXd getAccelerationLimits() const;
 
-  // TODO (avk) : Docstring missing.
+  /// Creates and returns a trajectory executor.
   std::shared_ptr<aikido::control::TrajectoryExecutor>
   createTrajectoryExecutor();
 
-  // TODO (avk) : Docstring missing.
+  /// Switches between controllers.
+  /// \param[in] startControllers Controllers to start.
+  /// \param[in] stopControllesr Controllers to stop.
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
@@ -375,7 +382,7 @@ private:
       size_t maxNumTrials,
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
-  // TODO (avk) : Docstring missing.
+  // True if running in simulation.
   const bool mSimulation;
 
   // Names of the trajectory executors
@@ -395,7 +402,7 @@ private:
   double mSmootherFeasibilityCheckResolution;
   double mSmootherFeasibilityApproxTolerance;
 
-  // TODO (avk) : Docstring missing.
+  // World associated with this robot.
   aikido::planner::WorldPtr mWorld;
 
   // TODO (avk) : Docstring missing.
@@ -407,7 +414,7 @@ private:
   // mRobotSkeleton stores the full skeleton of all components (arm and hand)
   dart::dynamics::SkeletonPtr mRobotSkeleton;
 
-  // TODO (avk) : Docstring missing.
+  // Ros node associated with this robot.
   std::unique_ptr<::ros::NodeHandle> mNode;
 
   // TODO (avk) : Docstring missing.
@@ -415,7 +422,7 @@ private:
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;
   std::unique_ptr<aikido::common::ExecutorThread> mJointStateThread;
 
-  // TODO (avk) : Docstring missing.
+  // Trajectory executor.
   std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
   // Name of the first link of the arm in the URDF

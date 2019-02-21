@@ -593,7 +593,6 @@ ConcreteManipulatorPtr Ada::configureArm(
       cloneRNG(),
       executor,
       collisionDetector,
-      // collideWith,
       selfCollisionFilter);
 
   auto manipulator
@@ -730,8 +729,7 @@ bool Ada::moveArmToEndEffectorOffset(
       collisionFree,
       timelimit,
       positionTolerance,
-      angularTolerance,
-      velocityLimits);
+      angularTolerance);
 
   if (!traj)
     return false;
@@ -746,25 +744,11 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
     double positionTolerance,
-    double angularTolerance,
-    const std::vector<double>& velocityLimits)
+    double angularTolerance)
 {
-  auto defaultPose = mArm->getMetaSkeleton()->getPositions();
-  auto skeleton = mArm->getMetaSkeleton();
-
-  auto llimits = skeleton->getPositionLowerLimits();
-  auto ulimits = skeleton->getPositionUpperLimits();
-  if (velocityLimits.size() == skeleton->getNumDofs())
-  {
-    Eigen::Vector6d upperLimits(velocityLimits.data());
-
-    skeleton->setPositionLowerLimits(upperLimits * -1);
-    skeleton->setPositionUpperLimits(upperLimits);
-  }
-
   auto trajectory = mArm->planToEndEffectorOffset(
       mArmSpace,
-      skeleton,
+      mArm->getMetaSkeleton(),
       mHand->getEndEffectorBodyNode(),
       collisionFree,
       direction,
@@ -772,12 +756,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
       timelimit,
       positionTolerance,
       angularTolerance);
-
-  if (velocityLimits.size() == skeleton->getNumDofs())
-  {
-    skeleton->setPositionLowerLimits(llimits);
-    skeleton->setPositionUpperLimits(ulimits);
-  }
 
   return trajectory;
 }
