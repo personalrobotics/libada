@@ -10,6 +10,12 @@
 
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
+#undef dtwarn
+#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
+
+#undef dtinfo
+#define dtinfo (::dart::common::colorMsg("Info", 32))
+
 namespace ada {
 
 using dart::common::make_unique;
@@ -34,7 +40,7 @@ void disablePairwiseSelfCollision(
         selfCollisionFilter)
 {
 #ifndef NDEBUG
-  std::cout << "Disabling collision between " << rootNode->getName() << " and "
+  dtinfo << "Disabling collision between " << rootNode->getName() << " and "
             << singleNode->getName() << std::endl;
 #endif
 
@@ -53,7 +59,7 @@ void enablePairwiseSelfCollision(
         selfCollisionFilter)
 {
 #ifndef NDEBUG
-  std::cout << "Enabling collision between " << rootNode->getName() << " and "
+  dtinfo << "Enabling collision between " << rootNode->getName() << " and "
             << singleNode->getName() << std::endl;
 #endif
   selfCollisionFilter->removeBodyNodePairFromBlackList(rootNode, singleNode);
@@ -240,8 +246,7 @@ void AdaHand::ungrab()
   std::string newName = grabbedBodyNode->setName(oldName);
   if (newName != oldName)
   {
-    // TODO: use proper logging (warn)
-    std::cout << "[Hand::ungrab] Released object was renamed from \"" << oldName
+    dtwarn << "[Hand::ungrab] Released object was renamed from \"" << oldName
               << "\" to \"" << newName << "\"" << std::endl;
   }
 

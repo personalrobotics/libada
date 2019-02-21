@@ -56,9 +56,9 @@ Eigen::MatrixXd createBwMatrixForTSR(
     double xTolerance,
     double yTolerance,
     double zTolerenace,
-    double yawTolerance,
-    double pitchTolerance = 0.0,
-    double rollTolerance = 0.0);
+    double rollTolerance,
+    double pitchTolerance,
+    double yawTolerance);
 
 } // namespace util
 } // namespace ada

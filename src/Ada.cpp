@@ -35,6 +35,12 @@
 #include <srdfdom/model.h>
 #include <urdf/model.h>
 
+#undef dtwarn
+#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
+
+#undef dtinfo
+#define dtinfo (::dart::common::colorMsg("Info", 32))
+
 namespace ada {
 
 using aikido::control::TrajectoryExecutorPtr;
@@ -138,7 +144,7 @@ Ada::Ada(
     throw std::runtime_error("Arm Trajectory Controller is not valid!");
   }
 
-  std::cout << "Arm Executor " << armTrajectoryExecutorName << std::endl;
+  dtinfo << "Arm Executor " << armTrajectoryExecutorName << std::endl;
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
 
@@ -185,7 +191,7 @@ Ada::Ada(
     auto body1 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link2_);
 
 #ifndef NDEBUG
-    std::cout << "[INFO] Disabled collisions between " << disabledPair.link1_
+    dtinfo << "Disabled collisions between " << disabledPair.link1_
               << " and " << disabledPair.link2_ << std::endl;
 #endif
 
@@ -757,7 +763,7 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
   }
 
   auto trajectory = mArm->planToEndEffectorOffset(
-      mArm->getStateSpace(),
+      mArmSpace,
       skeleton,
       mHand->getEndEffectorBodyNode(),
       collisionFree,
@@ -875,6 +881,7 @@ bool Ada::moveArmOnTrajectory(
   }
   catch (const std::exception& e)
   {
+    dtwarn << "Exception in trajectoryExecution: " << e.what() << std::endl;
     return false;
   }
   return true;
