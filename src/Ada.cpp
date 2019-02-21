@@ -9,25 +9,17 @@
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/Spline.hpp>
-#include <aikido/constraint/CyclicSampleable.hpp>
-#include <aikido/constraint/FiniteSampleable.hpp>
-#include <aikido/constraint/NewtonsMethodProjectable.hpp>
-#include <aikido/constraint/Satisfied.hpp>
 #include <aikido/constraint/Testable.hpp>
 #include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
-#include <aikido/planner/PlanningResult.hpp>
-#include <aikido/planner/SnapPlanner.hpp>
-#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
-#include <aikido/statespace/GeodesicInterpolator.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <controller_manager_msgs/SwitchController.h>
 #include <dart/utils/urdf/urdf.hpp>
@@ -48,9 +40,6 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::constraint::TestablePtr;
-using aikido::distance::createDistanceMetric;
-using aikido::planner::parabolic::ParabolicSmoother;
-using aikido::planner::parabolic::ParabolicTimer;
 using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
@@ -62,7 +51,6 @@ using aikido::robot::util::parseYAMLToNamedConfigurations;
 using aikido::robot::util::VectorFieldPlannerParameters;
 using aikido::robot::util::CRRTPlannerParameters;
 using aikido::statespace::StateSpace;
-using aikido::statespace::GeodesicInterpolator;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
 using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
@@ -74,12 +62,12 @@ using aikido::common::cloneRNGFrom;
 using dart::collision::FCLCollisionDetector;
 using dart::common::make_unique;
 using dart::dynamics::BodyNodePtr;
-using dart::dynamics::ChainPtr;
-using dart::dynamics::InverseKinematics;
 using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
 
+// We use this as default since the camera-attached version is the most
+// frequent use case.
 dart::common::Uri defaultAdaUrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{

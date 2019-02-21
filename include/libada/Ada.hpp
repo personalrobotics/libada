@@ -15,8 +15,6 @@
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
-#include <aikido/planner/parabolic/ParabolicSmoother.hpp>
-#include <aikido/planner/parabolic/ParabolicTimer.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
