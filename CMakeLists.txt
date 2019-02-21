@@ -37,6 +37,7 @@ find_package(aikido 0.3.0 REQUIRED
     control_ros
     distance
     planner
+    planner_kunzretimer
     planner_ompl
     planner_parabolic
     planner_vectorfield
@@ -76,6 +77,7 @@ set(sources
   src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
   src/AdaHand.cpp
   src/Ada.cpp
+  src/util.cpp
 )
 
 add_library(libada SHARED ${sources})
