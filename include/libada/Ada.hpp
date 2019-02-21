@@ -70,7 +70,7 @@ public:
       = aikido::robot::util::VectorFieldPlannerParameters(
           0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
-  /// Construct the ada metaskeleton using a URI.
+  /// Construct Ada metaskeleton using a URI.
   /// \param[in] env World (either for planning, post-processing, or executing).
   /// \param[in] simulation True if running in simulation mode.
   /// \param[in] node ROS node. Required for running in real.
