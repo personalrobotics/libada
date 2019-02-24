@@ -57,9 +57,9 @@ Eigen::MatrixXd createBwMatrixForTSR(
     double xTolerance,
     double yTolerance,
     double zTolerance,
-    double yawTolerance,
+    double rollTolerance,
     double pitchTolerance,
-    double rollTolerance)
+    double yawTolerance)
 {
   Eigen::MatrixXd bw = Eigen::Matrix<double, 6, 2>::Zero();
   bw(0, 0) = -xTolerance;
