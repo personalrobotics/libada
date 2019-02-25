@@ -1,5 +1,4 @@
 #include "libada/util.hpp"
-#include <stdlib.h>
 #include <aikido/common/Spline.hpp>
 #include <aikido/distance/DistanceMetric.hpp>
 #include <aikido/distance/defaults.hpp>
@@ -8,6 +7,7 @@
 #include <aikido/trajectory/Interpolated.hpp>
 #include <aikido/trajectory/util.hpp>
 #include <dart/common/StlHelpers.hpp>
+#include <stdlib.h>
 
 namespace ada {
 namespace util {
