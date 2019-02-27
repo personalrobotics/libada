@@ -295,7 +295,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
 //==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
 {
-  return mRobot->executeTrajectory(trajectory);
+  return mTrajectoryExecutor->execute(trajectory);
 }
 
 //==============================================================================
@@ -342,6 +342,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
   mRobot->step(timepoint);
   mArm->step(timepoint);
+  mTrajectoryExecutor->step(timepoint);
 
   if (!mSimulation)
   {
@@ -622,6 +623,7 @@ Ada::createTrajectoryExecutor()
   {
     std::string serverName
         = mArmTrajectoryExecutorName + "/follow_joint_trajectory";
+    std::cout << "Create " << serverName << std::endl;
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
@@ -648,7 +650,12 @@ bool Ada::switchControllers(
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
   if (mControllerServiceClient->call(srv) && srv.response.ok)
+  {
+    std::cout << "Switch controller succeeded " << std::endl;
+    mArmTrajectoryExecutorName = startControllers[0];
+    mTrajectoryExecutor = createTrajectoryExecutor();
     return true;
+  }
   else
     throw std::runtime_error("SwitchController failed.");
 }
@@ -695,7 +702,10 @@ bool Ada::moveArmToTSR(
       = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
 
   if (!trajectory)
+  {
+    dtwarn << "Failed to plan to tsr" << std::endl;
     return false;
+  }
 
   return moveArmOnTrajectory(
       trajectory, collisionFree, postprocessType, velocityLimits);
@@ -841,6 +851,7 @@ bool Ada::moveArmOnTrajectory(
   }
 
   auto future = executeTrajectory(std::move(timedTrajectory));
+  std::cout << "Got a future " << std::endl;
   try
   {
     future.get();
