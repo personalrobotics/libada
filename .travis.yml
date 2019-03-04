@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 
 sudo: required
 
@@ -29,6 +29,7 @@ before_install:
   #- curl -sS "${DISTRIBUTION}" | ./scripts/internal-convert.py > distribution.yml # internal-convert.py is required as this repo is private; please remove it once becomes public
   - ./scripts/internal-setup.sh
   - export PACKAGE_NAMES="$(./scripts/internal-get-packages.py distribution.yml ${REPOSITORY})"
+  - sudo apt-get install -y libompl-dev=1.0.0+ds2-1build1
 
 install:
   - mv "${TRAVIS_BUILD_DIR}" src
