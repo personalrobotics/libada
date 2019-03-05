@@ -16,6 +16,7 @@
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
+#include <aikido/planner/ompl/OMPLConfigurationToConfigurationPlanner.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
@@ -23,6 +24,7 @@
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <controller_manager_msgs/SwitchController.h>
 #include <dart/utils/urdf/urdf.hpp>
+#include <gls/GLS.hpp>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <srdfdom/model.h>
 #include <urdf/model.h>
@@ -40,6 +42,8 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::constraint::TestablePtr;
+using aikido::planner::SequenceMetaPlanner;
+using aikido::planner::ompl::OMPLConfigurationToConfigurationPlanner;
 using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
@@ -263,6 +267,32 @@ Ada::Ada(
 
   mThread = make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
+
+  auto omplPlanner = std::
+      make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
+          mArmSpace,
+          &mRng);
+  auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
+  if (glsPlanner)
+  {
+    // Configure to LazySP with Forward Selector.
+    auto event = std::make_shared<gls::event::ShortestPathEvent>();
+    auto selector = std::make_shared<gls::selector::ForwardSelector>();
+    glsPlanner->setEvent(event);
+    glsPlanner->setSelector(selector);
+
+    // Set the roadmap to be used.
+    glsPlanner->setRoadmap("/home/adityavk/workspaces/lab-ws/src/planning_dataset/data/ada/graph_25_1000.graphml");
+    glsPlanner->setConnectionRadius(4.0);
+    glsPlanner->setCollisionCheckResolution(0.3);
+  }
+
+  // Create ADA's actual planner, a sequence meta-planner that contains each
+  // of the stand-alone planners.
+  std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
+      omplPlanner};
+  mPlanner
+      = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
 }
 
 //==============================================================================
@@ -417,8 +447,14 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  return mRobot->planToConfiguration(
-      space, metaSkeleton, goalState, collisionFree, timelimit);
+  auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
+
+  // Create a planToConfiguration problem.
+  auto problem = aikido::planner::ConfigurationToConfiguration(
+      mArmSpace, startState, goalState, collisionFree);
+  aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
+
+  return mPlanner->plan(problem, &pResult);
 }
 
 //==============================================================================
@@ -429,8 +465,10 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  return mRobot->planToConfiguration(
-      space, metaSkeleton, goal, collisionFree, timelimit);
+  auto goalState = space->createState();
+  space->convertPositionsToState(goal, goalState);
+  return planToConfiguration(
+      mArmSpace, metaSkeleton, goalState, collisionFree, timelimit);
 }
 
 //==============================================================================
@@ -442,7 +480,7 @@ TrajectoryPtr Ada::planToConfigurations(
     double timelimit)
 {
   return mRobot->planToConfigurations(
-      space, metaSkeleton, goalStates, collisionFree, timelimit);
+      mArmSpace, metaSkeleton, goalStates, collisionFree, timelimit);
 }
 
 //==============================================================================
@@ -454,7 +492,7 @@ TrajectoryPtr Ada::planToConfigurations(
     double timelimit)
 {
   return mRobot->planToConfigurations(
-      space, metaSkeleton, goals, collisionFree, timelimit);
+      mArmSpace, metaSkeleton, goals, collisionFree, timelimit);
 }
 
 //==============================================================================
