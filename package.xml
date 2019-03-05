@@ -11,6 +11,7 @@
   <depend>eigen</depend>
   <depend>aikido</depend>
   <depend>controller_manager_msgs</depend>
+  <depend>gls</depend>
   <depend>roslib</depend>
   <depend>srdfdom</depend>
   <depend>urdf</depend>
