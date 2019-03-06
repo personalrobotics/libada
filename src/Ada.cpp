@@ -16,11 +16,14 @@
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
+#include <aikido/planner/SnapConfigurationToConfigurationPlanner.hpp>
 #include <aikido/planner/ompl/OMPLConfigurationToConfigurationPlanner.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
+#include <aikido/planner/SequenceMetaPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
+#include <aikido/statespace/GeodesicInterpolator.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <controller_manager_msgs/SwitchController.h>
 #include <dart/utils/urdf/urdf.hpp>
@@ -44,6 +47,7 @@ using aikido::constraint::dart::TSRPtr;
 using aikido::constraint::TestablePtr;
 using aikido::planner::SequenceMetaPlanner;
 using aikido::planner::ompl::OMPLConfigurationToConfigurationPlanner;
+using aikido::planner::SnapConfigurationToConfigurationPlanner;
 using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
@@ -62,6 +66,7 @@ using aikido::trajectory::Interpolated;
 using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
 using aikido::common::cloneRNGFrom;
+using aikido::statespace::GeodesicInterpolator;
 
 using dart::collision::FCLCollisionDetector;
 using dart::common::make_unique;
@@ -115,7 +120,8 @@ Ada::Ada(
     const std::string& armTrajectoryExecutorName,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
-    const dart::common::ResourceRetrieverPtr& retriever)
+    const dart::common::ResourceRetrieverPtr& retriever,
+    const std::string& glsGraphFile)
   : mSimulation(simulation)
   , mArmTrajectoryExecutorName(armTrajectoryExecutorName)
   , mCollisionResolution(collisionResolution)
@@ -124,6 +130,7 @@ Ada::Ada(
   , mSmootherFeasibilityApproxTolerance(1e-3)
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
+  , mGLSGraphFile(glsGraphFile)
 {
   simulation = true; // temporarily set simulation to true
 
@@ -268,31 +275,43 @@ Ada::Ada(
   mThread = make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
 
-  auto omplPlanner = std::
-      make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
-          mArmSpace,
-          &mRng);
-  auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
-  if (glsPlanner)
-  {
-    // Configure to LazySP with Forward Selector.
-    auto event = std::make_shared<gls::event::ShortestPathEvent>();
-    auto selector = std::make_shared<gls::selector::ForwardSelector>();
-    glsPlanner->setEvent(event);
-    glsPlanner->setSelector(selector);
+  auto snapPlanner = std::make_shared<SnapConfigurationToConfigurationPlanner>(
+      mArmSpace, std::make_shared<GeodesicInterpolator>(mArmSpace));
 
-    // Set the roadmap to be used.
-    glsPlanner->setRoadmap("/home/adityavk/workspaces/lab-ws/src/planning_dataset/data/ada/graph_25_1000.graphml");
-    glsPlanner->setConnectionRadius(4.0);
-    glsPlanner->setCollisionCheckResolution(0.3);
+  if (mGLSGraphFile != "")
+  {
+
+    auto omplPlanner = std::
+        make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
+            mArmSpace,
+            &mRng);
+    auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
+    if (glsPlanner)
+    {
+      // Configure to LazySP with Forward Selector.
+      auto event = std::make_shared<gls::event::ShortestPathEvent>();
+      auto selector = std::make_shared<gls::selector::ForwardSelector>();
+      glsPlanner->setEvent(event);
+      glsPlanner->setSelector(selector);
+
+      // Set the roadmap to be used.
+      glsPlanner->setRoadmap(mGLSGraphFile);
+      glsPlanner->setConnectionRadius(4.0);
+      glsPlanner->setCollisionCheckResolution(0.3);
+    }
+
+    // Create ADA's actual planner, a sequence meta-planner that contains each
+    // of the stand-alone planners.
+    std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
+        snapPlanner, omplPlanner};
+    mPlanner
+        = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
+  }
+  else
+  {
+    mPlanner = snapPlanner;
   }
 
-  // Create ADA's actual planner, a sequence meta-planner that contains each
-  // of the stand-alone planners.
-  std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
-      omplPlanner};
-  mPlanner
-      = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
 }
 
 //==============================================================================
@@ -448,14 +467,22 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
+  if (mPlanner)
+  {
+    auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
 
-  // Create a planToConfiguration problem.
-  auto problem = aikido::planner::ConfigurationToConfiguration(
-      mArmSpace, startState, goalState, collisionFree);
-  aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
+    // Create a planToConfiguration problem.
+    auto problem = aikido::planner::ConfigurationToConfiguration(
+        mArmSpace, startState, goalState, collisionFree);
+    aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
 
-  return mPlanner->plan(problem, &pResult);
+    return mPlanner->plan(problem, &pResult);
+  }
+  else
+  {
+    return mRobot->planToConfiguration(
+        space, metaSkeleton, goalState, collisionFree, timelimit);
+  }
 }
 
 //==============================================================================
@@ -466,10 +493,19 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  auto goalState = space->createState();
-  space->convertPositionsToState(goal, goalState);
-  return planToConfiguration(
-      mArmSpace, metaSkeleton, goalState, collisionFree, timelimit);
+  if (mPlanner)
+  {
+    // TODO: need to fix the issue of space != mArmSpace
+    auto goalState = space->createState();
+    space->convertPositionsToState(goal, goalState);
+    return planToConfiguration(
+        mArmSpace, metaSkeleton, goalState, collisionFree, timelimit);
+  }
+  else
+  {
+    return mRobot->planToConfiguration(
+        space, metaSkeleton, goal, collisionFree, timelimit);
+  }
 }
 
 //==============================================================================
@@ -492,6 +528,7 @@ TrajectoryPtr Ada::planToConfigurations(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
+  // TODO: need to fix the issue of space != mArmSpace
   return mRobot->planToConfigurations(
       mArmSpace, metaSkeleton, goals, collisionFree, timelimit);
 }
@@ -507,15 +544,21 @@ TrajectoryPtr Ada::planToTSR(
     size_t maxNumTrials,
     const aikido::distance::ConfigurationRankerPtr& ranker)
 {
-  return mRobot->planToTSR(
-      space,
+  auto collisionConstraint
+      = getFullCollisionConstraint(mArmSpace, metaSkeleton, collisionFree);
+
+  return aikido::robot::util::planToTSR(
+      mArmSpace,
       metaSkeleton,
       bn,
       tsr,
-      collisionFree,
+      collisionConstraint,
+      cloneRNG().get(),
       timelimit,
       maxNumTrials,
-      ranker);
+      ranker,
+      mPlanner);
+
 }
 
 //==============================================================================

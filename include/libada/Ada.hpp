@@ -14,7 +14,7 @@
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
-#include <aikido/planner/SequenceMetaPlanner.hpp>
+#include <aikido/planner/Planner.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
@@ -88,7 +88,8 @@ public:
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
-      = std::make_shared<aikido::io::CatkinResourceRetriever>());
+      = std::make_shared<aikido::io::CatkinResourceRetriever>(),
+      const std::string& glsGraphFile="");
 
   virtual ~Ada() = default;
 
@@ -450,7 +451,10 @@ private:
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
 
   /// ADA's sequence meta-planner.
-  std::shared_ptr<aikido::planner::SequenceMetaPlanner> mPlanner;
+  std::shared_ptr<aikido::planner::Planner> mPlanner;
+
+  // Graph for planning with GLS planner
+  const std::string mGLSGraphFile;
 };
 
 } // namespace ada
