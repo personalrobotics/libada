@@ -484,6 +484,7 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
+  // Creating the planner everytime.
   if (mPlanner)
   {
     auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
@@ -493,7 +494,27 @@ TrajectoryPtr Ada::planToConfiguration(
         mArmSpace, startState, goalState, collisionFree);
     aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
 
-    return mPlanner->plan(problem, &pResult);
+    auto omplPlanner = std::
+        make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
+            mArmSpace,
+            &mRng);
+    auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
+    if (glsPlanner)
+    {
+      // Configure to LazySP with Forward Selector.
+      auto event = std::make_shared<gls::event::ShortestPathEvent>();
+      auto selector = std::make_shared<gls::selector::ForwardSelector>();
+      glsPlanner->setEvent(event);
+      glsPlanner->setSelector(selector);
+
+      // Set the roadmap to be used.
+      glsPlanner->setRoadmap(mGLSGraphFile);
+      glsPlanner->setConnectionRadius(10.0);
+      glsPlanner->setCollisionCheckResolution(0.3);
+    }
+
+    return omplPlanner->plan(problem, &pResult);
+    // return mPlanner->plan(problem, &pResult);
   }
   else
   {
@@ -690,8 +711,8 @@ TrajectoryPtr Ada::planToTSR(
     // Try snap planner first
     for (std::size_t i = 0; i < configurations.size(); ++i)
     {
-      auto problem = ConfigurationToConfiguration(
-          space, startState, configurations[i], collisionConstraint);
+      auto problem = aikido::planner::ConfigurationToConfiguration(
+          mArmSpace, startState, configurations[i], collisionConstraint);
 
       TrajectoryPtr traj;
 
@@ -703,7 +724,6 @@ TrajectoryPtr Ada::planToTSR(
         return traj;
       }
     }
-
   }
 
   Eigen::VectorXd positions;
