@@ -85,11 +85,11 @@ public:
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
       const std::string& endEffectorName = "j2n6s200_end_effector",
       const std::string& armTrajectoryExecutorName = "trajectory_controller",
+      const std::string& glsGraphFile="",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
-      = std::make_shared<aikido::io::CatkinResourceRetriever>(),
-      const std::string& glsGraphFile="");
+      = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
   virtual ~Ada() = default;
 

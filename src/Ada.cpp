@@ -31,6 +31,12 @@
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <srdfdom/model.h>
 #include <urdf/model.h>
+#include <aikido/constraint/dart/InverseKinematicsSampleable.hpp>
+#include <aikido/constraint/FiniteSampleable.hpp>
+#include <aikido/constraint/SequentialSampleable.hpp>
+#include <aikido/statespace/dart/MetaSkeletonStateSaver.hpp>
+#include <aikido/distance/NominalConfigurationRanker.hpp>
+#include <aikido/constraint/dart/JointStateSpaceHelpers.hpp>
 
 #undef dtwarn
 #define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
@@ -39,6 +45,8 @@
 #define dtinfo (::dart::common::colorMsg("Info", 32))
 
 namespace ada {
+
+using aikido::constraint::dart::InverseKinematicsSampleable;
 
 using aikido::control::TrajectoryExecutorPtr;
 using aikido::constraint::dart::CollisionFreePtr;
@@ -67,6 +75,12 @@ using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
 using aikido::common::cloneRNGFrom;
 using aikido::statespace::GeodesicInterpolator;
+using aikido::constraint::SequentialSampleable;
+using aikido::statespace::dart::MetaSkeletonStateSaver;
+using aikido::distance::NominalConfigurationRanker;
+using aikido::planner::ConfigurationToConfiguration;
+using aikido::constraint::dart::createSampleableBounds;
+using aikido::distance::ConstConfigurationRankerPtr;
 
 using dart::collision::FCLCollisionDetector;
 using dart::common::make_unique;
@@ -74,6 +88,7 @@ using dart::dynamics::BodyNodePtr;
 using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
 using dart::dynamics::SkeletonPtr;
+using dart::dynamics::InverseKinematics;
 
 // We use this as default since the camera-attached version is the most
 // frequent use case.
@@ -118,10 +133,10 @@ Ada::Ada(
     const dart::common::Uri& adaSrdfUri,
     const std::string& endEffectorName,
     const std::string& armTrajectoryExecutorName,
+    const std::string& glsGraphFile,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
-    const dart::common::ResourceRetrieverPtr& retriever,
-    const std::string& glsGraphFile)
+    const dart::common::ResourceRetrieverPtr& retriever)
   : mSimulation(simulation)
   , mArmTrajectoryExecutorName(armTrajectoryExecutorName)
   , mCollisionResolution(collisionResolution)
@@ -280,7 +295,7 @@ Ada::Ada(
 
   if (mGLSGraphFile != "")
   {
-
+    std::cout << "ADA " << mGLSGraphFile << std::endl;
     auto omplPlanner = std::
         make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
             mArmSpace,
@@ -296,14 +311,16 @@ Ada::Ada(
 
       // Set the roadmap to be used.
       glsPlanner->setRoadmap(mGLSGraphFile);
-      glsPlanner->setConnectionRadius(4.0);
+      glsPlanner->setConnectionRadius(10.0);
       glsPlanner->setCollisionCheckResolution(0.3);
     }
 
     // Create ADA's actual planner, a sequence meta-planner that contains each
     // of the stand-alone planners.
+    // std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
+    //     snapPlanner, omplPlanner};
     std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
-        snapPlanner, omplPlanner};
+        omplPlanner};
     mPlanner
         = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
   }
@@ -546,7 +563,9 @@ TrajectoryPtr Ada::planToTSR(
 {
   auto collisionConstraint
       = getFullCollisionConstraint(mArmSpace, metaSkeleton, collisionFree);
+  aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
 
+      /*
   return aikido::robot::util::planToTSR(
       mArmSpace,
       metaSkeleton,
@@ -558,6 +577,140 @@ TrajectoryPtr Ada::planToTSR(
       maxNumTrials,
       ranker,
       mPlanner);
+      */
+
+ dart::common::Timer timer;
+  timer.start();
+
+  // Create an IK solver with metaSkeleton dofs.
+  auto ik = InverseKinematics::create(bn);
+
+  // TODO: DART may be updated to check for single skeleton
+  if (metaSkeleton->getNumDofs() == 0)
+    throw std::invalid_argument("MetaSkeleton has 0 degrees of freedom.");
+
+  auto skeleton = metaSkeleton->getDof(0)->getSkeleton();
+  for (size_t i = 1; i < metaSkeleton->getNumDofs(); ++i)
+  {
+    if (metaSkeleton->getDof(i)->getSkeleton() != skeleton)
+      throw std::invalid_argument("MetaSkeleton has more than 1 skeleton.");
+  }
+
+  ik->setDofs(metaSkeleton->getDofs());
+
+  auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
+
+  std::cout << "Start positions " << metaSkeleton->getPositions().transpose() << std::endl;
+
+  // Hardcoded seed for ada
+  std::vector<MetaSkeletonStateSpace::ScopedState> seedStates;
+  Eigen::VectorXd seedConfiguration(space->getDimension());
+  seedStates.emplace_back(startState.clone());
+
+  auto finiteSeedSampleable
+      = std::make_shared<aikido::constraint::FiniteSampleable>(space, seedStates);
+
+  std::vector<aikido::constraint::ConstSampleablePtr> sampleableVector;
+  sampleableVector.push_back(finiteSeedSampleable);
+  sampleableVector.push_back(createSampleableBounds(space, cloneRNG()));
+  auto seedSampleable = std::make_shared<aikido::constraint::SequentialSampleable>(
+      space, sampleableVector);
+
+  // Convert TSR constraint into IK constraint
+  InverseKinematicsSampleable ikSampleable(
+      space,
+      metaSkeleton,
+      tsr,
+      seedSampleable,
+      ik,
+      maxNumTrials);
+
+  auto generator = ikSampleable.createSampleGenerator();
+
+  // Goal state
+  auto goalState = space->createState();
+
+  // TODO: Change this to timelimit once we use a fail-fast planner
+  double timelimitPerSample = timelimit / maxNumTrials;
+
+  // Save the current state of the space
+  auto saver = MetaSkeletonStateSaver(metaSkeleton);
+  DART_UNUSED(saver);
+
+  // HACK: try lots of snap plans first
+  static const std::size_t maxSnapSamples{10};
+
+  for (std::size_t batchIdx = 0; batchIdx <= 10; ++batchIdx)
+  {
+    std::cout << "Batch " << batchIdx << "/10" << std::endl;
+    std::size_t snapSamples = 0;
+
+    auto robot = metaSkeleton->getBodyNode(0)->getSkeleton();
+
+    std::vector<MetaSkeletonStateSpace::ScopedState> configurations;
+
+    // Use a ranker
+    ConstConfigurationRankerPtr configurationRanker(ranker);
+    if (!ranker)
+    {
+      auto nominalState = space->createState();
+      space->copyState(startState, nominalState);
+      configurationRanker = std::make_shared<const NominalConfigurationRanker>(
+          space, metaSkeleton, nominalState);
+    }
+
+    while (snapSamples < maxSnapSamples && generator->canSample())
+    {
+      // Sample from TSR
+      std::lock_guard<std::mutex> lock(robot->getMutex());
+      bool sampled = generator->sample(goalState);
+
+      // Increment even if it's not a valid sample since this loop
+      // has to terminate even if none are valid.
+      ++snapSamples;
+
+      if (!sampled)
+        continue;
+
+      configurations.emplace_back(goalState.clone());
+    }
+
+    if (configurations.empty())
+    {
+      std::cout <<"Failed to get any valid IK sample on batch " << batchIdx << std::endl;
+      continue;
+    }
+
+    configurationRanker->rankConfigurations(configurations);
+
+    Eigen::VectorXd _positions;
+    space->convertStateToPositions(startState, _positions);
+    std::cout << "Snap initial " << _positions.transpose() << std::endl;
+
+    // Try snap planner first
+    for (std::size_t i = 0; i < configurations.size(); ++i)
+    {
+      auto problem = ConfigurationToConfiguration(
+          space, startState, configurations[i], collisionConstraint);
+
+      TrajectoryPtr traj;
+
+      traj = mPlanner->plan(problem, &pResult);
+      if (traj)
+      {
+        std::cout << "Succeeded with " << i << "th sample " << std::endl;
+        std:: cout << "Took " << timer.getElapsedTime() << " seconds." << std::endl;
+        return traj;
+      }
+    }
+
+  }
+
+  Eigen::VectorXd positions;
+  space->convertStateToPositions(startState, positions);
+  std::cout << "Snap Failed " << positions.transpose() << std::endl;
+  std:: cout << "Took " << timer.getElapsedTime() << " seconds." << std::endl;
+  return nullptr;
 
 }
 
