@@ -491,26 +491,32 @@ TrajectoryPtr Ada::planToConfiguration(
         mArmSpace, startState, goalState, collisionFree);
     aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
 
-    auto omplPlanner
-        = std::make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
-            mArmSpace, &mRng);
-    auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
-    if (glsPlanner)
-    {
-      // Configure to LazySP with Forward Selector.
-      auto event = std::make_shared<gls::event::ShortestPathEvent>();
-      auto selector = std::make_shared<gls::selector::ForwardSelector>();
-      glsPlanner->setEvent(event);
-      glsPlanner->setSelector(selector);
+    auto state = space->createState();
+    Eigen::VectorXd positions;
+    space->copyState(goalState, state);
+    space->convertStateToPositions(state, positions);
+    std::cout << "Planning to: " << positions.transpose() << std::endl;
 
-      // Set the roadmap to be used.
-      glsPlanner->setRoadmap(mGLSGraphFile);
-      glsPlanner->setConnectionRadius(10.0);
-      glsPlanner->setCollisionCheckResolution(0.3);
-    }
+    // auto omplPlanner
+    //     = std::make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
+    //         mArmSpace, &mRng);
+    // auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
+    // if (glsPlanner)
+    // {
+    //   // Configure to LazySP with Forward Selector.
+    //   auto event = std::make_shared<gls::event::ShortestPathEvent>();
+    //   auto selector = std::make_shared<gls::selector::ForwardSelector>();
+    //   glsPlanner->setEvent(event);
+    //   glsPlanner->setSelector(selector);
 
-    return omplPlanner->plan(problem, &pResult);
-    // return mPlanner->plan(problem, &pResult);
+    //   // Set the roadmap to be used.
+    //   glsPlanner->setRoadmap(mGLSGraphFile);
+    //   glsPlanner->setConnectionRadius(10.0);
+    //   glsPlanner->setCollisionCheckResolution(0.3);
+    // }
+
+    // return omplPlanner->plan(problem, &pResult);
+    return mPlanner->plan(problem, &pResult);
   }
   else
   {
@@ -699,15 +705,18 @@ return aikido::robot::util::planToTSR(
 
     configurationRanker->rankConfigurations(configurations);
 
-    Eigen::VectorXd _positions;
-    space->convertStateToPositions(startState, _positions);
-    std::cout << "Snap initial " << _positions.transpose() << std::endl;
-
     // Try snap planner first
     for (std::size_t i = 0; i < configurations.size(); ++i)
     {
       auto problem = aikido::planner::ConfigurationToConfiguration(
           mArmSpace, startState, configurations[i], collisionConstraint);
+
+
+    Eigen::VectorXd _positions;
+    auto _state = space->createState();
+    space->copyState(configurations[i], _state);
+    space->convertStateToPositions(_state, _positions);
+    std::cout << "Planning to " << _positions.transpose() << std::endl;
 
       TrajectoryPtr traj;
 
@@ -955,6 +964,8 @@ bool Ada::moveArmToTSR(
     dtwarn << "Failed to plan to tsr" << std::endl;
     return false;
   }
+
+  // return true;
 
   return moveArmOnTrajectory(
       trajectory, collisionFree, postprocessType, velocityLimits);
