@@ -310,7 +310,7 @@ Ada::Ada(
 
       // Set the roadmap to be used.
       glsPlanner->setRoadmap(mGLSGraphFile);
-      glsPlanner->setConnectionRadius(10.0);
+      glsPlanner->setConnectionRadius(5.0);
       glsPlanner->setCollisionCheckResolution(0.3);
     }
 
