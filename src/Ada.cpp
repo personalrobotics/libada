@@ -319,7 +319,7 @@ Ada::Ada(
     // std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
     //     snapPlanner, omplPlanner};
     std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners
-        = {omplPlanner};
+        = {omplPlanner, snapPlanner};
     mPlanner = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
   }
   else
@@ -481,6 +481,9 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
+    auto collisionConstraint
+      = getFullCollisionConstraint(mArmSpace, metaSkeleton, collisionFree);
+
   // Creating the planner everytime.
   if (mPlanner)
   {
@@ -488,7 +491,7 @@ TrajectoryPtr Ada::planToConfiguration(
 
     // Create a planToConfiguration problem.
     auto problem = aikido::planner::ConfigurationToConfiguration(
-        mArmSpace, startState, goalState, collisionFree);
+        mArmSpace, startState, goalState, collisionConstraint);
     aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
 
     auto state = space->createState();
@@ -496,24 +499,6 @@ TrajectoryPtr Ada::planToConfiguration(
     space->copyState(goalState, state);
     space->convertStateToPositions(state, positions);
     std::cout << "Planning to: " << positions.transpose() << std::endl;
-
-    // auto omplPlanner
-    //     = std::make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
-    //         mArmSpace, &mRng);
-    // auto glsPlanner = omplPlanner->getOMPLPlanner()->as<gls::GLS>();
-    // if (glsPlanner)
-    // {
-    //   // Configure to LazySP with Forward Selector.
-    //   auto event = std::make_shared<gls::event::ShortestPathEvent>();
-    //   auto selector = std::make_shared<gls::selector::ForwardSelector>();
-    //   glsPlanner->setEvent(event);
-    //   glsPlanner->setSelector(selector);
-
-    //   // Set the roadmap to be used.
-    //   glsPlanner->setRoadmap(mGLSGraphFile);
-    //   glsPlanner->setConnectionRadius(10.0);
-    //   glsPlanner->setCollisionCheckResolution(0.3);
-    // }
 
     // return omplPlanner->plan(problem, &pResult);
     return mPlanner->plan(problem, &pResult);
