@@ -26,7 +26,7 @@ endif()
 include(ExternalProject)
 
 find_package(DART 6.6.2 REQUIRED
-  OPTIONAL_COMPONENTS utils
+  COMPONENTS utils utils-urdf optimizer-nlopt
 )
 
 find_package(aikido 0.3.0 REQUIRED
@@ -58,6 +58,8 @@ find_package(roslib REQUIRED)
 find_package(srdfdom REQUIRED)
 
 find_package(urdf REQUIRED)
+
+find_package(gls REQUIRED)
 
 
 #================================================================================
@@ -93,6 +95,7 @@ target_include_directories(libada SYSTEM
     ${aikido_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${controller_manager_msgs_INCLUDE_DIRS}
+    ${gls_INCLUDE_DIRS}
   PRIVATE
     ${roslib_INCLUDE_DIRS}
     ${srdfdom_INCLUDE_DIRS}
@@ -108,6 +111,7 @@ target_link_libraries(libada
   PUBLIC
     ${DART_LIBRARIES}
     ${aikido_LIBRARIES}
+    ${gls_LIBRARIES}
   PRIVATE
     ${roslib_LIBRARIES}
     ${srdfdom_LIBRARIES}

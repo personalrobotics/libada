@@ -17,12 +17,17 @@
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
+#include <aikido/planner/SequenceMetaPlanner.hpp>
+#include <aikido/planner/SnapConfigurationToConfigurationPlanner.hpp>
+#include <aikido/planner/ompl/OMPLConfigurationToConfigurationPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
+#include <aikido/statespace/GeodesicInterpolator.hpp>
 #include <aikido/statespace/dart/MetaSkeletonStateSpace.hpp>
 #include <controller_manager_msgs/SwitchController.h>
 #include <dart/utils/urdf/urdf.hpp>
+#include <gls/GLS.hpp>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <srdfdom/model.h>
 #include <urdf/model.h>
@@ -40,6 +45,9 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::constraint::TestablePtr;
+using aikido::planner::SequenceMetaPlanner;
+using aikido::planner::ompl::OMPLConfigurationToConfigurationPlanner;
+using aikido::planner::SnapConfigurationToConfigurationPlanner;
 using aikido::robot::Robot;
 using aikido::robot::ConcreteRobot;
 using aikido::robot::ConcreteManipulator;
@@ -58,6 +66,7 @@ using aikido::trajectory::Interpolated;
 using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
 using aikido::common::cloneRNGFrom;
+using aikido::statespace::GeodesicInterpolator;
 
 using dart::collision::FCLCollisionDetector;
 using dart::common::make_unique;
@@ -107,6 +116,7 @@ Ada::Ada(
     bool simulation,
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
+    const std::string planningGraph,
     const std::string& endEffectorName,
     const std::string& armTrajectoryExecutorName,
     const ::ros::NodeHandle* node,
@@ -254,6 +264,39 @@ Ada::Ada(
       collisionDetector,
       selfCollisionFilter);
   mRobot->setCRRTPlannerParameters(crrtParams);
+
+  // Setup planners.
+  auto snapPlanner = std::make_shared<SnapConfigurationToConfigurationPlanner>(
+      mArmSpace, std::make_shared<GeodesicInterpolator>(mArmSpace));
+
+  if (planningGraph == "")
+  {
+    mPlanner = snapPlanner;
+  }
+  else
+  {
+    auto glsPlanner
+        = std::make_shared<OMPLConfigurationToConfigurationPlanner<gls::GLS>>(
+            mArmSpace, &mRng);
+    auto omplPlanner = glsPlanner->getOMPLPlanner()->as<gls::GLS>();
+    if (omplPlanner)
+    {
+      // Configure to LazySP with Forward Selector.
+      auto event = std::make_shared<gls::event::ShortestPathEvent>();
+      auto selector = std::make_shared<gls::selector::ForwardSelector>();
+      omplPlanner->setEvent(event);
+      omplPlanner->setSelector(selector);
+
+      // Set the roadmap to be used.
+      omplPlanner->setRoadmap(planningGraph);
+      omplPlanner->setConnectionRadius(10.0);
+      omplPlanner->setCollisionCheckResolution(0.3);
+    }
+
+    std::vector<std::shared_ptr<aikido::planner::Planner>> allPlanners = {
+        snapPlanner, glsPlanner};
+    mPlanner = std::make_shared<SequenceMetaPlanner>(mArmSpace, allPlanners);
+  }
 
   // TODO: When the named configurations are set in resources.
   // Load the named configurations
@@ -417,8 +460,15 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  return mRobot->planToConfiguration(
-      space, metaSkeleton, goalState, collisionFree, timelimit);
+  auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
+
+  // Create a planToConfiguration problem.
+  // TODO(avk): Using mArmSpace here for satisfying contraint spaces.
+  auto problem = aikido::planner::ConfigurationToConfiguration(
+      space, startState, goalState, collisionFree);
+  aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
+
+  return mPlanner->plan(problem, &pResult);
 }
 
 //==============================================================================
@@ -429,8 +479,12 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  return mRobot->planToConfiguration(
-      space, metaSkeleton, goal, collisionFree, timelimit);
+  // TODO(avk): Using mArmSpace here for satisfying contraint spaces.
+  auto goalState = space->createState();
+  space->convertPositionsToState(goal, goalState);
+
+  return planToConfiguration(
+      space, metaSkeleton, goalState, collisionFree, timelimit);
 }
 
 //==============================================================================

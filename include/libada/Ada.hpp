@@ -14,6 +14,7 @@
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
+#include <aikido/planner/Planner.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
@@ -76,12 +77,14 @@ public:
   ///            May be nullptr if simulation is true.
   /// \param[in] adaUrdfUri Path to Ada urdf model.
   /// \param[in] adaSrdfUri Path to Ada srdf file.
+  /// \param[in] planningGraph Path to graph used by search-based planners.    
   /// \param[in] endEffectorName Name of end effector as in the urdf file.
   /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(aikido::planner::WorldPtr env,
       bool simulation,
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
+      const std::string planningGraph = "",
       const std::string& endEffectorName = "j2n6s200_end_effector",
       const std::string& armTrajectoryExecutorName = "trajectory_controller",
       const ::ros::NodeHandle* node = nullptr,
@@ -411,6 +414,9 @@ private:
 
   // mRobotSkeleton stores the full skeleton of all components (arm and hand)
   dart::dynamics::SkeletonPtr mRobotSkeleton;
+
+  /// ADA's sequence meta-planner.
+  std::shared_ptr<aikido::planner::Planner> mPlanner;
 
   // Ros node associated with this robot.
   std::unique_ptr<::ros::NodeHandle> mNode;
