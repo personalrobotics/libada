@@ -460,15 +460,7 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  auto startState = space->getScopedStateFromMetaSkeleton(metaSkeleton.get());
-
-  // Create a planToConfiguration problem.
-  // TODO(avk): Using mArmSpace here for satisfying contraint spaces.
-  auto problem = aikido::planner::ConfigurationToConfiguration(
-      space, startState, goalState, collisionFree);
-  aikido::planner::ConfigurationToConfigurationPlanner::Result pResult;
-
-  return mPlanner->plan(problem, &pResult);
+  return mRobot->planToConfiguration(space, metaSkeleton, goalState, collisionFree, mPlanner, timelimit);
 }
 
 //==============================================================================
@@ -479,12 +471,7 @@ TrajectoryPtr Ada::planToConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  // TODO(avk): Using mArmSpace here for satisfying contraint spaces.
-  auto goalState = space->createState();
-  space->convertPositionsToState(goal, goalState);
-
-  return planToConfiguration(
-      space, metaSkeleton, goalState, collisionFree, timelimit);
+  return mRobot->planToConfiguration(space, metaSkeleton, goal, collisionFree, mPlanner, timelimit);
 }
 
 //==============================================================================
@@ -496,7 +483,7 @@ TrajectoryPtr Ada::planToConfigurations(
     double timelimit)
 {
   return mRobot->planToConfigurations(
-      space, metaSkeleton, goalStates, collisionFree, timelimit);
+      space, metaSkeleton, goalStates, collisionFree, mPlanner, timelimit);
 }
 
 //==============================================================================
@@ -508,7 +495,7 @@ TrajectoryPtr Ada::planToConfigurations(
     double timelimit)
 {
   return mRobot->planToConfigurations(
-      space, metaSkeleton, goals, collisionFree, timelimit);
+      space, metaSkeleton, goals, collisionFree, mPlanner, timelimit);
 }
 
 //==============================================================================
@@ -528,6 +515,7 @@ TrajectoryPtr Ada::planToTSR(
       bn,
       tsr,
       collisionFree,
+      mPlanner,
       timelimit,
       maxNumTrials,
       ranker);
@@ -559,7 +547,7 @@ TrajectoryPtr Ada::planToNamedConfiguration(
     const CollisionFreePtr& collisionFree,
     double timelimit)
 {
-  return mRobot->planToNamedConfiguration(name, collisionFree, timelimit);
+  return mRobot->planToNamedConfiguration(name, collisionFree, mPlanner, timelimit);
 }
 
 //==============================================================================
