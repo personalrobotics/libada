@@ -782,9 +782,7 @@ bool Ada::moveArmOnTrajectory(
     std::vector<double> smoothVelocityLimits)
 {
   if (!trajectory)
-  {
-    throw std::runtime_error("Trajectory execution failed: Empty trajectory.");
-  }
+    return false;
 
   std::vector<aikido::constraint::ConstTestablePtr> constraints;
 
