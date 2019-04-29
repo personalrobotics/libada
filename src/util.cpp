@@ -1,5 +1,4 @@
 #include "libada/util.hpp"
-
 #include <aikido/common/Spline.hpp>
 #include <aikido/distance/DistanceMetric.hpp>
 #include <aikido/distance/defaults.hpp>
@@ -8,6 +7,7 @@
 #include <aikido/trajectory/Interpolated.hpp>
 #include <aikido/trajectory/util.hpp>
 #include <dart/common/StlHelpers.hpp>
+#include <stdlib.h>
 
 namespace ada {
 namespace util {
@@ -21,8 +21,9 @@ void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada)
   std::cin >> input;
   if (input == 'n')
   {
-    ROS_INFO_STREAM("Terminate with user input " << input);
+    ROS_INFO_STREAM("Aborting with user input " << input);
     ada->stopTrajectoryExecutor();
+    exit(1);
   }
 }
 
