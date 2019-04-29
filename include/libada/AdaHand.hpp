@@ -127,12 +127,7 @@ private:
   ///
   /// Maps an end-effector transform name (string) to a transform.
   using EndEffectorTransformMap = std::
-      unordered_map<std::string,
-                    Eigen::Isometry3d,
-                    std::hash<std::string>,
-                    std::equal_to<std::string>,
-                    Eigen::aligned_allocator<std::pair<const std::string,
-                                                       Eigen::Isometry3d>>>;
+      unordered_map<std::string, Eigen::Isometry3d, std::hash<std::string>, std::equal_to<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3d>>>;
 
   /// Create controllers in real or simulation.
   ///
