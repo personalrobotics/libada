@@ -384,7 +384,7 @@ private:
   const bool mSimulation;
 
   // Names of the trajectory executors
-  std::string mArmTrajectoryExecutorName; // GL:allow this to be changed
+  std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   // Collision resolution.

@@ -623,7 +623,6 @@ Ada::createTrajectoryExecutor()
   {
     std::string serverName
         = mArmTrajectoryExecutorName + "/follow_joint_trajectory";
-    std::cout << "Create " << serverName << std::endl;
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
@@ -651,9 +650,9 @@ bool Ada::switchControllers(
 
   if (mControllerServiceClient->call(srv) && srv.response.ok)
   {
-    std::cout << "Switch controller succeeded " << std::endl;
     mArmTrajectoryExecutorName = startControllers[0];
     mTrajectoryExecutor = createTrajectoryExecutor();
+    ROS_INFO_STREAM("Controllers switched");
     return true;
   }
   else
@@ -849,7 +848,6 @@ bool Ada::moveArmOnTrajectory(
   }
 
   auto future = executeTrajectory(std::move(timedTrajectory));
-  std::cout << "Got a future " << std::endl;
   try
   {
     future.get();
