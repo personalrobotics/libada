@@ -781,7 +781,9 @@ bool Ada::moveArmOnTrajectory(
     std::vector<double> smoothVelocityLimits)
 {
   if (!trajectory)
+  {
     return false;
+  }
 
   std::vector<aikido::constraint::ConstTestablePtr> constraints;
 
