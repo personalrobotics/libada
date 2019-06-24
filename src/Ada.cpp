@@ -784,29 +784,52 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 /*
   designate a startState
 */
-// aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
-//     const Eigen::Vector3d& direction,
-//     double length,
-//     State* startState,
-//     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-//     double timelimit,
-//     double positionTolerance,
-//     double angularTolerance)
-// {
-//   auto trajectory = mArm->planToEndEffectorOffset(
-//       mArmSpace,
-//       startState,
-//       mArm->getMetaSkeleton(),
-//       mHand->getEndEffectorBodyNode(),
-//       collisionFree,
-//       direction,
-//       length,
-//       timelimit,
-//       positionTolerance,
-//       angularTolerance);
+aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
+    const Eigen::Vector3d& direction,
+    double length,
+    State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  auto trajectory = mArm->planToEndEffectorOffset(
+      mArmSpace,
+      startState,
+      mArm->getMetaSkeleton(),
+      mHand->getEndEffectorBodyNode(),
+      collisionFree,
+      direction,
+      length,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
 
-//   return trajectory;
-// }
+  return trajectory;
+}
+
+//========================================================================
+aikido::trajectory::TrajectoryPtr Ada::planToEndEffectorPose(
+    const Eigen::Isometry3d& goalPose,
+    double conversionRatioInGeodesicDistance,
+    // State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double poseErrorTolerance)
+{
+  auto trajectory = mArm->planToEndEffectorPose(
+    mArmSpace,
+    // State* startState,
+    mArm->getMetaSkeleton(),
+    mHand->getEndEffectorBodyNode(),
+    collisionFree,
+    goalPose,
+    conversionRatioInGeodesicDistance,
+    timelimit,
+    poseErrorTolerance);
+
+  return trajectory;
+}
 
 aikido::trajectory::TrajectoryPtr Ada::planWithEndEffectorTwist(
     const Eigen::Vector6d& twists,

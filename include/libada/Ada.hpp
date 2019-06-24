@@ -339,7 +339,7 @@ public:
       double timelimit,
       double positionTolerance,
       double angularTolerance);
-
+// designate a startState
   aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
       const Eigen::Vector3d& direction,
       double length,
@@ -348,6 +348,16 @@ public:
       double timelimit,
       double positionTolerance,
       double angularTolerance);
+
+//===========================================
+  aikido::trajectory::TrajectoryPtr planToEndEffectorPose(
+    const Eigen::Isometry3d& goalPose,
+    double conversionRatioInGeodesicDistance,
+    // State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double poseErrorTolerance);
+
 
   aikido::trajectory::TrajectoryPtr planWithEndEffectorTwist(
     const Eigen::Vector6d& twists,
@@ -369,6 +379,8 @@ public:
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
+    // Trajectory executor.
+  std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
 private:
   // Named Configurations are read from a YAML file
@@ -452,9 +464,6 @@ private:
 
   // Thread for updating joint state from the Ros joint state client.
   std::unique_ptr<aikido::common::ExecutorThread> mJointStateThread;
-
-  // Trajectory executor.
-  std::shared_ptr<aikido::control::TrajectoryExecutor> mTrajectoryExecutor;
 
   // Name of the first link of the arm in the URDF
   std::string mArmBaseName;
