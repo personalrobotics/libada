@@ -60,7 +60,6 @@ using aikido::trajectory::TrajectoryPtr;
 using aikido::common::cloneRNGFrom;
 
 using dart::collision::FCLCollisionDetector;
-using dart::common::make_unique;
 using dart::dynamics::BodyNodePtr;
 using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
@@ -190,19 +189,19 @@ Ada::Ada(
   {
     if (!node)
     {
-      mNode = make_unique<::ros::NodeHandle>();
+      mNode = ::dart::common::make_unique<::ros::NodeHandle>();
     }
     else
     {
-      mNode = make_unique<::ros::NodeHandle>(*node);
+      mNode = ::dart::common::make_unique<::ros::NodeHandle>(*node);
     }
 
-    mControllerServiceClient = make_unique<::ros::ServiceClient>(
+    mControllerServiceClient = ::dart::common::make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
-    mJointStateClient = make_unique<RosJointStateClient>(
+    mJointStateClient = ::dart::common::make_unique<RosJointStateClient>(
         mRobotSkeleton, *mNode, "/joint_states", 1);
-    mJointStateThread = make_unique<ExecutorThread>(
+    mJointStateThread = ::dart::common::make_unique<ExecutorThread>(
         std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
         jointUpdateCycle);
     ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
@@ -261,7 +260,7 @@ Ada::Ada(
   //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
   // mRobot->setNamedConfigurations(namedConfigurations);
 
-  mThread = make_unique<ExecutorThread>(
+  mThread = ::dart::common::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
 }
 
