@@ -196,9 +196,10 @@ Ada::Ada(
       mNode = ::dart::common::make_unique<::ros::NodeHandle>(*node);
     }
 
-    mControllerServiceClient = ::dart::common::make_unique<::ros::ServiceClient>(
-        mNode->serviceClient<controller_manager_msgs::SwitchController>(
-            "controller_manager/switch_controller"));
+    mControllerServiceClient
+        = ::dart::common::make_unique<::ros::ServiceClient>(
+            mNode->serviceClient<controller_manager_msgs::SwitchController>(
+                "controller_manager/switch_controller"));
     mJointStateClient = ::dart::common::make_unique<RosJointStateClient>(
         mRobotSkeleton, *mNode, "/joint_states", 1);
     mJointStateThread = ::dart::common::make_unique<ExecutorThread>(
