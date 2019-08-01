@@ -18,7 +18,6 @@
 
 namespace ada {
 
-using dart::common::make_unique;
 using dart::dynamics::Group;
 using dart::dynamics::BodyNode;
 using dart::dynamics::BodyNodePtr;
@@ -94,7 +93,7 @@ AdaHand::AdaHand(
   {
     if (!node)
       throw std::runtime_error("ROS node not provided in real.");
-    mNode = make_unique<::ros::NodeHandle>(*node);
+    mNode = std::make_unique<::ros::NodeHandle>(*node);
   }
 
   auto robotSkeleton = mHandBaseBodyNode->getSkeleton();
@@ -198,7 +197,7 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   disablePairwiseSelfCollision(
       bodyNode, mEndEffectorBodyNode, mSelfCollisionFilter);
 
-  mGrabMetadata = make_unique<aikido::robot::GrabMetadata>(
+  mGrabMetadata = std::make_unique<aikido::robot::GrabMetadata>(
       bodyNode, bodyNodeName, bodyToGrab, jointProperties);
 }
 
