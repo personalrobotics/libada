@@ -367,6 +367,16 @@ public:
     double positionTolerance,
     double angularTolerance);
 
+// designate a startState
+  aikido::trajectory::TrajectoryPtr planWithEndEffectorTwist(
+    const Eigen::Vector6d& twists,
+    double durations,
+    State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance);
+
   /// Opens Ada's hand
   void openHand();
 

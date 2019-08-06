@@ -852,6 +852,34 @@ aikido::trajectory::TrajectoryPtr Ada::planWithEndEffectorTwist(
 
   return trajectory;
 }
+
+//==============================================================================
+// designate a startState
+
+aikido::trajectory::TrajectoryPtr Ada::planWithEndEffectorTwist(
+    const Eigen::Vector6d& twists,
+    double durations,
+    State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  auto trajectory = mArm->planWithEndEffectorTwist(
+      mArmSpace,
+      startState,
+      mArm->getMetaSkeleton(),
+      mHand->getEndEffectorBodyNode(),
+      twists,
+      durations,
+      collisionFree,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+
+  return trajectory;
+}
+
 //==============================================================================
 bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,

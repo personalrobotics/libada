@@ -12,6 +12,8 @@
 namespace ada {
 namespace util {
 
+void waitForAnyKey();
+
 /// Displays a message and waits for the user to press the enter key.
 /// Terminates if 'n' is pressed.
 /// \param[in] msg The message to display.

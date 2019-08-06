@@ -13,6 +13,11 @@ namespace ada {
 namespace util {
 
 //==============================================================================
+ void waitForAnyKey() {
+  std::cout << "Press Enter to Continue... \n";
+  std::cin.ignore();
+ }
+//==============================================================================
 void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada)
 {
   ROS_INFO((msg + "\nPress [y] to continue, [n] to terminate.").c_str());
