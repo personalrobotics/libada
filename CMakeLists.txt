@@ -170,7 +170,7 @@ install(FILES "package.xml"
 #
 
 include(ClangFormat)
-clang_format_setup(VERSION 3.9)
+clang_format_setup()
 
 if(CLANG_FORMAT_EXECUTABLE)
 
