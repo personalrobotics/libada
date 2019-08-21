@@ -25,7 +25,7 @@ endif()
 
 include(ExternalProject)
 
-find_package(DART 6.6.2 REQUIRED
+find_package(DART 6.8.5 REQUIRED
   COMPONENTS utils utils-urdf optimizer-nlopt
 
 )

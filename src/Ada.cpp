@@ -339,9 +339,7 @@ void Ada::setRoot(Robot* robot)
 void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
-  mRobot->step(timepoint);
   mArm->step(timepoint);
-  mTrajectoryExecutor->step(timepoint);
 
   if (!mSimulation)
   {
@@ -701,7 +699,7 @@ bool Ada::moveArmToTSR(
 
   if (!trajectory)
   {
-    dtwarn << "Failed to plan to tsr" << std::endl;
+    dtwarn << "Failed to plan to TSR" << std::endl;
     return false;
   }
 

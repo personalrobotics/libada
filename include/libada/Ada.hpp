@@ -336,7 +336,7 @@ public:
 
   /// Switches between controllers.
   /// \param[in] startControllers Controllers to start.
-  /// \param[in] stopControllesr Controllers to stop.
+  /// \param[in] stopControllers Controllers to stop.
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
