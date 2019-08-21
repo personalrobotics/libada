@@ -30,7 +30,7 @@ matrix:
       services: docker
 
 before_install:
-  - git clone --depth=50 git@github.com:personalrobotics/libada.git personalrobotics/libada
+  - git clone --depth=50 git@github.com:personalrobotics/libada.git personalrobotics/libada;
     if [ -n "$DOCKER_FILE" ]; then
       docker build -t "$DOCKER_FILE" -f ".ci/docker/$DOCKER_FILE" .;
       docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR -v ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro -v ~/.ssh/known_hosts:/root/.ssh/known_hosts --env-file .ci/docker/env.list --name libada-docker "$DOCKER_FILE";
