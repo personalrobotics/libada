@@ -60,7 +60,6 @@ using aikido::trajectory::TrajectoryPtr;
 using aikido::common::cloneRNGFrom;
 
 using dart::collision::FCLCollisionDetector;
-using dart::common::make_unique;
 using dart::dynamics::BodyNodePtr;
 using dart::dynamics::MetaSkeleton;
 using dart::dynamics::MetaSkeletonPtr;
@@ -190,19 +189,19 @@ Ada::Ada(
   {
     if (!node)
     {
-      mNode = make_unique<::ros::NodeHandle>();
+      mNode = std::make_unique<::ros::NodeHandle>();
     }
     else
     {
-      mNode = make_unique<::ros::NodeHandle>(*node);
+      mNode = std::make_unique<::ros::NodeHandle>(*node);
     }
 
-    mControllerServiceClient = make_unique<::ros::ServiceClient>(
+    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
-    mJointStateClient = make_unique<RosJointStateClient>(
+    mJointStateClient = std::make_unique<RosJointStateClient>(
         mRobotSkeleton, *mNode, "/joint_states", 1);
-    mJointStateThread = make_unique<ExecutorThread>(
+    mJointStateThread = std::make_unique<ExecutorThread>(
         std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
         jointUpdateCycle);
     ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
@@ -261,7 +260,7 @@ Ada::Ada(
   //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
   // mRobot->setNamedConfigurations(namedConfigurations);
 
-  mThread = make_unique<ExecutorThread>(
+  mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
 }
 
@@ -295,7 +294,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
 //==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
 {
-  return mRobot->executeTrajectory(trajectory);
+  return mTrajectoryExecutor->execute(trajectory);
 }
 
 //==============================================================================
@@ -340,7 +339,6 @@ void Ada::setRoot(Robot* robot)
 void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
-  mRobot->step(timepoint);
   mArm->step(timepoint);
 
   if (!mSimulation)
@@ -648,7 +646,12 @@ bool Ada::switchControllers(
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
   if (mControllerServiceClient->call(srv) && srv.response.ok)
+  {
+    mArmTrajectoryExecutorName = startControllers[0];
+    mTrajectoryExecutor = createTrajectoryExecutor();
+    ROS_INFO_STREAM("Controllers switched");
     return true;
+  }
   else
     throw std::runtime_error("SwitchController failed.");
 }
@@ -695,7 +698,10 @@ bool Ada::moveArmToTSR(
       = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
 
   if (!trajectory)
+  {
+    dtwarn << "Failed to plan to TSR" << std::endl;
     return false;
+  }
 
   return moveArmOnTrajectory(
       trajectory, collisionFree, postprocessType, velocityLimits);
@@ -772,9 +778,7 @@ bool Ada::moveArmOnTrajectory(
     std::vector<double> smoothVelocityLimits)
 {
   if (!trajectory)
-  {
-    throw std::runtime_error("Trajectory execution failed: Empty trajectory.");
-  }
+    return false;
 
   std::vector<aikido::constraint::ConstTestablePtr> constraints;
 

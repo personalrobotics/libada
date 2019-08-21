@@ -25,8 +25,9 @@ endif()
 
 include(ExternalProject)
 
-find_package(DART 6.6.2 REQUIRED
-  OPTIONAL_COMPONENTS utils
+find_package(DART 6.8.5 REQUIRED
+  COMPONENTS utils utils-urdf optimizer-nlopt
+
 )
 
 find_package(aikido 0.3.0 REQUIRED
@@ -169,7 +170,7 @@ install(FILES "package.xml"
 #
 
 include(ClangFormat)
-clang_format_setup(VERSION 3.8)
+clang_format_setup()
 
 if(CLANG_FORMAT_EXECUTABLE)
 

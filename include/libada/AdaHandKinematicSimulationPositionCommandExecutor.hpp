@@ -81,9 +81,9 @@ private:
       = std::array<std::size_t, kNumPositionExecutors>{{1, 1}};
 
   /// Executor for proximal and distal joints
-  std::array<AdaFingerKinematicSimulationPositionCommandExecutorPtr,
-             kNumPositionExecutors>
-      mPositionCommandExecutors;
+  std::
+      array<AdaFingerKinematicSimulationPositionCommandExecutorPtr, kNumPositionExecutors>
+          mPositionCommandExecutors;
 
   /// Duration to wait for futures from executors
   constexpr static auto kWaitPeriod = std::chrono::milliseconds(0);

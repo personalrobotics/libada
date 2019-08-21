@@ -334,6 +334,13 @@ public:
   /// Closes Ada's hand
   void closeHand();
 
+  /// Switches between controllers.
+  /// \param[in] startControllers Controllers to start.
+  /// \param[in] stopControllers Controllers to stop.
+  bool switchControllers(
+      const std::vector<std::string>& startControllers,
+      const std::vector<std::string>& stopControllers);
+
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
@@ -363,13 +370,6 @@ private:
   std::shared_ptr<aikido::control::TrajectoryExecutor>
   createTrajectoryExecutor();
 
-  /// Switches between controllers.
-  /// \param[in] startControllers Controllers to start.
-  /// \param[in] stopControllesr Controllers to stop.
-  bool switchControllers(
-      const std::vector<std::string>& startControllers,
-      const std::vector<std::string>& stopControllers);
-
   /// Plans the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return trajectory if the planning is successful.
@@ -384,7 +384,7 @@ private:
   const bool mSimulation;
 
   // Names of the trajectory executors
-  const std::string mArmTrajectoryExecutorName;
+  std::string mArmTrajectoryExecutorName;
   const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
 
   // Collision resolution.

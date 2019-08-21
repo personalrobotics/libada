@@ -8,14 +8,12 @@ constexpr std::chrono::milliseconds
     AdaHandKinematicSimulationPositionCommandExecutor::kWaitPeriod;
 constexpr int
     AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors;
-constexpr std::array<std::size_t,
-                     AdaHandKinematicSimulationPositionCommandExecutor::
-                         kNumPositionExecutors>
-    AdaHandKinematicSimulationPositionCommandExecutor::kPrimalDofs;
-constexpr std::array<std::size_t,
-                     AdaHandKinematicSimulationPositionCommandExecutor::
-                         kNumPositionExecutors>
-    AdaHandKinematicSimulationPositionCommandExecutor::kDistalDofs;
+constexpr std::
+    array<std::size_t, AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
+        AdaHandKinematicSimulationPositionCommandExecutor::kPrimalDofs;
+constexpr std::
+    array<std::size_t, AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
+        AdaHandKinematicSimulationPositionCommandExecutor::kDistalDofs;
 
 //==============================================================================
 AdaHandKinematicSimulationPositionCommandExecutor::
@@ -83,11 +81,11 @@ void AdaHandKinematicSimulationPositionCommandExecutor::setupExecutors(
       {Chain::create(
            robot->getBodyNode("j2n6s200_link_finger_1"),     // finger0Primal
            robot->getBodyNode("j2n6s200_link_finger_tip_1"), // finger0Distal
-           Chain::IncludeBoth),
+           Chain::IncludeUpstreamParentJoint),
        Chain::create(
            robot->getBodyNode("j2n6s200_link_finger_2"),     // finger1Primal
            robot->getBodyNode("j2n6s200_link_finger_tip_2"), // finger1Distal
-           Chain::IncludeBoth)}};
+           Chain::IncludeUpstreamParentJoint)}};
 
   for (std::size_t i = 0; i < fingerChains.size(); ++i)
   {
