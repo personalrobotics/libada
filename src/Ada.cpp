@@ -340,6 +340,8 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
   mArm->step(timepoint);
+  mRobot->step(timepoint);
+  mTrajectoryExecutor->step(timepoint);
 
   if (!mSimulation)
   {
