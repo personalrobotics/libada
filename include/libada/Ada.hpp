@@ -297,7 +297,8 @@ public:
   bool moveArmToConfiguration(
       const Eigen::Vector6d& configuration,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit);
+      double timelimit,
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Postprocesses and executes a trajectory.
   /// Throws runtime_error if the trajectory is empty.

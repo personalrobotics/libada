@@ -759,7 +759,8 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    double timelimit)
+    double timelimit,
+    const std::vector<double>& velocityLimits)
 {
   auto trajectory = planToConfiguration(
       mArmSpace,
@@ -768,7 +769,7 @@ bool Ada::moveArmToConfiguration(
       collisionFree,
       timelimit);
 
-  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ);
+  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ, velocityLimits);
 }
 
 //==============================================================================
@@ -794,6 +795,21 @@ bool Ada::moveArmOnTrajectory(
 
   auto armSkeleton = mArm->getMetaSkeleton();
 
+  // Update Velocity Limits
+  Eigen::VectorXd previousLowerLimits;
+  Eigen::VectorXd previousUpperLimits;
+  if (smoothVelocityLimits.size() == 6)
+  {
+    Eigen::Vector6d velocityLimits;
+    velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
+      smoothVelocityLimits[2], smoothVelocityLimits[3],
+      smoothVelocityLimits[4], smoothVelocityLimits[5];
+    previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
+    previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
+    armSkeleton->setVelocityLowerLimits(-velocityLimits);
+    armSkeleton->setVelocityUpperLimits(velocityLimits);
+  }
+
   switch (postprocessType)
   {
     case PARABOLIC_RETIME:
@@ -801,26 +817,7 @@ bool Ada::moveArmOnTrajectory(
       break;
 
     case PARABOLIC_SMOOTH:
-      if (smoothVelocityLimits.size() == 6)
-      {
-        Eigen::Vector6d velocityLimits;
-        velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
-            smoothVelocityLimits[2], smoothVelocityLimits[3],
-            smoothVelocityLimits[4], smoothVelocityLimits[5];
-        Eigen::VectorXd previousLowerLimits
-            = mArm->getMetaSkeleton()->getVelocityLowerLimits();
-        Eigen::VectorXd previousUpperLimits
-            = mArm->getMetaSkeleton()->getVelocityUpperLimits();
-        armSkeleton->setVelocityLowerLimits(-velocityLimits);
-        armSkeleton->setVelocityUpperLimits(velocityLimits);
-        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-        armSkeleton->setVelocityLowerLimits(previousLowerLimits);
-        armSkeleton->setVelocityUpperLimits(previousUpperLimits);
-      }
-      else
-      {
-        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-      }
+      timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
       break;
 
     case KUNZ:
@@ -843,6 +840,13 @@ bool Ada::moveArmOnTrajectory(
 
     default:
       throw std::invalid_argument("Unexpected trajectory post processing type");
+  }
+
+  // Revert velocity change
+  if (smoothVelocityLimits.size() == 6)
+  {
+    armSkeleton->setVelocityLowerLimits(previousLowerLimits);
+    armSkeleton->setVelocityUpperLimits(previousUpperLimits);
   }
 
   auto future = executeTrajectory(std::move(timedTrajectory));
