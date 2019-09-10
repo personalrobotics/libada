@@ -267,4 +267,4 @@ void AdaFingerKinematicSimulationPositionCommandExecutor::
       mDistalDof->getChildBodyNode());
 }
 
-} // ada
+} // namespace ada

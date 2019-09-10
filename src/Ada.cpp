@@ -35,29 +35,29 @@
 
 namespace ada {
 
-using aikido::control::TrajectoryExecutorPtr;
+using aikido::common::cloneRNGFrom;
+using aikido::constraint::TestablePtr;
 using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
-using aikido::constraint::TestablePtr;
-using aikido::robot::Robot;
-using aikido::robot::ConcreteRobot;
+using aikido::control::TrajectoryExecutorPtr;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
+using aikido::robot::ConcreteRobot;
 using aikido::robot::ConstConcreteManipulatorPtr;
 using aikido::robot::Hand;
 using aikido::robot::HandPtr;
+using aikido::robot::Robot;
+using aikido::robot::util::CRRTPlannerParameters;
 using aikido::robot::util::parseYAMLToNamedConfigurations;
 using aikido::robot::util::VectorFieldPlannerParameters;
-using aikido::robot::util::CRRTPlannerParameters;
 using aikido::statespace::StateSpace;
+using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
-using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
 using aikido::trajectory::Interpolated;
 using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
-using aikido::common::cloneRNGFrom;
 
 using dart::collision::FCLCollisionDetector;
 using dart::dynamics::BodyNodePtr;
@@ -98,7 +98,7 @@ BodyNodePtr getBodyNodeOrThrow(
 
   return bodyNode;
 }
-} // ns
+} // namespace
 
 //==============================================================================
 Ada::Ada(
@@ -801,8 +801,8 @@ bool Ada::moveArmOnTrajectory(
   {
     Eigen::Vector6d velocityLimits;
     velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
-      smoothVelocityLimits[2], smoothVelocityLimits[3],
-      smoothVelocityLimits[4], smoothVelocityLimits[5];
+        smoothVelocityLimits[2], smoothVelocityLimits[3],
+        smoothVelocityLimits[4], smoothVelocityLimits[5];
     previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
     previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
     armSkeleton->setVelocityLowerLimits(-velocityLimits);
