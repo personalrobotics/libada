@@ -66,7 +66,8 @@ public:
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
-          0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
+          // 0.2, 0.03, 0.03, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
+          0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] env World (either for planning, post-processing, or executing).

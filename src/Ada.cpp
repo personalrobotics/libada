@@ -865,7 +865,7 @@ aikido::trajectory::TrajectoryPtr Ada::planWithEndEffectorTwist(
     double positionTolerance,
     double angularTolerance)
 {
-  auto trajectory = mArm->planWithEndEffectorTwist(
+   auto trajectory = mArm->planWithEndEffectorTwist(
       mArmSpace,
       startState,
       mArm->getMetaSkeleton(),
