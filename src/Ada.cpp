@@ -278,6 +278,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path)
 {
+  // TODO : Add testable constraint to underlying Aikido function.
   return mRobot->retimePath(metaSkeleton, path);
 }
 
@@ -808,6 +809,12 @@ bool Ada::moveArmOnTrajectory(
     previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
     armSkeleton->setVelocityLowerLimits(-velocityLimits);
     armSkeleton->setVelocityUpperLimits(velocityLimits);
+  }
+  else if (smoothVelocityLimits.size() > 0)
+  {
+    // Must be sized 0 or 6
+    throw std::invalid_argument(
+        "Dimension of velocity limits doesn't match degrees of freedom.");
   }
 
   switch (postprocessType)
