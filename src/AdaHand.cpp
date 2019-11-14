@@ -18,12 +18,12 @@
 
 namespace ada {
 
-using dart::dynamics::Group;
-using dart::dynamics::BodyNode;
-using dart::dynamics::BodyNodePtr;
-using dart::dynamics::MetaSkeletonPtr;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
+using dart::dynamics::BodyNode;
+using dart::dynamics::BodyNodePtr;
+using dart::dynamics::Group;
+using dart::dynamics::MetaSkeletonPtr;
 
 const dart::common::Uri preshapesUri{
     "package://libada/resources/preshapes.yaml"};
@@ -133,8 +133,8 @@ dart::dynamics::MetaSkeletonPtr AdaHand::getMetaSkeleton()
 //==============================================================================
 void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
 {
-  using dart::dynamics::Joint;
   using dart::dynamics::FreeJoint;
+  using dart::dynamics::Joint;
   using dart::dynamics::WeldJoint;
 
   // TODO: implement grabbing multiple objects
@@ -204,8 +204,8 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
 //==============================================================================
 void AdaHand::ungrab()
 {
-  using dart::dynamics::Joint;
   using dart::dynamics::FreeJoint;
+  using dart::dynamics::Joint;
 
   // Ensure end effector is already grabbing object
   if (!mGrabMetadata)

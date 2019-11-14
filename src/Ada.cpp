@@ -35,29 +35,29 @@
 
 namespace ada {
 
-using aikido::control::TrajectoryExecutorPtr;
+using aikido::common::cloneRNGFrom;
+using aikido::constraint::TestablePtr;
 using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
-using aikido::constraint::TestablePtr;
-using aikido::robot::Robot;
-using aikido::robot::ConcreteRobot;
+using aikido::control::TrajectoryExecutorPtr;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
+using aikido::robot::ConcreteRobot;
 using aikido::robot::ConstConcreteManipulatorPtr;
 using aikido::robot::Hand;
 using aikido::robot::HandPtr;
+using aikido::robot::Robot;
+using aikido::robot::util::CRRTPlannerParameters;
 using aikido::robot::util::parseYAMLToNamedConfigurations;
 using aikido::robot::util::VectorFieldPlannerParameters;
-using aikido::robot::util::CRRTPlannerParameters;
 using aikido::statespace::StateSpace;
+using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
-using aikido::statespace::dart::ConstMetaSkeletonStateSpacePtr;
 using aikido::trajectory::Interpolated;
 using aikido::trajectory::InterpolatedPtr;
 using aikido::trajectory::TrajectoryPtr;
-using aikido::common::cloneRNGFrom;
 
 using dart::collision::FCLCollisionDetector;
 using dart::dynamics::BodyNodePtr;
@@ -98,7 +98,7 @@ BodyNodePtr getBodyNodeOrThrow(
 
   return bodyNode;
 }
-} // ns
+} // namespace
 
 //==============================================================================
 Ada::Ada(
@@ -278,6 +278,7 @@ std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path)
 {
+  // TODO : Add testable constraint to underlying Aikido function.
   return mRobot->retimePath(metaSkeleton, path);
 }
 
@@ -340,6 +341,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
   std::lock_guard<std::mutex> lock(mRobotSkeleton->getMutex());
   mArm->step(timepoint);
+  mTrajectoryExecutor->step(timepoint);
 
   if (!mSimulation)
   {
@@ -758,7 +760,8 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    double timelimit)
+    double timelimit,
+    const std::vector<double>& velocityLimits)
 {
   auto trajectory = planToConfiguration(
       mArmSpace,
@@ -767,7 +770,7 @@ bool Ada::moveArmToConfiguration(
       collisionFree,
       timelimit);
 
-  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ);
+  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ, velocityLimits);
 }
 
 //==============================================================================
@@ -775,7 +778,7 @@ bool Ada::moveArmOnTrajectory(
     aikido::trajectory::TrajectoryPtr trajectory,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     TrajectoryPostprocessType postprocessType,
-    std::vector<double> smoothVelocityLimits)
+    std::vector<double> velocityLimits)
 {
   if (!trajectory)
     return false;
@@ -793,6 +796,27 @@ bool Ada::moveArmOnTrajectory(
 
   auto armSkeleton = mArm->getMetaSkeleton();
 
+  // Update Velocity Limits
+  Eigen::VectorXd previousLowerLimits;
+  Eigen::VectorXd previousUpperLimits;
+  if (velocityLimits.size() == 6)
+  {
+    Eigen::Vector6d velocityLimits;
+    velocityLimits << velocityLimits[0], velocityLimits[1],
+        velocityLimits[2], velocityLimits[3],
+        velocityLimits[4], velocityLimits[5];
+    previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
+    previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
+    armSkeleton->setVelocityLowerLimits(-velocityLimits);
+    armSkeleton->setVelocityUpperLimits(velocityLimits);
+  }
+  else if (velocityLimits.size() > 0)
+  {
+    // Must be sized 0 or 6
+    throw std::invalid_argument(
+        "Dimension of velocity limits doesn't match degrees of freedom.");
+  }
+
   switch (postprocessType)
   {
     case PARABOLIC_RETIME:
@@ -800,26 +824,7 @@ bool Ada::moveArmOnTrajectory(
       break;
 
     case PARABOLIC_SMOOTH:
-      if (smoothVelocityLimits.size() == 6)
-      {
-        Eigen::Vector6d velocityLimits;
-        velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
-            smoothVelocityLimits[2], smoothVelocityLimits[3],
-            smoothVelocityLimits[4], smoothVelocityLimits[5];
-        Eigen::VectorXd previousLowerLimits
-            = mArm->getMetaSkeleton()->getVelocityLowerLimits();
-        Eigen::VectorXd previousUpperLimits
-            = mArm->getMetaSkeleton()->getVelocityUpperLimits();
-        armSkeleton->setVelocityLowerLimits(-velocityLimits);
-        armSkeleton->setVelocityUpperLimits(velocityLimits);
-        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-        armSkeleton->setVelocityLowerLimits(previousLowerLimits);
-        armSkeleton->setVelocityUpperLimits(previousUpperLimits);
-      }
-      else
-      {
-        timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-      }
+      timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
       break;
 
     case KUNZ:
@@ -842,6 +847,13 @@ bool Ada::moveArmOnTrajectory(
 
     default:
       throw std::invalid_argument("Unexpected trajectory post processing type");
+  }
+
+  // Revert velocity change
+  if (velocityLimits.size() == 6)
+  {
+    armSkeleton->setVelocityLowerLimits(previousLowerLimits);
+    armSkeleton->setVelocityUpperLimits(previousUpperLimits);
   }
 
   auto future = executeTrajectory(std::move(timedTrajectory));

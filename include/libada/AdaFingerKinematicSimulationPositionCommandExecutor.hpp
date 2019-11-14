@@ -23,7 +23,7 @@ AIKIDO_DECLARE_POINTERS(AdaFingerKinematicSimulationPositionCommandExecutor)
 /// to move until it reaches the joint limit or until distal collision is
 /// detected.
 class AdaFingerKinematicSimulationPositionCommandExecutor
-    : public aikido::control::PositionCommandExecutor
+  : public aikido::control::PositionCommandExecutor
 {
 public:
   /// Constructor.
@@ -149,6 +149,6 @@ private:
   mutable std::mutex mMutex;
 };
 
-} // ada
+} // namespace ada
 
 #endif // LIBADA_ADAFINGERKINEMATICSIMULATIONPOSITIONCOMMANDEXECUTOR_HPP_
