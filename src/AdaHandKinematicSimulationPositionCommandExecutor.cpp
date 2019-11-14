@@ -8,12 +8,14 @@ constexpr std::chrono::milliseconds
     AdaHandKinematicSimulationPositionCommandExecutor::kWaitPeriod;
 constexpr int
     AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors;
-constexpr std::
-    array<std::size_t, AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
-        AdaHandKinematicSimulationPositionCommandExecutor::kPrimalDofs;
-constexpr std::
-    array<std::size_t, AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
-        AdaHandKinematicSimulationPositionCommandExecutor::kDistalDofs;
+constexpr std::array<
+    std::size_t,
+    AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
+    AdaHandKinematicSimulationPositionCommandExecutor::kPrimalDofs;
+constexpr std::array<
+    std::size_t,
+    AdaHandKinematicSimulationPositionCommandExecutor::kNumPositionExecutors>
+    AdaHandKinematicSimulationPositionCommandExecutor::kDistalDofs;
 
 //==============================================================================
 AdaHandKinematicSimulationPositionCommandExecutor::
@@ -208,4 +210,4 @@ bool AdaHandKinematicSimulationPositionCommandExecutor::setCollideWith(
   return true;
 }
 
-} // ada
+} // namespace ada

@@ -293,6 +293,12 @@ public:
 
   /// Moves the robot to a configuration.
   /// Throws a runtime_error if no trajectory could be found.
+  /// \param[in] configuration 6-D vector of joint values
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// \param[in] timelimit Timelimit for planning.
+  /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
+  ///             If empty, defaults to URDF-specified limits.
+  ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
   bool moveArmToConfiguration(
       const Eigen::Vector6d& configuration,
@@ -302,12 +308,19 @@ public:
 
   /// Postprocesses and executes a trajectory.
   /// Throws runtime_error if the trajectory is empty.
+  /// \param[in] trajectory Trajectory to execute.
+  /// \param[in] collisionFree CollisionFree constraint to check.
+  /// \param[in] postprocessType Select re-timing post-processor
+  ///                             (\see ada::TrajectoryPostprocessType)
+  /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
+  ///             If empty, defaults to URDF-specified limits.
+  ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
   bool moveArmOnTrajectory(
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       TrajectoryPostprocessType postprocessType,
-      std::vector<double> smoothVelocityLimits = std::vector<double>());
+      std::vector<double> velocityLimits = std::vector<double>());
 
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
