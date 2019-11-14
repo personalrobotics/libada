@@ -778,7 +778,7 @@ bool Ada::moveArmOnTrajectory(
     aikido::trajectory::TrajectoryPtr trajectory,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     TrajectoryPostprocessType postprocessType,
-    std::vector<double> smoothVelocityLimits)
+    std::vector<double> velocityLimits)
 {
   if (!trajectory)
     return false;
@@ -799,18 +799,18 @@ bool Ada::moveArmOnTrajectory(
   // Update Velocity Limits
   Eigen::VectorXd previousLowerLimits;
   Eigen::VectorXd previousUpperLimits;
-  if (smoothVelocityLimits.size() == 6)
+  if (velocityLimits.size() == 6)
   {
     Eigen::Vector6d velocityLimits;
-    velocityLimits << smoothVelocityLimits[0], smoothVelocityLimits[1],
-        smoothVelocityLimits[2], smoothVelocityLimits[3],
-        smoothVelocityLimits[4], smoothVelocityLimits[5];
+    velocityLimits << velocityLimits[0], velocityLimits[1],
+        velocityLimits[2], velocityLimits[3],
+        velocityLimits[4], velocityLimits[5];
     previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
     previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
     armSkeleton->setVelocityLowerLimits(-velocityLimits);
     armSkeleton->setVelocityUpperLimits(velocityLimits);
   }
-  else if (smoothVelocityLimits.size() > 0)
+  else if (velocityLimits.size() > 0)
   {
     // Must be sized 0 or 6
     throw std::invalid_argument(
@@ -850,7 +850,7 @@ bool Ada::moveArmOnTrajectory(
   }
 
   // Revert velocity change
-  if (smoothVelocityLimits.size() == 6)
+  if (velocityLimits.size() == 6)
   {
     armSkeleton->setVelocityLowerLimits(previousLowerLimits);
     armSkeleton->setVelocityUpperLimits(previousUpperLimits);

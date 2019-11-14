@@ -312,7 +312,7 @@ public:
   /// \param[in] collisionFree CollisionFree constraint to check.
   /// \param[in] postprocessType Select re-timing post-processor
   ///                             (\see ada::TrajectoryPostprocessType)
-  /// \param[in] smoothVelocityLimits 6-D velocity limit per joint (in value/s)
+  /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
   ///             If empty, defaults to URDF-specified limits.
   ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
@@ -320,7 +320,7 @@ public:
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       TrajectoryPostprocessType postprocessType,
-      std::vector<double> smoothVelocityLimits = std::vector<double>());
+      std::vector<double> velocityLimits = std::vector<double>());
 
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
