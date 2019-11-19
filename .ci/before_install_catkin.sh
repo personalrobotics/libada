@@ -8,4 +8,4 @@ cd "${HOME}/workspace"
 git clone https://github.com/personalrobotics/pr-cleanroom.git scripts
 
 ./scripts/internal-setup.sh
-curl -sS "${DISTRIBUTION}" | ./scripts/internal-convert.py > distribution.yml # required for private repos
+curl -sS "${DISTRIBUTION}" > distribution.yml # public repo, no internal-convert
