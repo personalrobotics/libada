@@ -334,7 +334,6 @@ public:
   /// Closes Ada's hand
   void closeHand();
 
-private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
 
