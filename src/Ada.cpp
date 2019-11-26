@@ -801,14 +801,14 @@ bool Ada::moveArmOnTrajectory(
   Eigen::VectorXd previousUpperLimits;
   if (velocityLimits.size() == 6)
   {
-    Eigen::Vector6d velocityLimits;
-    velocityLimits << velocityLimits[0], velocityLimits[1],
+    Eigen::Vector6d eigenVelocityLimits;
+    eigenVelocityLimits << velocityLimits[0], velocityLimits[1],
         velocityLimits[2], velocityLimits[3],
         velocityLimits[4], velocityLimits[5];
     previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
     previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
-    armSkeleton->setVelocityLowerLimits(-velocityLimits);
-    armSkeleton->setVelocityUpperLimits(velocityLimits);
+    armSkeleton->setVelocityLowerLimits(-eigenVelocityLimits);
+    armSkeleton->setVelocityUpperLimits(eigenVelocityLimits);
   }
   else if (velocityLimits.size() > 0)
   {
