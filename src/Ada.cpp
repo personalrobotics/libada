@@ -733,6 +733,30 @@ bool Ada::moveArmToEndEffectorOffset(
   return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
 }
 
+//============================================================================== MAKEING MY EDITS HERE
+bool Ada::moveArmToEndEffectorPose(
+    const Eigen::Vector3d& endPose,
+    double length,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance,
+    const std::vector<double>& velocityLimits)
+{
+  auto traj = planArmToEndEffectorOffset(
+      endPose,
+      length,
+      collisionFree,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+
+  if (!traj)
+    return false;
+
+  return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
+}
+
 //==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
     const Eigen::Vector3d& direction,
@@ -755,6 +779,30 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 
   return trajectory;
 }
+
+//============================================================================== MAKING MY EDITS HERE
+aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorPose(
+    const Eigen::Vector3d& direction,
+    double length,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance)
+{
+  auto trajectory = mArm->planToEndEffectorOffset(
+      mArmSpace,
+      mArm->getMetaSkeleton(),
+      mHand->getEndEffectorBodyNode(),
+      collisionFree,
+      direction,
+      length,
+      timelimit,
+      positionTolerance,
+      angularTolerance);
+
+  return trajectory;
+}
+
 
 //==============================================================================
 bool Ada::moveArmToConfiguration(
