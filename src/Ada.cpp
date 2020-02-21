@@ -735,21 +735,19 @@ bool Ada::moveArmToEndEffectorOffset(
 
 //============================================================================== MAKEING MY EDITS HERE
 bool Ada::moveArmToEndEffectorPose(
-    const Eigen::Vector3d& endPose,
-    double length,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Isometry3d& goalPose,
+    double distance,
     double timelimit,
-    double positionTolerance,
-    double angularTolerance,
+    double poseErrorTolerance,
     const std::vector<double>& velocityLimits)
 {
-  auto traj = planArmToEndEffectorOffset(
-      endPose,
-      length,
+  auto traj = planArmToEndEffectorPose(
       collisionFree,
+      goalPose,
+      distance,
       timelimit,
-      positionTolerance,
-      angularTolerance);
+      poseErrorTolerance);
 
   if (!traj)
     return false;
@@ -782,23 +780,21 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorOffset(
 
 //============================================================================== MAKING MY EDITS HERE
 aikido::trajectory::TrajectoryPtr Ada::planArmToEndEffectorPose(
-    const Eigen::Vector3d& direction,
-    double length,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Isometry3d& goalPose,
+    double distance,
     double timelimit,
-    double positionTolerance,
-    double angularTolerance)
+    double poseErrorTolerance)
 {
-  auto trajectory = mArm->planToEndEffectorOffset(
+  auto trajectory = mArm->planToEndEffectorPose(
       mArmSpace,
       mArm->getMetaSkeleton(),
       mHand->getEndEffectorBodyNode(),
       collisionFree,
-      direction,
-      length,
+      goalPose,
+      distance,
       timelimit,
-      positionTolerance,
-      angularTolerance);
+      poseErrorTolerance);
 
   return trajectory;
 }

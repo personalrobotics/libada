@@ -291,17 +291,14 @@ public:
       double angularTolerance,
       const std::vector<double>& velocityLimits = std::vector<double>());
 
-  /// Moves the end effector to a certain pose.
-  /// Throws a runtime_error if no trajectory could be found.
-  /// \return True if the trajectory was completed successfully.
+  // NEW METHOD
   bool moveArmToEndEffectorPose(
-      const Eigen::Vector3d& endPose,
-      double length,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit,
-      double positionTolerance,
-      double angularTolerance,
-      const std::vector<double>& velocityLimits = std::vector<double>());
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Isometry3d& goalPose,
+    double distance,
+    double timelimit,
+    double poseErrorTolerance,
+    const std::vector<double>& velocityLimits);
 
   /// Moves the robot to a configuration.
   /// Throws a runtime_error if no trajectory could be found.
@@ -354,25 +351,13 @@ public:
       double positionTolerance,
       double angularTolerance);
 
-  /// Plans to a desired end-effector offset with fixed orientation.
-  /// \param[in] space The StateSpace for the metaskeleton.
-  /// \param[in] metaSkeleton Metaskeleton to plan with.
-  /// \param[in] body Bodynode for the end effector.
-  /// \param[in] collisionFree CollisionFree constraint to check.
-  /// \param[in] endPose final pose of unit vector in the world frame.
-  /// \param[in] distance Distance distance to move, in meters.
-  /// \param[in] timelimit Timelimit for planning.
-  /// \param[in] positionTolerance Constraint tolerance in meters.
-  /// \param[in] angularTolerance Constraint tolerance in radians.
-  /// \return Output trajectory
-  /// \return trajectory if the planning is successful.
-  aikido::trajectory::TrajectoryPtr planArmToEndEffectorPose(
-      const Eigen::Vector3d& endPose,
-      double length,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit,
-      double positionTolerance,
-      double angularTolerance);
+// NEW METHOD
+aikido::trajectory::TrajectoryPtr planArmToEndEffectorPose(
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Isometry3d& goalPose,
+    double distance,
+    double timelimit,
+    double poseErrorTolerance);
 
   /// Opens Ada's hand
   void openHand();
