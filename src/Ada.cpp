@@ -254,6 +254,11 @@ Ada::Ada(
       selfCollisionFilter);
   mRobot->setCRRTPlannerParameters(crrtParams);
 
+  // Start Cartesian Velocity Action Client
+  if (!mSimulation) {
+    mActionClient = std::make_shared<ActionClient>(mCartesianVelocityName + "/cart_velocity");
+  }
+
   // TODO: When the named configurations are set in resources.
   // Load the named configurations
   // auto namedConfigurations = parseYAMLToNamedConfigurations(
@@ -524,6 +529,158 @@ bool Ada::stopTrajectoryExecutor()
       std::vector<std::string>(),
       std::vector<std::string>{mArmTrajectoryExecutorName,
                                mHandTrajectoryExecutorName});
+}
+
+//=============================================================================
+bool Ada::setVelocityControl(bool enabled) {
+  if(mSimulation) return false;
+  bool ret;
+
+  controller_manager_msgs::SwitchController srv;
+  srv.request.strictness
+      = controller_manager_msgs::SwitchControllerRequest::STRICT;
+
+  if(enabled) {
+    // Stop joint trajectory control
+    ret = stopTrajectoryExecutor();
+    if (!ret) return false;
+
+    // Switch controllers
+    srv.request.start_controllers = std::vector<std::string>{mCartesianVelocityName};
+    srv.request.stop_controllers = std::vector<std::string>();
+    if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
+      return false;
+    }
+
+    // Ensure action client is running
+    return mActionClient->waitForActionServerToStart(ros::Duration(10.0));
+  } else {
+    // Kill action goals
+    ret = cancelCommandVelocity();
+    if (!ret) return false;
+
+    // Switch controllers
+    srv.request.start_controllers = std::vector<std::string>();
+    srv.request.stop_controllers = std::vector<std::string>{mCartesianVelocityName};
+    if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
+      return false;
+    }
+
+    // Start joint trajectory control
+    return startTrajectoryExecutor();
+  }
+}
+
+//=============================================================================
+std::future<bool> Ada::moveArmCommandVelocity(
+    const Eigen::Vector3d& linear,
+    const Eigen::Vector3d& angular,
+    ros::Duration forTime,
+    bool block) {
+  mPromise.reset(new std::promise<bool>());
+  std::future<bool> ret = mPromise->get_future();
+  if (mSimulation) {
+    mPromise->set_value(false);
+    return ret;
+  }
+
+  // Construct goal
+  pr_control_msgs::SetCartesianVelocityGoal goal;
+  goal.exec_time = forTime;
+  goal.command.linear.x = linear(0);
+  goal.command.linear.y = linear(1);
+  goal.command.linear.z = linear(2);
+  goal.command.angular.x = angular(0);
+  goal.command.angular.y = angular(1);
+  goal.command.angular.z = angular(2);
+
+  // Send goal
+  using std::placeholders::_1;
+  mGoalHandle = mActionClient->sendGoal(goal, 
+    std::bind(&Ada::transitionCallback, this, _1));
+
+  // Block until done or time-out
+  if(block) {
+    std::future_status status = ret.wait_for(std::chrono::nanoseconds(forTime.toNSec()));
+    if (status != std::future_status::ready) {
+      // Time-out, write false
+      mPromise->set_value(false);
+    }
+  }
+
+  return ret;
+}
+
+void Ada::transitionCallback(GoalHandle handle) {
+  // Only handle current goal
+  if (handle != mGoalHandle) return;
+
+  using actionlib::TerminalState;
+
+  if (handle.getCommState() == actionlib::CommState::DONE)
+  {
+    std::stringstream message;
+    bool isSuccessful = true;
+
+    // Check the status of the actionlib call. Note that the actionlib call can
+    // succeed, even if execution failed.
+    const auto terminalState = handle.getTerminalState();
+    if (terminalState != TerminalState::SUCCEEDED)
+    {
+      message << "Velocity Command " << terminalState.toString();
+
+      const auto terminalMessage = terminalState.getText();
+      if (!terminalMessage.empty())
+        message << " (" << terminalMessage << ")";
+
+      isSuccessful = false;
+    }
+    else
+    {
+      message << "Execution failed.";
+    }
+
+    // Check the status of execution. This is only possible if the actionlib
+    // call succeeded.
+    const auto result = handle.getResult();
+    if (result && result->error_code != Result::SUCCESSFUL)
+    {
+      message << ": ";
+      switch(result->error_code) {
+        case Result::INVALID_CMD:
+          message << "INVALID_CMD";
+          break;
+        case Result::FORCE_THRESH:
+          message << "FORCE_THRESH";
+          break;
+        case Result::CANCELLED:
+          message << "CANCELLED";
+          break;
+        default:
+          message << "UNKNOWN";
+      }
+
+      if (!result->error_string.empty())
+        message << " (" << result->error_string << ")";
+
+      isSuccessful = false;
+    }
+
+    if(!isSuccessful) {
+      ROS_WARN_STREAM(message.str());
+    }
+
+    mPromise->set_value(isSuccessful);
+  }
+
+}
+
+//=============================================================================
+bool Ada::cancelCommandVelocity() {
+  if(mSimulation) return false;
+  if(!mActionClient->isServerConnected()) return false;
+  mActionClient->cancelAllGoals();
+  return true;
 }
 
 //=============================================================================

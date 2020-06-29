@@ -27,6 +27,9 @@
 #include <dart/dart.hpp>
 #include <ros/ros.h>
 
+#include <pr_control_msgs/SetCartesianVelocityAction.h>
+#include <actionlib/client/action_client.h>
+
 #include "libada/AdaHand.hpp"
 
 namespace ada {
@@ -254,6 +257,28 @@ public:
   /// \return true if all controllers have been successfully switched
   bool stopTrajectoryExecutor();
 
+  /// Toggle controllers and enable/disable cartesian velocity control.
+  /// Required before calling \c moveArmCommandVelocity
+  /// \return true if all controllers have been successfully switched
+  bool setVelocityControl(bool enabled);
+
+  /// Moves the end effector at a cartesian velocity for a specified
+  /// amount of time.
+  /// \param[in] linear, 3-D velocity in world space, m/s
+  /// \param[in] angular, 3-D velocity about world axes, rad/s
+  /// \param[in] forTime, maximum time to execute velocity 
+  /// \param[in] block, block until completed, cancelled, or aborted
+  /// \return True if the trajectory was completed successfully.
+  std::future<bool> moveArmCommandVelocity(
+    const Eigen::Vector3d& linear,
+    const Eigen::Vector3d& angular = Eigen::Vector3d(0.0, 0.0, 0.0),
+    ros::Duration forTime = ros::Duration(1.0),
+    bool block = false);
+
+  /// Stops any movement created by \c moveArmCommandVelocity
+  /// \return True on successful cancellation
+  bool cancelCommandVelocity();
+
   /// \copydoc ConcreteRobot::setCRRTPlannerParameters
   void setCRRTPlannerParameters(
       const aikido::robot::util::CRRTPlannerParameters& crrtParameters);
@@ -354,6 +379,14 @@ public:
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
+
+// Short-cuts for action client types
+protected:
+  using Action = pr_control_msgs::SetCartesianVelocityAction;
+  using ActionClient = actionlib::ActionClient<Action>;
+  using GoalHandle = ActionClient::GoalHandle;
+
+  using Result = pr_control_msgs::SetCartesianVelocityResult;
 
 private:
   // Named Configurations are read from a YAML file
@@ -461,6 +494,18 @@ private:
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
+
+  ////// Cartesian Velocity Variables
+  // Name of cartesian velocity action server
+  const std::string mCartesianVelocityName = "move_until_touch_cartvel_controller";
+  // Action Client
+  std::shared_ptr<ActionClient> mActionClient;
+  // Transition callback for velocity goals
+  void transitionCallback(GoalHandle handle);
+  // Current action goal
+  GoalHandle mGoalHandle;
+  // Promise to keep track of current velocity goal
+  std::shared_ptr<std::promise<bool>> mPromise;
 };
 
 } // namespace ada
