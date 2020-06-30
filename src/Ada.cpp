@@ -119,6 +119,7 @@ Ada::Ada(
   , mSmootherFeasibilityApproxTolerance(1e-3)
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
+  , mSpinner(1)
 {
   simulation = true; // temporarily set simulation to true
 
@@ -552,9 +553,15 @@ bool Ada::setVelocityControl(bool enabled) {
       return false;
     }
 
+    // Begin receiving callbacks
+    mSpinner.start();
+
     // Ensure action client is running
+    ROS_INFO_STREAM("Starting cartesian velocity action client...");
     return mActionClient->waitForActionServerToStart(ros::Duration(10.0));
   } else {
+    // Stop callbacks
+    mSpinner.stop();
     // Kill action goals
     ret = cancelCommandVelocity();
     if (!ret) return false;
@@ -806,8 +813,10 @@ bool Ada::switchControllers(
 
   if (mControllerServiceClient->call(srv) && srv.response.ok)
   {
-    mArmTrajectoryExecutorName = startControllers[0];
-    mTrajectoryExecutor = createTrajectoryExecutor();
+    if(startControllers.size() > 0) {
+      mArmTrajectoryExecutorName = startControllers[0];
+      mTrajectoryExecutor = createTrajectoryExecutor();
+    }
     ROS_INFO_STREAM("Controllers switched");
     return true;
   }

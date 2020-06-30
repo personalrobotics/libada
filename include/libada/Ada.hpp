@@ -506,6 +506,8 @@ private:
   GoalHandle mGoalHandle;
   // Promise to keep track of current velocity goal
   std::shared_ptr<std::promise<bool>> mPromise;
+  // Spinner for callbacks
+  ros::AsyncSpinner mSpinner;
 };
 
 } // namespace ada
