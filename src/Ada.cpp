@@ -255,11 +255,6 @@ Ada::Ada(
       selfCollisionFilter);
   mRobot->setCRRTPlannerParameters(crrtParams);
 
-  // Start Cartesian Velocity Action Client
-  if (!mSimulation) {
-    mActionClient = std::make_shared<ActionClient>(mCartesianVelocityName + "/cart_velocity");
-  }
-
   // TODO: When the named configurations are set in resources.
   // Load the named configurations
   // auto namedConfigurations = parseYAMLToNamedConfigurations(
@@ -533,7 +528,7 @@ bool Ada::stopTrajectoryExecutor()
 }
 
 //=============================================================================
-bool Ada::setVelocityControl(bool enabled) {
+bool Ada::setVelocityControl(bool enabled, bool useFT) {
   if(mSimulation) return false;
   bool ret;
 
@@ -541,13 +536,16 @@ bool Ada::setVelocityControl(bool enabled) {
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
+  const std::string controlName = useFT ? mCartesianVelocityName : mCartesianVelocityNoFTName;
+
   if(enabled) {
+    mActionClient = std::make_shared<ActionClient>(controlName + "/cart_velocity");
     // Stop joint trajectory control
     ret = stopTrajectoryExecutor();
     if (!ret) return false;
 
     // Switch controllers
-    srv.request.start_controllers = std::vector<std::string>{mCartesianVelocityName};
+    srv.request.start_controllers = std::vector<std::string>{controlName};
     srv.request.stop_controllers = std::vector<std::string>();
     if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
       return false;
@@ -568,7 +566,7 @@ bool Ada::setVelocityControl(bool enabled) {
 
     // Switch controllers
     srv.request.start_controllers = std::vector<std::string>();
-    srv.request.stop_controllers = std::vector<std::string>{mCartesianVelocityName};
+    srv.request.stop_controllers = std::vector<std::string>{controlName};
     if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
       return false;
     }

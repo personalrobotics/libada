@@ -259,8 +259,9 @@ public:
 
   /// Toggle controllers and enable/disable cartesian velocity control.
   /// Required before calling \c moveArmCommandVelocity
+  /// \param[in] useFT whether to use the FT-enabled controller or not.
   /// \return true if all controllers have been successfully switched
-  bool setVelocityControl(bool enabled);
+  bool setVelocityControl(bool enabled, bool useFT = false);
 
   /// Moves the end effector at a cartesian velocity for a specified
   /// amount of time.
@@ -498,6 +499,7 @@ private:
   ////// Cartesian Velocity Variables
   // Name of cartesian velocity action server
   const std::string mCartesianVelocityName = "move_until_touch_cartvel_controller";
+  const std::string mCartesianVelocityNoFTName = "cartvel_controller";
   // Action Client
   std::shared_ptr<ActionClient> mActionClient;
   // Transition callback for velocity goals
