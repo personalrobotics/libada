@@ -47,6 +47,17 @@ enum TrajectoryPostprocessType
   KUNZ
 };
 
+// Enum for Cartesian Velocity Return Result
+enum CartVelocityResult
+{
+  kCVR_SUCCESS,
+  kCVR_INVALID,
+  kCVR_FORCE,
+  kCVR_CANCELLED,
+  kCVR_TIMEOUT,
+  kCVR_UNKNOWN
+};
+
 class Ada final : public aikido::robot::Robot
 {
 public:
@@ -270,7 +281,7 @@ public:
   /// \param[in] forTime, maximum time to execute velocity 
   /// \param[in] block, block until completed, cancelled, or aborted
   /// \return True if the trajectory was completed successfully.
-  std::future<bool> moveArmCommandVelocity(
+  std::future<CartVelocityResult> moveArmCommandVelocity(
     const Eigen::Vector3d& linear,
     const Eigen::Vector3d& angular = Eigen::Vector3d(0.0, 0.0, 0.0),
     ros::Duration forTime = ros::Duration(1.0),
@@ -507,9 +518,11 @@ private:
   // Current action goal
   GoalHandle mGoalHandle;
   // Promise to keep track of current velocity goal
-  std::shared_ptr<std::promise<bool>> mPromise;
+  std::shared_ptr<std::promise<CartVelocityResult>> mPromise;
   // Spinner for callbacks
   ros::AsyncSpinner mSpinner;
+  // Track whether using velocity control
+  bool mVelocityControl;
 };
 
 } // namespace ada

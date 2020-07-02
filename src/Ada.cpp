@@ -120,6 +120,7 @@ Ada::Ada(
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
   , mSpinner(1)
+  , mVelocityControl(false)
 {
   simulation = true; // temporarily set simulation to true
 
@@ -530,6 +531,9 @@ bool Ada::stopTrajectoryExecutor()
 //=============================================================================
 bool Ada::setVelocityControl(bool enabled, bool useFT) {
   if(mSimulation) return false;
+  // Do not re-enable or re-disable
+  if(mVelocityControl == enabled) return true;
+
   bool ret;
 
   controller_manager_msgs::SwitchController srv;
@@ -577,15 +581,15 @@ bool Ada::setVelocityControl(bool enabled, bool useFT) {
 }
 
 //=============================================================================
-std::future<bool> Ada::moveArmCommandVelocity(
+std::future<CartVelocityResult> Ada::moveArmCommandVelocity(
     const Eigen::Vector3d& linear,
     const Eigen::Vector3d& angular,
     ros::Duration forTime,
     bool block) {
-  mPromise.reset(new std::promise<bool>());
-  std::future<bool> ret = mPromise->get_future();
-  if (mSimulation) {
-    mPromise->set_value(false);
+  mPromise.reset(new std::promise<CartVelocityResult>());
+  std::future<CartVelocityResult> ret = mPromise->get_future();
+  if (mSimulation || !mVelocityControl) {
+    mPromise->set_value(kCVR_INVALID);
     return ret;
   }
 
@@ -609,7 +613,7 @@ std::future<bool> Ada::moveArmCommandVelocity(
     std::future_status status = ret.wait_for(std::chrono::nanoseconds(forTime.toNSec()));
     if (status != std::future_status::ready) {
       // Time-out, write false
-      mPromise->set_value(false);
+      mPromise->set_value(kCVR_TIMEOUT);
     }
   }
 
@@ -625,28 +629,21 @@ void Ada::transitionCallback(GoalHandle handle) {
   if (handle.getCommState() == actionlib::CommState::DONE)
   {
     std::stringstream message;
-    bool isSuccessful = true;
+    CartVelocityResult isSuccessful = kCVR_SUCCESS;
 
     // Check the status of the actionlib call. Note that the actionlib call can
     // succeed, even if execution failed.
     const auto terminalState = handle.getTerminalState();
     if (terminalState != TerminalState::SUCCEEDED)
     {
-      message << "Velocity Command " << terminalState.toString();
-
-      const auto terminalMessage = terminalState.getText();
-      if (!terminalMessage.empty())
-        message << " (" << terminalMessage << ")";
-
-      isSuccessful = false;
+      
     }
     else
     {
       message << "Execution failed.";
     }
 
-    // Check the status of execution. This is only possible if the actionlib
-    // call succeeded.
+    // Check the status of execution.
     const auto result = handle.getResult();
     if (result && result->error_code != Result::SUCCESSFUL)
     {
@@ -654,24 +651,36 @@ void Ada::transitionCallback(GoalHandle handle) {
       switch(result->error_code) {
         case Result::INVALID_CMD:
           message << "INVALID_CMD";
+          isSuccessful = kCVR_INVALID;
           break;
         case Result::FORCE_THRESH:
           message << "FORCE_THRESH";
+          isSuccessful = kCVR_FORCE;
           break;
         case Result::CANCELLED:
           message << "CANCELLED";
+          isSuccessful = kCVR_CANCELLED;
           break;
         default:
           message << "UNKNOWN";
+          isSuccessful = kCVR_UNKNOWN;
       }
 
       if (!result->error_string.empty())
         message << " (" << result->error_string << ")";
+    }
+    // we can fail without a result for another reason
+    else if (!result) {
+      message << "Velocity Command " << terminalState.toString();
 
-      isSuccessful = false;
+      const auto terminalMessage = terminalState.getText();
+      if (!terminalMessage.empty())
+        message << " (" << terminalMessage << ")";
+
+      isSuccessful = kCVR_UNKNOWN;
     }
 
-    if(!isSuccessful) {
+    if(isSuccessful != kCVR_SUCCESS) {
       ROS_WARN_STREAM(message.str());
     }
 
@@ -684,6 +693,7 @@ void Ada::transitionCallback(GoalHandle handle) {
 bool Ada::cancelCommandVelocity() {
   if(mSimulation) return false;
   if(!mActionClient->isServerConnected()) return false;
+  if(!mVelocityControl) return false;
   mActionClient->cancelAllGoals();
   return true;
 }
