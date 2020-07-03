@@ -264,6 +264,9 @@ Ada::Ada(
 
   mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
+
+  // Callbacks for Cartesian Velocity
+  mSpinner.start();
 }
 
 //==============================================================================
@@ -555,15 +558,14 @@ bool Ada::setVelocityControl(bool enabled, bool useFT) {
       return false;
     }
 
-    // Begin receiving callbacks
-    mSpinner.start();
-
     // Ensure action client is running
     ROS_INFO_STREAM("Starting cartesian velocity action client...");
-    return mActionClient->waitForActionServerToStart(ros::Duration(10.0));
+    if(!mActionClient->waitForActionServerToStart(ros::Duration(10.0))) {
+      return false;
+    }
+    mVelocityControl = true;
+    return true;
   } else {
-    // Stop callbacks
-    mSpinner.stop();
     // Kill action goals
     ret = cancelCommandVelocity();
     if (!ret) return false;
@@ -576,7 +578,11 @@ bool Ada::setVelocityControl(bool enabled, bool useFT) {
     }
 
     // Start joint trajectory control
-    return startTrajectoryExecutor();
+    if(!startTrajectoryExecutor()) {
+      return false;
+    }
+    mVelocityControl = false;
+    return true;
   }
 }
 
@@ -623,6 +629,7 @@ std::future<CartVelocityResult> Ada::moveArmCommandVelocity(
 void Ada::transitionCallback(GoalHandle handle) {
   // Only handle current goal
   if (handle != mGoalHandle) return;
+  if (!mVelocityControl) return;
 
   using actionlib::TerminalState;
 
@@ -684,7 +691,11 @@ void Ada::transitionCallback(GoalHandle handle) {
       ROS_WARN_STREAM(message.str());
     }
 
-    mPromise->set_value(isSuccessful);
+    try {
+      mPromise->set_value(isSuccessful);
+    } catch(...) {
+      ROS_WARN_STREAM("Promise already satisfied.");
+    }
   }
 
 }
