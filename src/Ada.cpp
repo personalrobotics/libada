@@ -119,7 +119,6 @@ Ada::Ada(
   , mSmootherFeasibilityApproxTolerance(1e-3)
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
-  , mSpinner(1)
   , mVelocityControl(false)
 {
   simulation = true; // temporarily set simulation to true
@@ -264,9 +263,6 @@ Ada::Ada(
 
   mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
-
-  // Callbacks for Cartesian Velocity
-  mSpinner.start();
 }
 
 //==============================================================================
@@ -560,7 +556,7 @@ bool Ada::setVelocityControl(bool enabled, bool useFT) {
 
     // Ensure action client is running
     ROS_INFO_STREAM("Starting cartesian velocity action client...");
-    if(!mActionClient->waitForActionServerToStart(ros::Duration(10.0))) {
+    if(!mActionClient->waitForServer(ros::Duration(10.0))) {
       return false;
     }
     mVelocityControl = true;
@@ -611,8 +607,12 @@ std::future<CartVelocityResult> Ada::moveArmCommandVelocity(
 
   // Send goal
   using std::placeholders::_1;
-  mGoalHandle = mActionClient->sendGoal(goal, 
-    std::bind(&Ada::transitionCallback, this, _1));
+  using std::placeholders::_2;
+  if (mActionClient->getState() != actionlib::SimpleClientGoalState::LOST) {
+    mActionClient->stopTrackingGoal();
+  }
+  mActionClient->sendGoal(goal, 
+    std::bind(&Ada::doneCallback, this, _1, _2));
 
   // Block until done or time-out
   if(block) {
@@ -626,32 +626,16 @@ std::future<CartVelocityResult> Ada::moveArmCommandVelocity(
   return ret;
 }
 
-void Ada::transitionCallback(GoalHandle handle) {
+void Ada::doneCallback(const GoalState& handle, const ResultPtr& result) {
   // Only handle current goal
-  if (handle != mGoalHandle) return;
   if (!mVelocityControl) return;
 
-  using actionlib::TerminalState;
-
-  if (handle.getCommState() == actionlib::CommState::DONE)
+  if (handle.isDone())
   {
     std::stringstream message;
     CartVelocityResult isSuccessful = kCVR_SUCCESS;
 
-    // Check the status of the actionlib call. Note that the actionlib call can
-    // succeed, even if execution failed.
-    const auto terminalState = handle.getTerminalState();
-    if (terminalState != TerminalState::SUCCEEDED)
-    {
-      
-    }
-    else
-    {
-      message << "Execution failed.";
-    }
-
     // Check the status of execution.
-    const auto result = handle.getResult();
     if (result && result->error_code != Result::SUCCESSFUL)
     {
       message << ": ";
@@ -678,9 +662,9 @@ void Ada::transitionCallback(GoalHandle handle) {
     }
     // we can fail without a result for another reason
     else if (!result) {
-      message << "Velocity Command " << terminalState.toString();
+      message << "Velocity Command " << handle.toString();
 
-      const auto terminalMessage = terminalState.getText();
+      const auto terminalMessage = handle.getText();
       if (!terminalMessage.empty())
         message << " (" << terminalMessage << ")";
 
@@ -705,6 +689,9 @@ bool Ada::cancelCommandVelocity() {
   if(mSimulation) return false;
   if(!mActionClient->isServerConnected()) return false;
   if(!mVelocityControl) return false;
+  if (mActionClient->getState() != actionlib::SimpleClientGoalState::LOST) {
+    mActionClient->stopTrackingGoal();
+  }
   mActionClient->cancelAllGoals();
   return true;
 }

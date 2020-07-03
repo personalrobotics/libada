@@ -28,7 +28,7 @@
 #include <ros/ros.h>
 
 #include <pr_control_msgs/SetCartesianVelocityAction.h>
-#include <actionlib/client/action_client.h>
+#include <actionlib/client/simple_action_client.h>
 
 #include "libada/AdaHand.hpp"
 
@@ -395,10 +395,11 @@ public:
 // Short-cuts for action client types
 protected:
   using Action = pr_control_msgs::SetCartesianVelocityAction;
-  using ActionClient = actionlib::ActionClient<Action>;
-  using GoalHandle = ActionClient::GoalHandle;
+  using ActionClient = actionlib::SimpleActionClient<Action>;
+  using GoalState = actionlib::SimpleClientGoalState;
 
   using Result = pr_control_msgs::SetCartesianVelocityResult;
+  using ResultPtr = pr_control_msgs::SetCartesianVelocityResultConstPtr;
 
 private:
   // Named Configurations are read from a YAML file
@@ -514,13 +515,9 @@ private:
   // Action Client
   std::shared_ptr<ActionClient> mActionClient;
   // Transition callback for velocity goals
-  void transitionCallback(GoalHandle handle);
-  // Current action goal
-  GoalHandle mGoalHandle;
+  void doneCallback(const GoalState& handle, const ResultPtr& result);
   // Promise to keep track of current velocity goal
   std::shared_ptr<std::promise<CartVelocityResult>> mPromise;
-  // Spinner for callbacks
-  ros::AsyncSpinner mSpinner;
   // Track whether using velocity control
   bool mVelocityControl;
 };
