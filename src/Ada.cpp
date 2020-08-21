@@ -17,6 +17,7 @@
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -265,31 +266,15 @@ Ada::Ada(
 }
 
 //==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::smoothPath(
+template <typename PostProcessor>
+aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
     const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
     const aikido::trajectory::Trajectory* path,
-    const TestablePtr& constraint)
+    const aikido::constraint::TestablePtr& constraint,
+    const typename PostProcessor::Params& postProcessorParams)
 {
-  return mRobot->smoothPath(metaSkeleton, path, constraint);
-}
-
-//==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path)
-{
-  // TODO : Add testable constraint to underlying Aikido function.
-  return mRobot->retimePath(metaSkeleton, path);
-}
-
-//==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path,
-    double maxDeviation,
-    double timestep)
-{
-  return mRobot->retimePathWithKunz(metaSkeleton, path, maxDeviation, timestep);
+  return mRobot->postProcessPath<PostProcessor>(
+      metaSkeleton, path, constraint, postProcessorParams);
 }
 
 //==============================================================================
@@ -687,14 +672,14 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
 }
 
 //==============================================================================
+// TODO: Add post-process type
 bool Ada::moveArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
     const aikido::distance::ConfigurationRankerPtr& ranker,
-    const std::vector<double>& velocityLimits,
-    TrajectoryPostprocessType postprocessType)
+    const std::vector<double>& velocityLimits)
 {
   auto trajectory
       = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
@@ -706,7 +691,7 @@ bool Ada::moveArmToTSR(
   }
 
   return moveArmOnTrajectory(
-      trajectory, collisionFree, postprocessType, velocityLimits);
+      trajectory, collisionFree, velocityLimits);
 }
 
 //==============================================================================
@@ -730,7 +715,7 @@ bool Ada::moveArmToEndEffectorOffset(
   if (!traj)
     return false;
 
-  return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
+  return moveArmOnTrajectory(traj, collisionFree, velocityLimits);
 }
 
 //==============================================================================
@@ -770,15 +755,16 @@ bool Ada::moveArmToConfiguration(
       collisionFree,
       timelimit);
 
-  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ, velocityLimits);
+  return moveArmOnTrajectory(trajectory, collisionFree, velocityLimits);
 }
 
 //==============================================================================
+template <typename PostProcessor>
 bool Ada::moveArmOnTrajectory(
     aikido::trajectory::TrajectoryPtr trajectory,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    TrajectoryPostprocessType postprocessType,
-    std::vector<double> velocityLimits)
+    std::vector<double> velocityLimits,
+    const typename PostProcessor::Params& params)
 {
   if (!trajectory)
     return false;
@@ -817,36 +803,12 @@ bool Ada::moveArmOnTrajectory(
         "Dimension of velocity limits doesn't match degrees of freedom.");
   }
 
-  switch (postprocessType)
+  timedTrajectory = postProcessPath<PostProcessor>(armSkeleton, trajectory.get(), testable, params);
+
+  // TODO: Have this die more gracefully
+  if (!timedTrajectory)
   {
-    case PARABOLIC_RETIME:
-      timedTrajectory = retimePath(armSkeleton, trajectory.get());
-      break;
-
-    case PARABOLIC_SMOOTH:
-      timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-      break;
-
-    case KUNZ:
-    {
-      timedTrajectory = retimePathWithKunz(
-          armSkeleton, trajectory.get(), kunzMaxDeviation, kunzTimeStep);
-
-      if (!timedTrajectory)
-      {
-        // If using kunz retimer fails, fall back to parabolic timing
-        timedTrajectory = retimePath(armSkeleton, trajectory.get());
-      }
-
-      if (!timedTrajectory)
-      {
-        throw std::runtime_error("Retiming failed");
-      }
-      break;
-    }
-
-    default:
-      throw std::invalid_argument("Unexpected trajectory post processing type");
+    throw std::runtime_error("Retiming failed");
   }
 
   // Revert velocity change

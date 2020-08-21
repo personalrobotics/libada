@@ -16,6 +16,7 @@
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -35,14 +36,8 @@ extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
-/// Enum for postprocessors.
-/// TODO: Remove this once aikido supports this.
-enum TrajectoryPostprocessType
-{
-  PARABOLIC_RETIME,
-  PARABOLIC_SMOOTH,
-  KUNZ
-};
+// Expose Kunz Retimer
+using aikido::planner::kunzretimer::KunzRetimer;
 
 class Ada final : public aikido::robot::Robot
 {
@@ -60,9 +55,9 @@ public:
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
 
-  // kunz parameters
-  const double kunzMaxDeviation = 1e-3;
-  const double kunzTimeStep = 1e-3;
+  // Default kunz parameters
+  constexpr static double kunzMaxDeviation = 1e-3;
+  constexpr static double kunzTimeStep = 1e-3;
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
@@ -91,23 +86,13 @@ public:
 
   virtual ~Ada() = default;
 
-  /// \copydoc Robot::smoothPath
-  std::unique_ptr<aikido::trajectory::Spline> smoothPath(
+  /// \copydoc ConcreteRobot::postProcessPath.
+  template <typename PostProcessor>
+  aikido::trajectory::UniqueSplinePtr postProcessPath(
       const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path,
-      const aikido::constraint::TestablePtr& constraint) override;
-
-  /// \copydoc Robot::retimePath
-  std::unique_ptr<aikido::trajectory::Spline> retimePath(
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path) override;
-
-  /// \copydoc Robot::retimePathWithKunzTimer
-  std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunz(
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const aikido::trajectory::Trajectory* path,
-      double maxDeviation,
-      double timestep) override;
+      const aikido::constraint::TestablePtr& constraint,
+      const typename PostProcessor::Params& postProcessorParams);
 
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.
@@ -276,8 +261,7 @@ public:
       double timelimit,
       size_t maxNumTrials,
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr,
-      const std::vector<double>& velocityLimits = std::vector<double>(),
-      TrajectoryPostprocessType postprocessType = KUNZ);
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Moves the end effector along a certain position offset.
   /// Throws a runtime_error if no trajectory could be found.
@@ -310,17 +294,17 @@ public:
   /// Throws runtime_error if the trajectory is empty.
   /// \param[in] trajectory Trajectory to execute.
   /// \param[in] collisionFree CollisionFree constraint to check.
-  /// \param[in] postprocessType Select re-timing post-processor
-  ///                             (\see ada::TrajectoryPostprocessType)
   /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
   ///             If empty, defaults to URDF-specified limits.
   ///             Throws an invalid_argument if incorrectly sized.
+  /// \param[in] params Parameters for the selected post-processor.
   /// \return True if the trajectory was completed successfully.
+  template <typename PostProcessor = KunzRetimer>
   bool moveArmOnTrajectory(
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      TrajectoryPostprocessType postprocessType,
-      std::vector<double> velocityLimits = std::vector<double>());
+      std::vector<double> velocityLimits,
+      const typename PostProcessor::Params& params = KunzRetimer::Params(kunzMaxDeviation, kunzTimeStep));
 
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
