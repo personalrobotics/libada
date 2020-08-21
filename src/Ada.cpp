@@ -265,6 +265,13 @@ Ada::Ada(
       std::bind(&Ada::update, this), threadExecutionCycle);
 }
 
+// Explicit instantiation
+template bool Ada::moveArmOnTrajectory<ParabolicSmoother>(
+      aikido::trajectory::TrajectoryPtr trajectory,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      std::vector<double> velocityLimits,
+      const ParabolicSmoother::Params& params);
+
 //==============================================================================
 template <typename PostProcessor>
 aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(

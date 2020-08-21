@@ -38,6 +38,7 @@ extern std::vector<std::string> possibleTrajectoryExecutors;
 
 // Expose Kunz Retimer
 using aikido::planner::kunzretimer::KunzRetimer;
+using aikido::planner::parabolic::ParabolicSmoother;
 
 class Ada final : public aikido::robot::Robot
 {
