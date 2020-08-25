@@ -15,9 +15,9 @@
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
-#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -263,25 +263,6 @@ Ada::Ada(
 
   mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
-}
-
-// Explicit instantiation
-template bool Ada::moveArmOnTrajectory<ParabolicSmoother>(
-      aikido::trajectory::TrajectoryPtr trajectory,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      std::vector<double> velocityLimits,
-      const ParabolicSmoother::Params& params);
-
-//==============================================================================
-template <typename PostProcessor>
-aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path,
-    const aikido::constraint::TestablePtr& constraint,
-    const typename PostProcessor::Params& postProcessorParams)
-{
-  return mRobot->postProcessPath<PostProcessor>(
-      metaSkeleton, path, constraint, postProcessorParams);
 }
 
 //==============================================================================
@@ -679,14 +660,15 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
 }
 
 //==============================================================================
-// TODO: Add post-process type
+template <typename PostProcessor>
 bool Ada::moveArmToTSR(
     const aikido::constraint::dart::TSR& tsr,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
     size_t maxNumTrials,
     const aikido::distance::ConfigurationRankerPtr& ranker,
-    const std::vector<double>& velocityLimits)
+    const Eigen::Vector6d& velocityLimits,
+    const typename PostProcessor::Params& params)
 {
   auto trajectory
       = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
@@ -697,9 +679,28 @@ bool Ada::moveArmToTSR(
     return false;
   }
 
-  return moveArmOnTrajectory(
-      trajectory, collisionFree, velocityLimits);
+  return moveArmOnTrajectory<PostProcessor>(
+      trajectory, collisionFree, velocityLimits, params);
 }
+
+// Explicit Instantiation
+template bool Ada::moveArmToTSR<ParabolicSmoother>(
+    const aikido::constraint::dart::TSR& tsr,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    size_t maxNumTrials,
+    const aikido::distance::ConfigurationRankerPtr& ranker,
+    const Eigen::Vector6d& velocityLimits,
+    const ParabolicSmoother::Params& params);
+
+template bool Ada::moveArmToTSR<KunzRetimer>(
+    const aikido::constraint::dart::TSR& tsr,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    size_t maxNumTrials,
+    const aikido::distance::ConfigurationRankerPtr& ranker,
+    const Eigen::Vector6d& velocityLimits,
+    const KunzRetimer::Params& params);
 
 //==============================================================================
 bool Ada::moveArmToEndEffectorOffset(
@@ -709,7 +710,7 @@ bool Ada::moveArmToEndEffectorOffset(
     double timelimit,
     double positionTolerance,
     double angularTolerance,
-    const std::vector<double>& velocityLimits)
+    const Eigen::Vector6d& velocityLimits)
 {
   auto traj = planArmToEndEffectorOffset(
       direction,
@@ -753,7 +754,7 @@ bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
-    const std::vector<double>& velocityLimits)
+    const Eigen::Vector6d& velocityLimits)
 {
   auto trajectory = planToConfiguration(
       mArmSpace,
@@ -770,7 +771,7 @@ template <typename PostProcessor>
 bool Ada::moveArmOnTrajectory(
     aikido::trajectory::TrajectoryPtr trajectory,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    std::vector<double> velocityLimits,
+    const Eigen::Vector6d& velocityLimits,
     const typename PostProcessor::Params& params)
 {
   if (!trajectory)
@@ -789,40 +790,13 @@ bool Ada::moveArmOnTrajectory(
 
   auto armSkeleton = mArm->getMetaSkeleton();
 
-  // Update Velocity Limits
-  Eigen::VectorXd previousLowerLimits;
-  Eigen::VectorXd previousUpperLimits;
-  if (velocityLimits.size() == 6)
-  {
-    Eigen::Vector6d eigenVelocityLimits;
-    eigenVelocityLimits << velocityLimits[0], velocityLimits[1],
-        velocityLimits[2], velocityLimits[3],
-        velocityLimits[4], velocityLimits[5];
-    previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
-    previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
-    armSkeleton->setVelocityLowerLimits(-eigenVelocityLimits);
-    armSkeleton->setVelocityUpperLimits(eigenVelocityLimits);
-  }
-  else if (velocityLimits.size() > 0)
-  {
-    // Must be sized 0 or 6
-    throw std::invalid_argument(
-        "Dimension of velocity limits doesn't match degrees of freedom.");
-  }
-
-  timedTrajectory = postProcessPath<PostProcessor>(armSkeleton, trajectory.get(), testable, params);
+  timedTrajectory = postProcessPath<PostProcessor>(
+      trajectory.get(), testable, params, velocityLimits);
 
   // TODO: Have this die more gracefully
   if (!timedTrajectory)
   {
     throw std::runtime_error("Retiming failed");
-  }
-
-  // Revert velocity change
-  if (velocityLimits.size() == 6)
-  {
-    armSkeleton->setVelocityLowerLimits(previousLowerLimits);
-    armSkeleton->setVelocityUpperLimits(previousUpperLimits);
   }
 
   auto future = executeTrajectory(std::move(timedTrajectory));
@@ -837,6 +811,18 @@ bool Ada::moveArmOnTrajectory(
   }
   return true;
 }
+
+// Explicit instantiation
+template bool Ada::moveArmOnTrajectory<ParabolicSmoother>(
+    aikido::trajectory::TrajectoryPtr trajectory,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector6d& velocityLimits,
+    const ParabolicSmoother::Params& params);
+template bool Ada::moveArmOnTrajectory<KunzRetimer>(
+    aikido::trajectory::TrajectoryPtr trajectory,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const Eigen::Vector6d& velocityLimits,
+    const KunzRetimer::Params& params);
 
 //==============================================================================
 void Ada::openHand()
