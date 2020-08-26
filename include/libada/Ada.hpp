@@ -9,6 +9,8 @@
 #include <actionlib/client/simple_action_client.h>
 #include <aikido/common/ExecutorThread.hpp>
 #include <aikido/common/RNG.hpp>
+#include <aikido/constraint/Testable.hpp>
+#include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
 #include <aikido/constraint/dart/TSR.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
@@ -41,9 +43,14 @@ using aikido::planner::kunzretimer::KunzRetimer;
 using aikido::planner::parabolic::ParabolicSmoother;
 
 /// ADA-specific defaults for the KunzRetimer.
+// Default kunz parameters
+constexpr static double DEFAULT_KUNZ_DEVIATION = 1e-3;
+constexpr static double DEFAULT_KUNZ_STEP = 1e-3;
 struct KunzParams : KunzRetimer::Params
 {
-  KunzParams(double _maxDeviation = 1e-3, double _timeStep = 1e-3)
+  KunzParams(
+      double _maxDeviation = DEFAULT_KUNZ_DEVIATION,
+      double _timeStep = DEFAULT_KUNZ_STEP)
     : aikido::planner::kunzretimer::KunzRetimer::Params(
           _maxDeviation, _timeStep)
   {
@@ -66,10 +73,6 @@ public:
   // TODO(tapo) parameter.
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
-
-  // Default kunz parameters
-  constexpr static double kunzMaxDeviation = 1e-3;
-  constexpr static double kunzTimeStep = 1e-3;
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
@@ -312,7 +315,6 @@ public:
   /// \param[in] timelimit Timelimit for planning.
   /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
   ///             If Zero, defaults to URDF-specified limits.
-  ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
   bool moveArmToConfiguration(
       const Eigen::Vector6d& configuration,
@@ -325,8 +327,7 @@ public:
   /// \param[in] trajectory Trajectory to execute.
   /// \param[in] collisionFree CollisionFree constraint to check.
   /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
-  ///             If empty, defaults to URDF-specified limits.
-  ///             Throws an invalid_argument if incorrectly sized.
+  ///             If Zero, defaults to URDF-specified limits.
   /// \param[in] params Parameters for the selected post-processor.
   /// \return True if the trajectory was completed successfully.
   template <typename PostProcessor = KunzRetimer>
@@ -478,5 +479,7 @@ private:
 };
 
 } // namespace ada
+
+#include "detail/Ada-impl.hpp"
 
 #endif // LIBADA_ADA_HPP_
