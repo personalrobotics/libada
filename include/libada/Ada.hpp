@@ -108,23 +108,7 @@ public:
       const aikido::constraint::TestablePtr& constraint,
       const typename PostProcessor::Params& postProcessorParams,
       const Eigen::VectorXd& velocityLimits = Eigen::Vector6d::Zero(),
-      const Eigen::VectorXd& accelerationLimits = Eigen::Vector6d::Zero())
-  {
-    auto sentVelocityLimits = (velocityLimits.squaredNorm() == 0.0)
-                                  ? getVelocityLimits()
-                                  : velocityLimits;
-    auto sentAccelerationLimits = (accelerationLimits.squaredNorm() == 0.0)
-                                      ? getAccelerationLimits()
-                                      : accelerationLimits;
-
-    return mRobot->postProcessPath<PostProcessor>(
-        sentVelocityLimits,
-        sentAccelerationLimits,
-        path,
-        constraint,
-        postProcessorParams);
-  }
-
+      const Eigen::VectorXd& accelerationLimits = Eigen::Vector6d::Zero());
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.
   std::future<void> executeTrajectory(

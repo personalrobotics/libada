@@ -1,5 +1,29 @@
 
 namespace ada {
+
+  template <typename PostProcessor>
+  aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
+      const aikido::trajectory::Trajectory* path,
+      const aikido::constraint::TestablePtr& constraint,
+      const typename PostProcessor::Params& postProcessorParams,
+      const Eigen::VectorXd& velocityLimits,
+      const Eigen::VectorXd& accelerationLimits)
+  {
+    auto sentVelocityLimits = (velocityLimits.squaredNorm() == 0.0)
+                                  ? getVelocityLimits()
+                                  : velocityLimits;
+    auto sentAccelerationLimits = (accelerationLimits.squaredNorm() == 0.0)
+                                      ? getAccelerationLimits()
+                                      : accelerationLimits;
+
+    return mRobot->postProcessPath<PostProcessor>(
+        sentVelocityLimits,
+        sentAccelerationLimits,
+        path,
+        constraint,
+        postProcessorParams);
+  }
+
 //==============================================================================
 template <typename PostProcessor>
 bool Ada::moveArmToTSR(
