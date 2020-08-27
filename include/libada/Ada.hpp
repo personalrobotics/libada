@@ -38,15 +38,11 @@ extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
-// Expose Kunz Retimer
-using aikido::planner::kunzretimer::KunzRetimer;
-using aikido::planner::parabolic::ParabolicSmoother;
-
 /// ADA-specific defaults for the KunzRetimer.
 // Default kunz parameters
 constexpr static double DEFAULT_KUNZ_DEVIATION = 1e-3;
 constexpr static double DEFAULT_KUNZ_STEP = 1e-3;
-struct KunzParams : KunzRetimer::Params
+struct KunzParams : aikido::planner::kunzretimer::KunzRetimer::Params
 {
   KunzParams(
       double _maxDeviation = DEFAULT_KUNZ_DEVIATION,
@@ -270,7 +266,7 @@ public:
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return True if the trajectory was completed successfully.
-  template <typename PostProcessor = KunzRetimer>
+  template <typename PostProcessor = aikido::planner::kunzretimer::KunzRetimer>
   bool moveArmToTSR(
       const aikido::constraint::dart::TSR& tsr,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
@@ -314,7 +310,7 @@ public:
   ///             If Zero, defaults to URDF-specified limits.
   /// \param[in] params Parameters for the selected post-processor.
   /// \return True if the trajectory was completed successfully.
-  template <typename PostProcessor = KunzRetimer>
+  template <typename PostProcessor = aikido::planner::kunzretimer::KunzRetimer>
   bool moveArmOnTrajectory(
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,

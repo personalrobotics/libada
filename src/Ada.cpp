@@ -40,6 +40,7 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::control::TrajectoryExecutorPtr;
+using aikido::planner::kunzretimer::KunzRetimer;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
 using aikido::robot::ConcreteRobot;

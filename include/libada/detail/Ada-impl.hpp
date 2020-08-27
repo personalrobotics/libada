@@ -1,6 +1,7 @@
 
 namespace ada {
 
+//==============================================================================
 template <typename PostProcessor>
 aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
     const aikido::trajectory::Trajectory* path,
