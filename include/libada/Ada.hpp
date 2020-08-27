@@ -9,15 +9,12 @@
 #include <actionlib/client/simple_action_client.h>
 #include <aikido/common/ExecutorThread.hpp>
 #include <aikido/common/RNG.hpp>
-#include <aikido/constraint/Testable.hpp>
-#include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
 #include <aikido/constraint/dart/TSR.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
-#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/vectorfield/VectorFieldPlanner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
@@ -38,20 +35,13 @@ extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
-/// ADA-specific defaults for the KunzRetimer.
-// Default kunz parameters
-constexpr static double DEFAULT_KUNZ_DEVIATION = 1e-3;
-constexpr static double DEFAULT_KUNZ_STEP = 1e-3;
-struct KunzParams : aikido::planner::kunzretimer::KunzRetimer::Params
+/// Enum for postprocessors.
+/// TODO: Remove this once aikido supports this.
+enum TrajectoryPostprocessType
 {
-  KunzParams(
-      double _maxDeviation = DEFAULT_KUNZ_DEVIATION,
-      double _timeStep = DEFAULT_KUNZ_STEP)
-    : aikido::planner::kunzretimer::KunzRetimer::Params(
-          _maxDeviation, _timeStep)
-  {
-    // Do nothing.
-  }
+  PARABOLIC_RETIME,
+  PARABOLIC_SMOOTH,
+  KUNZ
 };
 
 class Ada final : public aikido::robot::Robot
@@ -69,6 +59,10 @@ public:
   // TODO(tapo) parameter.
   const std::chrono::milliseconds threadExecutionCycle{10};
   const std::chrono::milliseconds jointUpdateCycle{10};
+
+  // kunz parameters
+  const double kunzMaxDeviation = 1e-3;
+  const double kunzTimeStep = 1e-3;
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
@@ -97,14 +91,24 @@ public:
 
   virtual ~Ada() = default;
 
-  /// \copydoc ConcreteRobot::postProcessPath.
-  template <typename PostProcessor>
-  aikido::trajectory::UniqueSplinePtr postProcessPath(
+  /// \copydoc Robot::smoothPath
+  std::unique_ptr<aikido::trajectory::Spline> smoothPath(
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
       const aikido::trajectory::Trajectory* path,
-      const aikido::constraint::TestablePtr& constraint,
-      const typename PostProcessor::Params& postProcessorParams,
-      const Eigen::VectorXd& velocityLimits = Eigen::Vector6d::Zero(),
-      const Eigen::VectorXd& accelerationLimits = Eigen::Vector6d::Zero());
+      const aikido::constraint::TestablePtr& constraint) override;
+
+  /// \copydoc Robot::retimePath
+  std::unique_ptr<aikido::trajectory::Spline> retimePath(
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const aikido::trajectory::Trajectory* path) override;
+
+  /// \copydoc Robot::retimePathWithKunzTimer
+  std::unique_ptr<aikido::trajectory::Spline> retimePathWithKunz(
+      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
+      const aikido::trajectory::Trajectory* path,
+      double maxDeviation,
+      double timestep) override;
+
   /// Executes a trajectory.
   /// \param[in] trajectory Timed trajectory to execute.
   std::future<void> executeTrajectory(
@@ -266,15 +270,14 @@ public:
   /// Moves the end effector to a TSR.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return True if the trajectory was completed successfully.
-  template <typename PostProcessor = aikido::planner::kunzretimer::KunzRetimer>
   bool moveArmToTSR(
       const aikido::constraint::dart::TSR& tsr,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
       size_t maxNumTrials,
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr,
-      const Eigen::Vector6d& velocityLimits = Eigen::Vector6d::Zero(),
-      const typename PostProcessor::Params& params = KunzParams());
+      const std::vector<double>& velocityLimits = std::vector<double>(),
+      TrajectoryPostprocessType postprocessType = KUNZ);
 
   /// Moves the end effector along a certain position offset.
   /// Throws a runtime_error if no trajectory could be found.
@@ -286,7 +289,7 @@ public:
       double timelimit,
       double positionTolerance,
       double angularTolerance,
-      const Eigen::Vector6d& velocityLimits = Eigen::Vector6d::Zero());
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Moves the robot to a configuration.
   /// Throws a runtime_error if no trajectory could be found.
@@ -294,28 +297,30 @@ public:
   /// \param[in] collisionFree CollisionFree constraint to check.
   /// \param[in] timelimit Timelimit for planning.
   /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
-  ///             If Zero, defaults to URDF-specified limits.
+  ///             If empty, defaults to URDF-specified limits.
+  ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
   bool moveArmToConfiguration(
       const Eigen::Vector6d& configuration,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
       double timelimit,
-      const Eigen::Vector6d& velocityLimits = Eigen::Vector6d::Zero());
+      const std::vector<double>& velocityLimits = std::vector<double>());
 
   /// Postprocesses and executes a trajectory.
   /// Throws runtime_error if the trajectory is empty.
   /// \param[in] trajectory Trajectory to execute.
   /// \param[in] collisionFree CollisionFree constraint to check.
+  /// \param[in] postprocessType Select re-timing post-processor
+  ///                             (\see ada::TrajectoryPostprocessType)
   /// \param[in] velocityLimits 6-D velocity limit per joint (in value/s)
-  ///             If Zero, defaults to URDF-specified limits.
-  /// \param[in] params Parameters for the selected post-processor.
+  ///             If empty, defaults to URDF-specified limits.
+  ///             Throws an invalid_argument if incorrectly sized.
   /// \return True if the trajectory was completed successfully.
-  template <typename PostProcessor = aikido::planner::kunzretimer::KunzRetimer>
   bool moveArmOnTrajectory(
       aikido::trajectory::TrajectoryPtr trajectory,
       const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      const Eigen::Vector6d& velocityLimits = Eigen::Vector6d::Zero(),
-      const typename PostProcessor::Params& params = KunzParams());
+      TrajectoryPostprocessType postprocessType,
+      std::vector<double> velocityLimits = std::vector<double>());
 
   /// Plans to a desired end-effector offset with fixed orientation.
   /// \param[in] space The StateSpace for the metaskeleton.
@@ -459,7 +464,5 @@ private:
 };
 
 } // namespace ada
-
-#include "detail/Ada-impl.hpp"
 
 #endif // LIBADA_ADA_HPP_
