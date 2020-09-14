@@ -10,18 +10,27 @@ aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
     const Eigen::VectorXd& velocityLimits,
     const Eigen::VectorXd& accelerationLimits)
 {
-  auto sentVelocityLimits = (velocityLimits.squaredNorm() == 0.0)
-                                ? getVelocityLimits()
-                                : velocityLimits;
-  auto sentAccelerationLimits = (accelerationLimits.squaredNorm() == 0.0)
-                                    ? getAccelerationLimits()
-                                    : accelerationLimits;
+  auto sentVelocityLimits
+      = (velocityLimits.squaredNorm() == 0.0
+         || (std::size_t)velocityLimits.size()
+                != mArm->getMetaSkeleton()->getNumDofs())
+            ? mArm->getMetaSkeleton()->getVelocityUpperLimits()
+            : velocityLimits;
+  auto sentAccelerationLimits
+      = (accelerationLimits.squaredNorm() == 0.0
+         || (std::size_t)accelerationLimits.size()
+                != mArm->getMetaSkeleton()->getNumDofs())
+            ? mArm->getMetaSkeleton()->getAccelerationUpperLimits()
+            : accelerationLimits;
 
-  if(sentAccelerationLimits.size() != 6) {
+  if (sentAccelerationLimits.size() != 6)
+  {
     sentAccelerationLimits.resize(6);
     auto defaultAccelerationLimits = getAccelerationLimits();
-    sentAccelerationLimits << defaultAccelerationLimits(0), defaultAccelerationLimits(1), defaultAccelerationLimits(2),
-                              defaultAccelerationLimits(3), defaultAccelerationLimits(4), defaultAccelerationLimits(5);
+    sentAccelerationLimits << defaultAccelerationLimits(0),
+        defaultAccelerationLimits(1), defaultAccelerationLimits(2),
+        defaultAccelerationLimits(3), defaultAccelerationLimits(4),
+        defaultAccelerationLimits(5);
   }
 
   return mRobot->postProcessPath<PostProcessor>(
