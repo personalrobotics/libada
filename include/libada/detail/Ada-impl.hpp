@@ -23,16 +23,6 @@ aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
             ? mArm->getMetaSkeleton()->getAccelerationUpperLimits()
             : accelerationLimits;
 
-  if (sentAccelerationLimits.size() != 6)
-  {
-    sentAccelerationLimits.resize(6);
-    auto defaultAccelerationLimits = getAccelerationLimits();
-    sentAccelerationLimits << defaultAccelerationLimits(0),
-        defaultAccelerationLimits(1), defaultAccelerationLimits(2),
-        defaultAccelerationLimits(3), defaultAccelerationLimits(4),
-        defaultAccelerationLimits(5);
-  }
-
   return mRobot->postProcessPath<PostProcessor>(
       sentVelocityLimits,
       sentAccelerationLimits,
