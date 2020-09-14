@@ -569,13 +569,13 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 //==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits() const
 {
-  return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
+  return mArm->getMetaSkeleton()->getVelocityUpperLimits();
 }
 
 //==============================================================================
 Eigen::VectorXd Ada::getAccelerationLimits() const
 {
-  return mRobot->getMetaSkeleton()->getAccelerationUpperLimits();
+  return mArm->getMetaSkeleton()->getAccelerationUpperLimits();
 }
 
 //==============================================================================
