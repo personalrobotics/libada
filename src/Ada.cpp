@@ -9,12 +9,11 @@
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/Spline.hpp>
-#include <aikido/constraint/Testable.hpp>
-#include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
+#include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
@@ -41,6 +40,7 @@ using aikido::constraint::dart::CollisionFreePtr;
 using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::control::TrajectoryExecutorPtr;
+using aikido::planner::kunzretimer::KunzRetimer;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
 using aikido::robot::ConcreteRobot;
@@ -263,34 +263,6 @@ Ada::Ada(
 
   mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
-}
-
-//==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::smoothPath(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path,
-    const TestablePtr& constraint)
-{
-  return mRobot->smoothPath(metaSkeleton, path, constraint);
-}
-
-//==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePath(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path)
-{
-  // TODO : Add testable constraint to underlying Aikido function.
-  return mRobot->retimePath(metaSkeleton, path);
-}
-
-//==============================================================================
-std::unique_ptr<aikido::trajectory::Spline> Ada::retimePathWithKunz(
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const aikido::trajectory::Trajectory* path,
-    double maxDeviation,
-    double timestep)
-{
-  return mRobot->retimePathWithKunz(metaSkeleton, path, maxDeviation, timestep);
 }
 
 //==============================================================================
@@ -767,13 +739,13 @@ Eigen::VectorXd Ada::getCurrentConfiguration() const
 //==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits() const
 {
-  return mRobot->getMetaSkeleton()->getVelocityUpperLimits();
+  return mArm->getMetaSkeleton()->getVelocityUpperLimits();
 }
 
 //==============================================================================
 Eigen::VectorXd Ada::getAccelerationLimits() const
 {
-  return mRobot->getMetaSkeleton()->getAccelerationUpperLimits();
+  return mArm->getMetaSkeleton()->getAccelerationUpperLimits();
 }
 
 //==============================================================================
@@ -859,29 +831,6 @@ aikido::trajectory::TrajectoryPtr Ada::planArmToTSR(
 }
 
 //==============================================================================
-bool Ada::moveArmToTSR(
-    const aikido::constraint::dart::TSR& tsr,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    double timelimit,
-    size_t maxNumTrials,
-    const aikido::distance::ConfigurationRankerPtr& ranker,
-    const std::vector<double>& velocityLimits,
-    TrajectoryPostprocessType postprocessType)
-{
-  auto trajectory
-      = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
-
-  if (!trajectory)
-  {
-    dtwarn << "Failed to plan to TSR" << std::endl;
-    return false;
-  }
-
-  return moveArmOnTrajectory(
-      trajectory, collisionFree, postprocessType, velocityLimits);
-}
-
-//==============================================================================
 bool Ada::moveArmToEndEffectorOffset(
     const Eigen::Vector3d& direction,
     double length,
@@ -889,7 +838,7 @@ bool Ada::moveArmToEndEffectorOffset(
     double timelimit,
     double positionTolerance,
     double angularTolerance,
-    const std::vector<double>& velocityLimits)
+    const Eigen::Vector6d& velocityLimits)
 {
   auto traj = planArmToEndEffectorOffset(
       direction,
@@ -902,7 +851,7 @@ bool Ada::moveArmToEndEffectorOffset(
   if (!traj)
     return false;
 
-  return moveArmOnTrajectory(traj, collisionFree, KUNZ, velocityLimits);
+  return moveArmOnTrajectory<KunzRetimer>(traj, collisionFree, velocityLimits);
 }
 
 //==============================================================================
@@ -933,7 +882,7 @@ bool Ada::moveArmToConfiguration(
     const Eigen::Vector6d& configuration,
     const aikido::constraint::dart::CollisionFreePtr& collisionFree,
     double timelimit,
-    const std::vector<double>& velocityLimits)
+    const Eigen::Vector6d& velocityLimits)
 {
   auto trajectory = planToConfiguration(
       mArmSpace,
@@ -942,103 +891,8 @@ bool Ada::moveArmToConfiguration(
       collisionFree,
       timelimit);
 
-  return moveArmOnTrajectory(trajectory, collisionFree, KUNZ, velocityLimits);
-}
-
-//==============================================================================
-bool Ada::moveArmOnTrajectory(
-    aikido::trajectory::TrajectoryPtr trajectory,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    TrajectoryPostprocessType postprocessType,
-    std::vector<double> velocityLimits)
-{
-  if (!trajectory)
-    return false;
-
-  std::vector<aikido::constraint::ConstTestablePtr> constraints;
-
-  if (collisionFree)
-  {
-    constraints.push_back(collisionFree);
-  }
-  auto testable = std::make_shared<aikido::constraint::TestableIntersection>(
-      mArmSpace, constraints);
-
-  aikido::trajectory::TrajectoryPtr timedTrajectory;
-
-  auto armSkeleton = mArm->getMetaSkeleton();
-
-  // Update Velocity Limits
-  Eigen::VectorXd previousLowerLimits;
-  Eigen::VectorXd previousUpperLimits;
-  if (velocityLimits.size() == 6)
-  {
-    Eigen::Vector6d eigenVelocityLimits;
-    eigenVelocityLimits << velocityLimits[0], velocityLimits[1],
-        velocityLimits[2], velocityLimits[3],
-        velocityLimits[4], velocityLimits[5];
-    previousLowerLimits = mArm->getMetaSkeleton()->getVelocityLowerLimits();
-    previousUpperLimits = mArm->getMetaSkeleton()->getVelocityUpperLimits();
-    armSkeleton->setVelocityLowerLimits(-eigenVelocityLimits);
-    armSkeleton->setVelocityUpperLimits(eigenVelocityLimits);
-  }
-  else if (velocityLimits.size() > 0)
-  {
-    // Must be sized 0 or 6
-    throw std::invalid_argument(
-        "Dimension of velocity limits doesn't match degrees of freedom.");
-  }
-
-  switch (postprocessType)
-  {
-    case PARABOLIC_RETIME:
-      timedTrajectory = retimePath(armSkeleton, trajectory.get());
-      break;
-
-    case PARABOLIC_SMOOTH:
-      timedTrajectory = smoothPath(armSkeleton, trajectory.get(), testable);
-      break;
-
-    case KUNZ:
-    {
-      timedTrajectory = retimePathWithKunz(
-          armSkeleton, trajectory.get(), kunzMaxDeviation, kunzTimeStep);
-
-      if (!timedTrajectory)
-      {
-        // If using kunz retimer fails, fall back to parabolic timing
-        timedTrajectory = retimePath(armSkeleton, trajectory.get());
-      }
-
-      if (!timedTrajectory)
-      {
-        throw std::runtime_error("Retiming failed");
-      }
-      break;
-    }
-
-    default:
-      throw std::invalid_argument("Unexpected trajectory post processing type");
-  }
-
-  // Revert velocity change
-  if (velocityLimits.size() == 6)
-  {
-    armSkeleton->setVelocityLowerLimits(previousLowerLimits);
-    armSkeleton->setVelocityUpperLimits(previousUpperLimits);
-  }
-
-  auto future = executeTrajectory(std::move(timedTrajectory));
-  try
-  {
-    future.get();
-  }
-  catch (const std::exception& e)
-  {
-    dtwarn << "Exception in trajectoryExecution: " << e.what() << std::endl;
-    return false;
-  }
-  return true;
+  return moveArmOnTrajectory<KunzRetimer>(
+      trajectory, collisionFree, velocityLimits);
 }
 
 //==============================================================================
