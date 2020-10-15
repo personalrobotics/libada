@@ -14,7 +14,6 @@
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
-#include <aikido/planner/ompl/CRRTConnect.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
@@ -48,7 +47,6 @@ using aikido::robot::ConstConcreteManipulatorPtr;
 using aikido::robot::Hand;
 using aikido::robot::HandPtr;
 using aikido::robot::Robot;
-using aikido::robot::util::CRRTPlannerParameters;
 using aikido::robot::util::parseYAMLToNamedConfigurations;
 using aikido::robot::util::VectorFieldPlannerParameters;
 using aikido::statespace::StateSpace;
@@ -211,21 +209,6 @@ Ada::Ada(
 
   mTrajectoryExecutor = createTrajectoryExecutor();
 
-  // TODO: (GL) Ideally this should be set in the header as const but since
-  // it requires mRng I am keeping it here.
-  // Create default parameters (otherwise, they are undefined by default in
-  // aikido). These parameters are taken mainly from the default constructors of
-  // the structs (aikido/robot/util.hpp) and one of the herb demos.
-  CRRTPlannerParameters crrtParams(
-      &mRng,
-      5,
-      std::numeric_limits<double>::infinity(),
-      0.1,
-      0.05,
-      0.1,
-      20,
-      1e-4);
-
   // Setting arm base and end names
   mArmBaseName = "j2n6s200_link_base";
   mArmEndName = "j2n6s200_link_6";
@@ -238,7 +221,6 @@ Ada::Ada(
       mTrajectoryExecutor,
       collisionDetector,
       selfCollisionFilter);
-  mArm->setCRRTPlannerParameters(crrtParams);
   mArm->setVectorFieldPlannerParameters(vfParams);
 
   mArmSpace = mArm->getStateSpace();
@@ -252,7 +234,6 @@ Ada::Ada(
       mTrajectoryExecutor,
       collisionDetector,
       selfCollisionFilter);
-  mRobot->setCRRTPlannerParameters(crrtParams);
 
   // TODO: When the named configurations are set in resources.
   // Load the named configurations
@@ -452,26 +433,6 @@ TrajectoryPtr Ada::planToTSR(
 }
 
 //==============================================================================
-TrajectoryPtr Ada::planToTSRwithTrajectoryConstraint(
-    const MetaSkeletonStateSpacePtr& space,
-    const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-    const dart::dynamics::BodyNodePtr& bodyNode,
-    const TSRPtr& goalTsr,
-    const TSRPtr& constraintTsr,
-    const CollisionFreePtr& collisionFree,
-    double timelimit)
-{
-  return mRobot->planToTSRwithTrajectoryConstraint(
-      space,
-      metaSkeleton,
-      bodyNode,
-      goalTsr,
-      constraintTsr,
-      collisionFree,
-      timelimit);
-}
-
-//==============================================================================
 TrajectoryPtr Ada::planToNamedConfiguration(
     const std::string& name,
     const CollisionFreePtr& collisionFree,
@@ -496,12 +457,6 @@ bool Ada::stopTrajectoryExecutor()
       std::vector<std::string>(),
       std::vector<std::string>{mArmTrajectoryExecutorName,
                                mHandTrajectoryExecutorName});
-}
-
-//=============================================================================
-void Ada::setCRRTPlannerParameters(const CRRTPlannerParameters& crrtParameters)
-{
-  mRobot->setCRRTPlannerParameters(crrtParameters);
 }
 
 //=============================================================================
