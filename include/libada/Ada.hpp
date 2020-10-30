@@ -86,7 +86,7 @@ public:
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
-          0.2, 0.03, 0.03, 0.01, 1e-3, 1e-3, 1.0, 0.2, 0.01);
+          0.2, 0.03, 0.01, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] env World (either for planning, post-processing, or executing).
@@ -233,16 +233,6 @@ public:
       size_t maxNumTrials,
       const aikido::distance::ConfigurationRankerPtr& ranker = nullptr);
 
-  /// \copydoc ConcreteRobot::planToTSRwithTrajctoryConstraint
-  aikido::trajectory::TrajectoryPtr planToTSRwithTrajectoryConstraint(
-      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& space,
-      const dart::dynamics::MetaSkeletonPtr& metaSkeleton,
-      const dart::dynamics::BodyNodePtr& bodyNode,
-      const aikido::constraint::dart::TSRPtr& goalTsr,
-      const aikido::constraint::dart::TSRPtr& constraintTsr,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      double timelimit);
-
   /// Plans to a named configuration.
   /// \param[in] startState Starting state
   /// \param[in] name Name of the configuration to plan to
@@ -286,10 +276,6 @@ public:
   /// Stops any movement created by \c moveArmCommandVelocity
   /// \return True on successful cancellation
   bool cancelCommandVelocity();
-
-  /// \copydoc ConcreteRobot::setCRRTPlannerParameters
-  void setCRRTPlannerParameters(
-      const aikido::robot::util::CRRTPlannerParameters& crrtParameters);
 
   /// Sets VectorFieldPlanner parameters.
   /// TODO: To be removed with Planner API.

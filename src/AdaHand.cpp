@@ -5,8 +5,12 @@
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
+#include <aikido/planner/SnapConfigurationToConfigurationPlanner.hpp>
 #include <aikido/planner/World.hpp>
+#include <aikido/planner/dart/ConfigurationToConfiguration.hpp>
+#include <aikido/planner/dart/ConfigurationToConfiguration_to_ConfigurationToConfiguration.hpp>
 #include <aikido/robot/util.hpp>
+#include <aikido/statespace/GeodesicInterpolator.hpp>
 
 #include "libada/AdaHandKinematicSimulationPositionCommandExecutor.hpp"
 
@@ -18,6 +22,11 @@
 
 namespace ada {
 
+using aikido::planner::SnapConfigurationToConfigurationPlanner;
+using aikido::planner::dart::ConfigurationToConfiguration;
+using aikido::planner::dart::
+    ConfigurationToConfiguration_to_ConfigurationToConfiguration;
+using aikido::statespace::GeodesicInterpolator;
 using aikido::statespace::dart::MetaSkeletonStateSpace;
 using aikido::statespace::dart::MetaSkeletonStateSpacePtr;
 using dart::dynamics::BodyNode;
@@ -272,11 +281,21 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
 
   auto satisfied = std::make_shared<Satisfied>(mSpace);
 
-  // TODO(Gilwoo): passing nullptr as random seed because
-  // this shoud just use snap planner. It should be changed to
-  // explicitly call SnapPlanner
-  auto trajectory = aikido::robot::util::planToConfiguration(
-      mSpace, mHand, goalState, satisfied, nullptr, 1.0);
+  // Snap planner is the only planner that makes sense for this.
+  auto snapConfigToConfigPlanner
+      = std::make_shared<SnapConfigurationToConfigurationPlanner>(
+          mSpace, std::make_shared<GeodesicInterpolator>(mSpace));
+
+  // Convert to DART planner.
+  auto dartSnapConfigToConfigPlanner = std::make_shared<
+      ConfigurationToConfiguration_to_ConfigurationToConfiguration>(
+      snapConfigToConfigPlanner, mHand);
+
+  // Create planning problem and plan.
+  auto problem
+      = ConfigurationToConfiguration(mSpace, mHand, goalState, satisfied);
+  auto trajectory
+      = dartSnapConfigToConfigPlanner->plan(problem, /*result*/ nullptr);
 
   if (!trajectory)
   {
