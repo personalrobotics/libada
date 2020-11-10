@@ -66,7 +66,8 @@ public:
 
   const aikido::robot::util::VectorFieldPlannerParameters vfParams
       = aikido::robot::util::VectorFieldPlannerParameters(
-          0.2, 0.03, 0.03, 0.01, 1e-3, 1e-3, 1.0, 0.2, 0.01);
+          // 0.2, 0.03, 0.03, 0.01, 1e-3, 1e-3, 1.0, 0.2, 0.01);
+          0.2, 0.001, 0.001, 0.001, 1e-3, 1e-3, 1.0, 0.2, 0.01);
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] env World (either for planning, post-processing, or executing).
@@ -291,6 +292,18 @@ public:
       double angularTolerance,
       const std::vector<double>& velocityLimits = std::vector<double>());
 
+  /// Moves the end effector with a certain twist. within a durations
+  /// Throws a runtime_error if no trajectory could be found.
+  /// \return True if the trajectory was completed successfully.
+  bool moveArmWithEndEffectorTwist(
+      const Eigen::Vector6d& twists,
+      double durations,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance,
+      const std::vector<double>& velocityLimits);
+
   /// Moves the robot to a configuration.
   /// Throws a runtime_error if no trajectory could be found.
   /// \return True if the trajectory was completed successfully.
@@ -328,6 +341,34 @@ public:
       double timelimit,
       double positionTolerance,
       double angularTolerance);
+  // designate a startState
+  aikido::trajectory::TrajectoryPtr planArmToEndEffectorOffset(
+      const Eigen::Vector3d& direction,
+      double length,
+      State* startState,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+      double timelimit,
+      double positionTolerance,
+      double angularTolerance);
+
+  //===========================================
+  aikido::trajectory::TrajectoryPtr planWithEndEffectorTwist(
+    const Eigen::Vector6d& twists,
+    double durations,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance);
+
+  // designate a startState
+  aikido::trajectory::TrajectoryPtr planWithEndEffectorTwist(
+    const Eigen::Vector6d& twists,
+    double durations,
+    State* startState,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    double timelimit,
+    double positionTolerance,
+    double angularTolerance);
 
   /// Opens Ada's hand
   void openHand();

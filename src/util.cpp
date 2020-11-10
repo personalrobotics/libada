@@ -27,6 +27,26 @@ void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada)
   }
 }
 
+char chooseMode(const std::string& msg)
+{
+  ROS_INFO((msg + "\n Press [s] to Scoop, [p] to Push, [n] to do Nothing").c_str());
+  char input;
+  std::cin.clear();
+  std::cin >> input;
+  if (input == 's')
+  {
+    ROS_INFO_STREAM("----- Choose to Scoop -----");
+    return 's';
+  }
+  if (input == 'p')
+  {
+    ROS_INFO_STREAM("----- Choose to Push -----");
+    return 'p';
+  }
+  ROS_INFO_STREAM("----- Continue -----");
+  return 'n';
+}
+
 //==============================================================================
 Eigen::Isometry3d createIsometry(
     double x, double y, double z, double roll, double pitch, double yaw)

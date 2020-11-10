@@ -18,6 +18,11 @@ namespace util {
 /// \param[in] ada Ada currently being active.
 void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada);
 
+/// Displays a message and waits for the user to press the enter key.
+/// Continue if 'n' is pressed.
+/// \param[in] msg The message to display.
+char chooseMode(const std::string& msg);
+
 /// Loads and returns a ros parameter.
 /// Throws a runtime_error if the parameter is not set.
 /// \param[in] paramName The name of the parameter.
