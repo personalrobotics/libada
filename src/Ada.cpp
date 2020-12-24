@@ -134,9 +134,20 @@ Ada::Ada(
   using aikido::common::ExecutorThread;
   using aikido::control::ros::RosJointStateClient;
 
-  std::string name = "j2n6s200";
+  // Load URDF and SRDF Models
 
-  // Load Ada
+  urdf::Model urdfModel;
+  std::string adaUrdfXMLString = retriever->readAll(adaUrdfUri);
+  urdfModel.initString(adaUrdfXMLString);
+
+  srdf::Model srdfModel;
+  std::string adaSrdfXMLString = retriever->readAll(adaSrdfUri);
+  srdfModel.initString(urdfModel, adaSrdfXMLString);
+  auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
+
+  // Load Ada into World
+
+  std::string name = urdfModel.getName();
   mRobotSkeleton = mWorld->getSkeleton(name);
   if (!mRobotSkeleton)
   {
@@ -161,15 +172,6 @@ Ada::Ada(
   // auto collideWith = collisionDetector->createCollisionGroupAsSharedPtr();
   auto selfCollisionFilter
       = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
-
-  urdf::Model urdfModel;
-  std::string adaUrdfXMLString = retriever->readAll(adaUrdfUri);
-  urdfModel.initString(adaUrdfXMLString);
-
-  srdf::Model srdfModel;
-  std::string adaSrdfXMLString = retriever->readAll(adaSrdfUri);
-  srdfModel.initString(urdfModel, adaSrdfXMLString);
-  auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
 
   for (auto disabledPair : disabledCollisions)
   {
@@ -210,14 +212,19 @@ Ada::Ada(
 
   mTrajectoryExecutor = createTrajectoryExecutor();
 
-  // Setting arm base and end names
-  mArmBaseName = "j2n6s200_link_base";
-  mArmEndName = "j2n6s200_link_6";
-  mHandBaseName = "j2n6s200_hand_base";
+  // Setting arm base (start of first chain)
+  mArmBaseName = srdfModel.getGroups()[0].chains_[0].first;
+
+  // Setting arm end (end of first chain)
+  mArmEndName = srdfModel.getGroups()[0].chains_[0].second;
+
+  // Setting hand base (parent link of end effector)
+  mHandBaseName = srdfModel.getEndEffectors()[0].parent_link_;
+
 
   // Setup the arm
   mArm = configureArm(
-      "j2n6s200",
+      name,
       retriever,
       mTrajectoryExecutor,
       collisionDetector,
