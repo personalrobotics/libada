@@ -66,9 +66,9 @@ using dart::dynamics::SkeletonPtr;
 // We use this as default since the camera-attached version is the most
 // frequent use case.
 dart::common::Uri defaultAdaUrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
+    "package://ada_description/jaco/urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
-    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
+    "package://ada_description/jaco/urdf/ada_with_camera.srdf"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
