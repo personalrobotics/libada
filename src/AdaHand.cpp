@@ -34,8 +34,6 @@ using dart::dynamics::BodyNodePtr;
 using dart::dynamics::Group;
 using dart::dynamics::MetaSkeletonPtr;
 
-const dart::common::Uri preshapesUri{
-    "package://libada/resources/preshapes.yaml"};
 const dart::common::Uri tsrEndEffectorTransformsUri{
     "package://libada/resources/tsr_transforms.yaml"};
 
@@ -115,12 +113,18 @@ AdaHand::AdaHand(
 
   mHand = Group::create("Hand", bodyNodes);
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mHand.get());
+  ROS_WARN_STREAM("Num Hand Dofs: " << mSpace->getProperties().getNumDofs());
+  ROS_WARN_STREAM("Dof Names: ");
+  for(std::string dofname : mSpace->getProperties().getDofNames()) {
+    ROS_WARN_STREAM(dofname);
+  }
 
   mExecutor = createTrajectoryExecutor(robotSkeleton);
 
   // TODO(Gilwoo): Use this to find the set point when grabbing object.
   // mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
 
+  const dart::common::Uri preshapesUri{"package://libada/resources/" + name + "_preshapes.yaml"};
   loadPreshapes(preshapesUri, retriever);
 
   loadTSRTransforms(tsrEndEffectorTransformsUri, retriever);
@@ -373,7 +377,7 @@ AdaHand::PreshapeMap AdaHand::parseYAMLToPreshapes(const YAML::Node& node)
     auto jointNodes = preshapeNode.second;
 
     // TODO: check
-    Eigen::VectorXd preshape(2);
+    Eigen::VectorXd preshape(jointNodes.size());
     for (auto joint : jointNodes)
     {
       auto jointName = joint.first.as<std::string>();
@@ -434,5 +438,5 @@ AdaHand::createSimPositionCommandExecutor(
 
 const std::unordered_map<std::string, size_t>
     AdaHand::adaFingerJointNameToPositionIndexMap
-    = {{"j2n6s200_joint_finger_1", 0}, {"j2n6s200_joint_finger_2", 1}};
+    = {{"finger_joint", 0}, {"left_inner_knuckle_joint", 1}, {"right_inner_knuckle_joint", 2}, {"right_outer_knuckle_joint", 3}, {"j2n6s200_joint_finger_1", 0}, {"j2n6s200_joint_finger_2", 1}};
 } // namespace ada

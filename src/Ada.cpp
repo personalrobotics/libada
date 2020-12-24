@@ -217,6 +217,7 @@ Ada::Ada(
 
   // Setting arm end (end of first chain)
   mArmEndName = srdfModel.getGroups()[0].chains_[0].second;
+  mEndEffectorName = mArmEndName;
 
   // Setting hand base (parent link of end effector)
   mHandBaseName = srdfModel.getEndEffectors()[0].parent_link_;

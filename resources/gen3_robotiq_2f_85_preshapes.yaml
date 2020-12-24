@@ -1,0 +1,21 @@
+---
+closed:
+    finger_joint: 0.4
+    left_inner_knuckle_joint: 0.4
+    right_inner_knuckle_joint: 0.4
+    right_outer_knuckle_joint: 0.4
+open:
+    finger_joint: 0.0
+    left_inner_knuckle_joint: 0.0
+    right_inner_knuckle_joint: 0.0
+    right_outer_knuckle_joint: 0.0
+partial_open:
+    finger_joint: 0.4
+    left_inner_knuckle_joint: 0.0
+    right_inner_knuckle_joint: 0.0
+    right_outer_knuckle_joint: 0.0
+almost_closed:
+    finger_joint: 0.7
+    left_inner_knuckle_joint: 0.0
+    right_inner_knuckle_joint: 0.0
+    right_outer_knuckle_joint: 0.0
