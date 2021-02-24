@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(libada)
-set(library_VERSION 0.2.0)
+set(library_VERSION 0.3.0)
+
+if(NOT ADAPY_PYTHON_VERSION)
+  set(ADAPY_PYTHON_VERSION 3.8)
+endif()
+
+find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
@@ -27,7 +33,7 @@ endif()
 include(ExternalProject)
 
 find_package(DART 6.8.5 REQUIRED
-  COMPONENTS utils utils-urdf optimizer-nlopt
+  COMPONENTS utils utils-urdf optimizer-nlopt rviz
 
 )
 
@@ -49,9 +55,11 @@ find_package(aikido 0.3.0 REQUIRED
     io
 )
 
+find_package(PythonLibs 3.8 REQUIRED)
+
 find_package(ada_description REQUIRED)
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED python)
 
 find_package(controller_manager_msgs REQUIRED)
 
@@ -75,11 +83,17 @@ endif()
 #
 
 set(sources
-  src/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHand.cpp
-  src/Ada.cpp
-  src/util.cpp
+  src/libada/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
+  src/libada/AdaHandKinematicSimulationPositionCommandExecutor.cpp
+  src/libada/AdaHand.cpp
+  src/libada/Ada.cpp
+  src/adapy/adapy.cpp
+  src/adapy/ada_py.cpp
+  src/adapy/aikido_py.cpp
+  src/adapy/dart_py.cpp
+  src/adapy/pr_tsr_py.cpp
+  src/adapy/ik_py.cpp
+  src/libada/util.cpp
 )
 
 add_library(libada SHARED ${sources})
@@ -114,6 +128,25 @@ target_link_libraries(libada
     ${roslib_LIBRARIES}
     ${srdfdom_LIBRARIES}
     ${urdf_LIBRARIES}
+)
+
+#=============================================================================
+#Pybind 
+
+pybind11_add_module(adapy
+  MODULE
+  src/adapy/adapy.cpp
+  src/adapy/ada_py.cpp
+  src/adapy/aikido_py.cpp
+  src/adapy/dart_py.cpp
+  src/adapy/pr_tsr_py.cpp
+  src/adapy/ik_py.cpp
+)
+
+target_link_libraries(adapy PUBLIC
+  libada
+  ${libaikidopy_LIBRARIES}
+  ${DART_LIBRARIES}
 )
 
 #================================================================================
@@ -152,6 +185,9 @@ install(TARGETS libada EXPORT libadaConfig
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)
+
+install(TARGETS adapy
+        LIBRARY DESTINATION lib/python3.8/dist-packages)
 
 # This makes the project importable from the install directory
 install(EXPORT libadaConfig DESTINATION share/libada/cmake)
