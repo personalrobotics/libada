@@ -7,6 +7,24 @@ if(NOT ADAPY_PYTHON_VERSION)
 endif()
 
 find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+  "from distutils.sysconfig import get_python_lib;\
+  print(get_python_lib(plat_specific=True, prefix=''))"
+  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT PythonInterp_FOUND)
+  message(WARNING "Failed to find PythonInterp.")
+  return()
+endif()
+
+find_package(PythonLibs ${ADAPY_PYTHON_VERSION} REQUIRED)
+
+# Find pybind11
+# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
+set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION})
+find_package(pybind11 2.0 REQUIRED)
+
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
