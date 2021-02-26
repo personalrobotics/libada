@@ -3,7 +3,7 @@ project(libada)
 set(library_VERSION 0.3.0)
 
 if(NOT ADAPY_PYTHON_VERSION)
-  set(ADAPY_PYTHON_VERSION 3.8)
+  set(ADAPY_PYTHON_VERSION 3.6)
 endif()
 
 find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
@@ -55,7 +55,7 @@ find_package(aikido 0.3.0 REQUIRED
     io
 )
 
-find_package(PythonLibs 3.8 REQUIRED)
+find_package(PythonLibs 3.6 REQUIRED)
 
 find_package(ada_description REQUIRED)
 
@@ -131,7 +131,7 @@ target_link_libraries(libada
 )
 
 #=============================================================================
-#Pybind 
+#Pybind
 
 pybind11_add_module(adapy
   MODULE
@@ -187,7 +187,7 @@ install(TARGETS libada EXPORT libadaConfig
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS adapy
-        LIBRARY DESTINATION lib/python3.8/dist-packages)
+        LIBRARY DESTINATION lib/python3.6/dist-packages)
 
 # This makes the project importable from the install directory
 install(EXPORT libadaConfig DESTINATION share/libada/cmake)
