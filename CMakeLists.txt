@@ -33,8 +33,7 @@ endif()
 include(ExternalProject)
 
 find_package(DART 6.8.5 REQUIRED
-  COMPONENTS utils utils-urdf optimizer-nlopt rviz
-
+  COMPONENTS utils utils-urdf optimizer-nlopt
 )
 
 find_package(aikido 0.3.0 REQUIRED
@@ -53,6 +52,7 @@ find_package(aikido 0.3.0 REQUIRED
     robot
     statespace
     io
+    rviz
 )
 
 find_package(PythonLibs 3.6 REQUIRED)
