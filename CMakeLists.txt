@@ -23,7 +23,7 @@ find_package(PythonLibs ${ADAPY_PYTHON_VERSION} REQUIRED)
 # Find pybind11
 # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
 set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION})
-find_package(pybind11 2.0 REQUIRED)
+find_package(pybind11 2.2.0 REQUIRED)
 
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)

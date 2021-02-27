@@ -11,9 +11,7 @@ void Dart(pybind11::module& m);
 void Pr_Tsr(pybind11::module& m);
 void IK(pybind11::module& m);
 
-PYBIND11_PLUGIN(adapy) {
-  pybind11::module m("adapy");
-
+PYBIND11_MODULE(adapy, m) {
   Ada(m);
 
   Aikido(m);
@@ -23,6 +21,4 @@ PYBIND11_PLUGIN(adapy) {
   Pr_Tsr(m);
 
   IK(m);
-
-  return m.ptr();
 }
