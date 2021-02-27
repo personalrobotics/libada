@@ -176,6 +176,15 @@ public:
   // Runs step with current time.
   void update();
 
+  aikido::trajectory::TrajectoryPtr computeJointSpacePath(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+      const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints);
+
+  aikido::trajectory::TrajectoryPtr computeSmoothJointSpacePath(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+      const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree = nullptr);
+
   /// \copydoc Robot::planToConfiguration.
   aikido::trajectory::TrajectoryPtr planToConfiguration(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
