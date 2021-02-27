@@ -1,4 +1,4 @@
-#include <aikido/rviz/WorldInteractiveMarkerViewer.hpp>
+#include <aikido/rviz/InteractiveMarkerViewer.hpp>
 #include <dart/dynamics/JacobianNode.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
@@ -170,4 +170,3 @@ void Ada(pybind11::module& m) {
            self->grab(object);
       });
 }
-

@@ -1,7 +1,7 @@
 #include <aikido/planner/World.hpp>
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
-#include <aikido/rviz/WorldInteractiveMarkerViewer.hpp>
+#include <aikido/rviz/InteractiveMarkerViewer.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <dart/dart.hpp>
 #include <dart/utils/urdf/DartLoader.hpp>
@@ -88,17 +88,17 @@ void Aikido(pybind11::module& m) {
           return nullptr;
         }
       });
-  py::class_<aikido::rviz::WorldInteractiveMarkerViewer, std::shared_ptr<aikido::rviz::WorldInteractiveMarkerViewer>>(
-      m, "WorldInteractiveMarkerViewer")
+  py::class_<aikido::rviz::InteractiveMarkerViewer, std::shared_ptr<aikido::rviz::InteractiveMarkerViewer>>(
+      m, "InteractiveMarkerViewer")
       .def("update",
-           [](aikido::rviz::WorldInteractiveMarkerViewer *self)->void{self->update();})
+           [](aikido::rviz::InteractiveMarkerViewer *self)->void{self->update();})
       .def("add_frame",
-           [](aikido::rviz::WorldInteractiveMarkerViewer *self, dart::dynamics::BodyNode* node)
+           [](aikido::rviz::InteractiveMarkerViewer *self, dart::dynamics::BodyNode* node)
                -> void {
-             self->addFrame(node);
+             self->addFrameMarker(node);
            })
       .def("add_tsr_marker",
-           [](aikido::rviz::WorldInteractiveMarkerViewer *self,
+           [](aikido::rviz::InteractiveMarkerViewer *self,
               std::shared_ptr<aikido::constraint::dart::TSR> tsr)
                -> aikido::rviz::TSRMarkerPtr {
              return self->addTSRMarker(*tsr.get());

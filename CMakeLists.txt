@@ -105,12 +105,6 @@ set(sources
   src/libada/AdaHandKinematicSimulationPositionCommandExecutor.cpp
   src/libada/AdaHand.cpp
   src/libada/Ada.cpp
-  src/adapy/adapy.cpp
-  src/adapy/ada_py.cpp
-  src/adapy/aikido_py.cpp
-  src/adapy/dart_py.cpp
-  src/adapy/pr_tsr_py.cpp
-  src/adapy/ik_py.cpp
   src/libada/util.cpp
 )
 
@@ -159,6 +153,14 @@ pybind11_add_module(adapy
   src/adapy/dart_py.cpp
   src/adapy/pr_tsr_py.cpp
   src/adapy/ik_py.cpp
+)
+
+target_include_directories(adapy
+  SYSTEM PUBLIC
+    ${PYTHON_INCLUDE_DIRS}
+    ${pybind11_INCLUDE_DIRS}
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(adapy PUBLIC
