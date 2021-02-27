@@ -368,23 +368,25 @@ void Ada::update()
 //==============================================================================
 TrajectoryPtr Ada::computeJointSpacePath(
     const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
-    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints) {
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
+{
   auto satisfied = std::make_shared<aikido::constraint::Satisfied>(stateSpace);
 
-  std::shared_ptr<aikido::statespace::GeodesicInterpolator>
-      interpolator = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
-  std::shared_ptr<aikido::trajectory::Interpolated>
-      traj = std::make_shared<aikido::trajectory::Interpolated>(stateSpace, interpolator);
+  std::shared_ptr<aikido::statespace::GeodesicInterpolator> interpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
+  std::shared_ptr<aikido::trajectory::Interpolated> traj
+      = std::make_shared<aikido::trajectory::Interpolated>(
+          stateSpace, interpolator);
 
-  for (auto &waypoint : waypoints) {
+  for (auto& waypoint : waypoints)
+  {
     auto state = stateSpace->createState();
     stateSpace->convertPositionsToState(waypoint.second, state);
     traj->addWaypoint(waypoint.first, state);
   }
 
-  auto timedTrajectory
-     = std::move(postProcessPath<KunzRetimer>(
-          traj.get(), satisfied, ada::KunzParams()));
+  auto timedTrajectory = std::move(
+      postProcessPath<KunzRetimer>(traj.get(), satisfied, ada::KunzParams()));
 
   return std::move(timedTrajectory);
 }
@@ -393,25 +395,28 @@ TrajectoryPtr Ada::computeJointSpacePath(
 TrajectoryPtr Ada::computeSmoothJointSpacePath(
     const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
     const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
-    const CollisionFreePtr& collisionFree) {
-  // Use the given constraint if one was given.
+    const CollisionFreePtr& collisionFree)
+{
+  // Use the given constraint if one was passed.
   TestablePtr constraint = collisionFree;
   if (!constraint)
     constraint = std::make_shared<aikido::constraint::Satisfied>(stateSpace);
 
-  std::shared_ptr<aikido::statespace::GeodesicInterpolator>
-      interpolator = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
-  std::shared_ptr<aikido::trajectory::Interpolated>
-      traj = std::make_shared<aikido::trajectory::Interpolated>(stateSpace, interpolator);
+  std::shared_ptr<aikido::statespace::GeodesicInterpolator> interpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
+  std::shared_ptr<aikido::trajectory::Interpolated> traj
+      = std::make_shared<aikido::trajectory::Interpolated>(
+          stateSpace, interpolator);
 
-  for (auto &waypoint : waypoints) {
+  for (auto& waypoint : waypoints)
+  {
     auto state = stateSpace->createState();
     stateSpace->convertPositionsToState(waypoint.second, state);
     traj->addWaypoint(waypoint.first, state);
   }
 
-  auto smoothTrajectory
-      = postProcessPath<ParabolicSmoother>(traj.get(), constraint, ParabolicSmoother::Params());
+  auto smoothTrajectory = postProcessPath<ParabolicSmoother>(
+      traj.get(), constraint, ParabolicSmoother::Params());
 
   return std::move(smoothTrajectory);
 }
