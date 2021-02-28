@@ -4,7 +4,6 @@ import adapy
 import rospy
 
 import pdb
-pdb.set_trace()
 
 rospy.init_node("adapy_simple_traj")
 rate = rospy.Rate(10)
@@ -38,6 +37,15 @@ if not rospy.is_shutdown():
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     traj = ada.compute_joint_space_path(arm_state_space, waypoints)
+
+    print("")
+    print("CONTINUE TO EXECUTE")
+    print("")
+    pdb.set_trace()
+
     ada.execute_trajectory(traj)
 
-    rospy.sleep(1.0)
+    print("")
+    print("DONE! CONTINUE TO EXIT")
+    print("")
+    pdb.set_trace()

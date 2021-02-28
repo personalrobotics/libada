@@ -160,12 +160,11 @@ void Ada(pybind11::module& m)
              const aikido::trajectory::TrajectoryPtr& trajectory) -> void {
             auto future = self->executeTrajectory(trajectory);
 
-            //             if (!future.valid()) {
-            //               std::__throw_future_error(0);
-            //             }
-            //
-            //             future.wait();
-            //              ros::Duration(15).sleep();
+            if (!future.valid()) {
+              std::__throw_future_error(0);
+            }
+
+            future.wait();
           })
       .def(
           "start_viewer",
