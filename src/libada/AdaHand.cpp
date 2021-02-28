@@ -264,8 +264,6 @@ void AdaHand::ungrab()
 //==============================================================================
 std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
 {
-  using aikido::constraint::Satisfied;
-
   boost::optional<Eigen::VectorXd> preshape = getPreshape(preshapeName);
 
   if (!preshape)
@@ -276,8 +274,16 @@ std::future<void> AdaHand::executePreshape(const std::string& preshapeName)
     throw std::runtime_error(message.str());
   }
 
+  return executePreshape(preshape.get());
+}
+
+//==============================================================================
+std::future<void> AdaHand::executePreshape(const Eigen::Vector2d& preshape)
+{
+  using aikido::constraint::Satisfied;
+
   auto goalState = mSpace->createState();
-  mSpace->convertPositionsToState(preshape.get(), goalState);
+  mSpace->convertPositionsToState(preshape, goalState);
 
   auto satisfied = std::make_shared<Satisfied>(mSpace);
 

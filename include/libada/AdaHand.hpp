@@ -83,6 +83,8 @@ public:
   // Documentation inherited.
   std::future<void> executePreshape(const std::string& preshapeName) override;
 
+  std::future<void> executePreshape(const Eigen::Vector2d& preshape);
+
   // Documentation inherited.
   void step(const std::chrono::system_clock::time_point& timepoint) override;
 

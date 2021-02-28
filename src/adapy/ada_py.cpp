@@ -140,19 +140,20 @@ void Ada(pybind11::module& m)
                 armSkeleton->getVelocityUpperLimits(),
                 armSkeleton->getAccelerationUpperLimits());
           })
-  .def(
-      "plan_to_configuration",
-      [](ada::Ada* self,
-         const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
-         const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-         const Eigen::VectorXd& configuration)
-          -> aikido::trajectory::TrajectoryPtr {
-        auto state = armSpace->createState();
-        armSpace->convertPositionsToState(configuration, state);
-        auto trajectory = self->planToConfiguration(
-            armSpace, armSkeleton, state, nullptr, 10);
-        return trajectory;
-      })
+      .def(
+          "plan_to_configuration",
+          [](ada::Ada* self,
+             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
+                 armSpace,
+             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+             const Eigen::VectorXd& configuration)
+              -> aikido::trajectory::TrajectoryPtr {
+            auto state = armSpace->createState();
+            armSpace->convertPositionsToState(configuration, state);
+            auto trajectory = self->planToConfiguration(
+                armSpace, armSkeleton, state, nullptr, 10);
+            return trajectory;
+          })
       .def(
           "execute_trajectory",
           [](ada::Ada* self,
@@ -171,12 +172,12 @@ void Ada(pybind11::module& m)
           [](ada::Ada* self,
              const std::string& topicName,
              const std::string& baseFrameName)
-              -> std::shared_ptr<aikido::rviz::WorldInteractiveMarkerViewer> {
+              -> std::shared_ptr<aikido::rviz::InteractiveMarkerViewer> {
             int argc = 1;
             char* argv[] = {"adapy"};
             ros::init(argc, argv, "ada");
             auto viewer
-                = std::make_shared<aikido::rviz::WorldInteractiveMarkerViewer>(
+                = std::make_shared<aikido::rviz::InteractiveMarkerViewer>(
                     self->getWorld(), topicName, baseFrameName);
             viewer->setAutoUpdate(true);
             return viewer;
