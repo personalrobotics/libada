@@ -7,8 +7,12 @@
 
 #include <aikido/planner/World.hpp>
 #include "libada/Ada.hpp"
+#include "aikido/constraint/Satisfied.hpp"
+#include "aikido/planner/kunzretimer/KunzRetimer.hpp"
 #include "aikido/statespace/ScopedState.hpp"
 namespace py = pybind11;
+
+using aikido::planner::kunzretimer::KunzRetimer;
 
 void Ada(pybind11::module& m)
 {
@@ -127,22 +131,28 @@ void Ada(pybind11::module& m)
              const dart::dynamics::MetaSkeletonPtr& armSkeleton,
              aikido::trajectory::TrajectoryPtr trajectory_ptr)
               -> aikido::trajectory::TrajectoryPtr {
-            return self->retimePath(armSkeleton, trajectory_ptr.get());
+            auto satisfied = std::make_shared<aikido::constraint::Satisfied>(
+                trajectory_ptr->getStateSpace());
+            return self->postProcessPath<KunzRetimer>(
+                trajectory_ptr.get(),
+                satisfied,
+                ada::KunzParams(),
+                armSkeleton->getVelocityUpperLimits(),
+                armSkeleton->getAccelerationUpperLimits());
           })
-      .def(
-          "plan_to_configuration",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 armSpace,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             const Eigen::VectorXd& configuration)
-              -> aikido::trajectory::TrajectoryPtr {
-            auto state = armSpace->createState();
-            armSpace->convertPositionsToState(configuration, state);
-            auto trajectory = self->planToConfiguration(
-                armSpace, armSkeleton, state, nullptr, 10);
-            return trajectory;
-          })
+  .def(
+      "plan_to_configuration",
+      [](ada::Ada* self,
+         const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
+         const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+         const Eigen::VectorXd& configuration)
+          -> aikido::trajectory::TrajectoryPtr {
+        auto state = armSpace->createState();
+        armSpace->convertPositionsToState(configuration, state);
+        auto trajectory = self->planToConfiguration(
+            armSpace, armSkeleton, state, nullptr, 10);
+        return trajectory;
+      })
       .def(
           "execute_trajectory",
           [](ada::Ada* self,
