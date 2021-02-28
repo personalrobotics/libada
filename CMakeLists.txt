@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 project(libada)
 set(library_VERSION 0.3.0)
 
-if(NOT ADAPY_PYTHON_VERSION)
-  set(ADAPY_PYTHON_VERSION 3.6)
-endif()
+set(ADAPY_PYTHON_VERSION 2.7)
 
 find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
@@ -22,7 +20,7 @@ find_package(PythonLibs ${ADAPY_PYTHON_VERSION} REQUIRED)
 
 # Find pybind11
 # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION})
+set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION} CACHE STRING "")
 find_package(pybind11 2.2.0 REQUIRED)
 
 
@@ -72,8 +70,6 @@ find_package(aikido 0.3.0 REQUIRED
     io
     rviz
 )
-
-find_package(PythonLibs 3.6 REQUIRED)
 
 find_package(ada_description REQUIRED)
 
@@ -207,7 +203,7 @@ install(TARGETS libada EXPORT libadaConfig
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS adapy
-        LIBRARY DESTINATION lib/python3.6/dist-packages)
+        LIBRARY DESTINATION lib/python2.7/dist-packages)
 
 # This makes the project importable from the install directory
 install(EXPORT libadaConfig DESTINATION share/libada/cmake)
