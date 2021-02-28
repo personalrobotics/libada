@@ -178,7 +178,7 @@ void Ada(pybind11::module& m)
             ros::init(argc, argv, "ada");
             auto viewer
                 = std::make_shared<aikido::rviz::InteractiveMarkerViewer>(
-                    self->getWorld(), topicName, baseFrameName);
+                    topicName, baseFrameName, self->getWorld());
             viewer->setAutoUpdate(true);
             return viewer;
           });
