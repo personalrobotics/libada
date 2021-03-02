@@ -202,8 +202,13 @@ void Ada(pybind11::module& m)
           "execute_preshape",
           [](ada::AdaHand* self, const Eigen::Vector2d& d) -> void {
             auto future = self->executePreshape(d);
-            //                future.wait();
-            //        ros::Duration(5).sleep();
+
+            if (!future.valid())
+            {
+              std::__throw_future_error(0);
+            }
+
+            future.wait();
           })
       .def(
           "get_endeffector_transform",

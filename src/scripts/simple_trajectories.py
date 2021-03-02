@@ -44,6 +44,9 @@ if not rospy.is_shutdown():
     pdb.set_trace()
 
     ada.execute_trajectory(traj)
+    # Also close the hand.
+    preshape = [1.1, 1.1]
+    ada.get_hand().execute_preshape(preshape);
 
     print("")
     print("DONE! CONTINUE TO EXIT")
