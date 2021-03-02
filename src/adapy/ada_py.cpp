@@ -160,7 +160,8 @@ void Ada(pybind11::module& m)
              const aikido::trajectory::TrajectoryPtr& trajectory) -> void {
             auto future = self->executeTrajectory(trajectory);
 
-            if (!future.valid()) {
+            if (!future.valid())
+            {
               std::__throw_future_error(0);
             }
 
