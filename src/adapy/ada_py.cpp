@@ -33,6 +33,9 @@ void Ada(pybind11::module& m)
           "start_trajectory_executor",
           [](ada::Ada* self) -> void { self->startTrajectoryExecutor(); })
       .def(
+          "stop_trajectory_executor",
+          [](ada::Ada* self) -> void { self->stopTrajectoryExecutor(); })
+      .def(
           "get_name",
           [](ada::Ada* self) -> std::string { return self->getName(); })
       .def(
@@ -164,8 +167,9 @@ void Ada(pybind11::module& m)
             {
               std::__throw_future_error(0);
             }
-
             future.wait();
+            // Throw any exceptions
+            future.get();
           })
       .def(
           "start_viewer",
@@ -173,9 +177,6 @@ void Ada(pybind11::module& m)
              const std::string& topicName,
              const std::string& baseFrameName)
               -> std::shared_ptr<aikido::rviz::InteractiveMarkerViewer> {
-            int argc = 1;
-            char* argv[] = {"adapy"};
-            ros::init(argc, argv, "ada");
             auto viewer
                 = std::make_shared<aikido::rviz::InteractiveMarkerViewer>(
                     topicName, baseFrameName, self->getWorld());
@@ -209,6 +210,36 @@ void Ada(pybind11::module& m)
             }
 
             future.wait();
+            // Throw any exceptions
+            future.get();
+          })
+      .def(
+          "open",
+          [](ada::AdaHand* self) -> void {
+            auto future = self->executePreshape("open");
+
+            if (!future.valid())
+            {
+              std::__throw_future_error(0);
+            }
+
+            future.wait();
+            // Throw any exceptions
+            future.get();
+          })
+      .def(
+          "close",
+          [](ada::AdaHand* self) -> void {
+            auto future = self->executePreshape("closed");
+
+            if (!future.valid())
+            {
+              std::__throw_future_error(0);
+            }
+
+            future.wait();
+            // Throw any exceptions
+            future.get();
           })
       .def(
           "get_endeffector_transform",

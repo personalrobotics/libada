@@ -10,17 +10,21 @@ aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
     const Eigen::VectorXd& velocityLimits,
     const Eigen::VectorXd& accelerationLimits)
 {
+  // Don't plan above 70% hard velocity limit
+  // Unless requested explicitly
+  const double DEFAULT_LIMITS_BUFFER = 0.7;
+
   bool velLimitsInvalid
       = (velocityLimits.squaredNorm() == 0.0)
         || velocityLimits.size() != getVelocityLimits().size();
   auto sentVelocityLimits
-      = velLimitsInvalid ? getVelocityLimits() : velocityLimits;
+      = velLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getVelocityLimits() : velocityLimits;
 
   bool accLimitsInvalid
       = (accelerationLimits.squaredNorm() == 0.0)
         || accelerationLimits.size() != getAccelerationLimits().size();
   auto sentAccelerationLimits
-      = accLimitsInvalid ? getAccelerationLimits() : accelerationLimits;
+      = accLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getAccelerationLimits() : accelerationLimits;
 
   return mRobot->postProcessPath<PostProcessor>(
       sentVelocityLimits,

@@ -89,7 +89,7 @@ public:
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
       const std::string& endEffectorName = "j2n6s200_end_effector",
-      const std::string& armTrajectoryExecutorName = "trajectory_controller",
+      const std::string& armTrajectoryExecutorName = "rewd_trajectory_controller",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever

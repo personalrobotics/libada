@@ -388,7 +388,7 @@ TrajectoryPtr Ada::computeJointSpacePath(
   auto timedTrajectory = std::move(
       postProcessPath<KunzRetimer>(traj.get(), satisfied, ada::KunzParams()));
 
-  return std::move(timedTrajectory);
+  return timedTrajectory;
 }
 
 //==============================================================================
@@ -418,7 +418,7 @@ TrajectoryPtr Ada::computeSmoothJointSpacePath(
   auto smoothTrajectory = postProcessPath<ParabolicSmoother>(
       traj.get(), constraint, ParabolicSmoother::Params());
 
-  return std::move(smoothTrajectory);
+  return smoothTrajectory;
 }
 
 //==============================================================================

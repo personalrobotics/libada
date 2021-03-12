@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 project(libada)
 set(library_VERSION 0.3.0)
 
-set(ADAPY_PYTHON_VERSION 2.7)
+set(ADAPY_PYTHON_VERSION 3.8)
 
 find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
@@ -22,7 +22,6 @@ find_package(PythonLibs ${ADAPY_PYTHON_VERSION} REQUIRED)
 # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
 set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION} CACHE STRING "")
 find_package(pybind11 2.2.0 REQUIRED)
-
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
@@ -203,7 +202,7 @@ install(TARGETS libada EXPORT libadaConfig
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS adapy
-        LIBRARY DESTINATION lib/python2.7/dist-packages)
+        LIBRARY DESTINATION lib/python3/dist-packages)
 
 # This makes the project importable from the install directory
 install(EXPORT libadaConfig DESTINATION share/libada/cmake)
