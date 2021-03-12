@@ -72,7 +72,7 @@ find_package(aikido 0.3.0 REQUIRED
 
 find_package(ada_description REQUIRED)
 
-find_package(Boost REQUIRED python)
+find_package(Boost REQUIRED)
 
 find_package(controller_manager_msgs REQUIRED)
 
