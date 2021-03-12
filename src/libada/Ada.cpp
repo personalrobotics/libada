@@ -366,7 +366,7 @@ void Ada::update()
 }
 
 //==============================================================================
-TrajectoryPtr Ada::computeJointSpacePath(
+TrajectoryPtr Ada::computeRetimedJointSpacePath(
     const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
     const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
 {

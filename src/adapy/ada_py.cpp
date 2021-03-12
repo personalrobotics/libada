@@ -114,7 +114,7 @@ void Ada(pybind11::module& m)
                  stateSpace,
              const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
               -> aikido::trajectory::TrajectoryPtr {
-            return self->computeJointSpacePath(stateSpace, waypoints);
+            return self->computeRetimedJointSpacePath(stateSpace, waypoints);
           })
       .def(
           "compute_smooth_joint_space_path",
@@ -132,7 +132,7 @@ void Ada(pybind11::module& m)
           "compute_retime_path",
           [](ada::Ada* self,
              const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             aikido::trajectory::TrajectoryPtr trajectory_ptr)
+             aikido::trajectory::InterpolatedPtr trajectory_ptr)
               -> aikido::trajectory::TrajectoryPtr {
             auto satisfied = std::make_shared<aikido::constraint::Satisfied>(
                 trajectory_ptr->getStateSpace());

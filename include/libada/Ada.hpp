@@ -176,7 +176,7 @@ public:
   // Runs step with current time.
   void update();
 
-  aikido::trajectory::TrajectoryPtr computeJointSpacePath(
+  aikido::trajectory::TrajectoryPtr computeRetimedJointSpacePath(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints);
 
