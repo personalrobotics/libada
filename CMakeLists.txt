@@ -2,32 +2,39 @@ cmake_minimum_required(VERSION 3.10.0)
 project(libada)
 set(library_VERSION 0.3.0)
 
-set(ADAPY_PYTHON_VERSION 3.8)
-
-find_package(PythonInterp ${ADAPY_PYTHON_VERSION} REQUIRED)
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-  "from distutils.sysconfig import get_python_lib;\
-  print(get_python_lib(plat_specific=True, prefix=''))"
-  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-if(NOT PythonInterp_FOUND)
-  message(WARNING "Failed to find PythonInterp.")
-  return()
-endif()
-
-find_package(PythonLibs ${ADAPY_PYTHON_VERSION} REQUIRED)
-
-# Find pybind11
-# Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
-set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION} CACHE STRING "")
-find_package(pybind11 2.2.0 REQUIRED)
-
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+#================================================================================
+# Python setup
+#
+
+set(ADAPY_PYTHON_VERSION 3.8)
+find_package(PythonInterp ${ADAPY_PYTHON_VERSION})
+
+if(PythonInterp_FOUND)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+    "from distutils.sysconfig import get_python_lib;\
+    print(get_python_lib(plat_specific=True, prefix=''))"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  find_package(PythonLibs ${ADAPY_PYTHON_VERSION})
+
+  # Find pybind11
+  # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
+  set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION} CACHE STRING "")
+  find_package(pybind11 2.2.0)
+endif()
+
+if(NOT pybind11_FOUND)
+  message(WARNING "Could not load pybind11. Cannot build python bindings.")
+  return()
+endif()
 
 #================================================================================
 # CodeCov setup
@@ -139,30 +146,31 @@ target_link_libraries(libada
 
 #=============================================================================
 #Pybind
+if(pybind11_FOUND)
+  pybind11_add_module(adapy
+    MODULE
+    python/adapy/adapy.cpp
+    python/adapy/ada_py.cpp
+    python/adapy/aikido_py.cpp
+    python/adapy/dart_py.cpp
+    python/adapy/pr_tsr_py.cpp
+    python/adapy/ik_py.cpp
+  )
 
-pybind11_add_module(adapy
-  MODULE
-  src/adapy/adapy.cpp
-  src/adapy/ada_py.cpp
-  src/adapy/aikido_py.cpp
-  src/adapy/dart_py.cpp
-  src/adapy/pr_tsr_py.cpp
-  src/adapy/ik_py.cpp
-)
+  target_include_directories(adapy
+    SYSTEM PUBLIC
+      ${PYTHON_INCLUDE_DIRS}
+      ${pybind11_INCLUDE_DIRS}
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
-target_include_directories(adapy
-  SYSTEM PUBLIC
-    ${PYTHON_INCLUDE_DIRS}
-    ${pybind11_INCLUDE_DIRS}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_link_libraries(adapy PUBLIC
-  libada
-  ${libaikidopy_LIBRARIES}
-  ${DART_LIBRARIES}
-)
+  target_link_libraries(adapy PUBLIC
+    libada
+    ${libaikidopy_LIBRARIES}
+    ${DART_LIBRARIES}
+  )
+endif()
 
 #================================================================================
 # Testing
@@ -201,9 +209,6 @@ install(TARGETS libada EXPORT libadaConfig
   RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)
 
-install(TARGETS adapy
-        LIBRARY DESTINATION lib/python3/dist-packages)
-
 # This makes the project importable from the install directory
 install(EXPORT libadaConfig DESTINATION share/libada/cmake)
 
@@ -215,6 +220,10 @@ install(FILES "package.xml"
   DESTINATION "share/libada")
 
 #install(DIRECTORY resources DESTINATION share)
+if(pybind11_FOUND)
+  install(TARGETS adapy
+        LIBRARY DESTINATION lib/python3/dist-packages)
+endif()
 
 
 #================================================================================
