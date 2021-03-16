@@ -150,11 +150,11 @@ if(pybind11_FOUND)
   pybind11_add_module(adapy
     MODULE
     python/adapy/adapy.cpp
-    python/adapy/ada_py.cpp
-    python/adapy/aikido_py.cpp
-    python/adapy/dart_py.cpp
-    python/adapy/pr_tsr_py.cpp
-    python/adapy/ik_py.cpp
+    python/adapy/ada_bindings.cpp
+    python/adapy/aikido_bindings.cpp
+    python/adapy/dart_bindings.cpp
+    python/adapy/pr_tsr_bindings.cpp
+    python/adapy/ik_bindings.cpp
   )
 
   target_include_directories(adapy
