@@ -20,8 +20,7 @@ void Pr_Tsr(pybind11::module& m)
       .def(
           "get_T0_w",
           [](aikido::constraint::dart::TSR* self) -> Eigen::Matrix4d {
-            auto Trans = self->mT0_w.matrix();
-            return Trans;
+            return self->mT0_w.matrix();
           })
       .def(
           "set_T0_w",
@@ -38,8 +37,7 @@ void Pr_Tsr(pybind11::module& m)
       .def(
           "get_Tw_e",
           [](aikido::constraint::dart::TSR* self) -> Eigen::Matrix4d {
-            auto Trans = self->mTw_e.matrix();
-            return Trans;
+            return self->mTw_e.matrix();
           })
       .def(
           "set_Tw_e",

@@ -103,11 +103,11 @@ endif()
 #
 
 set(sources
-  src/libada/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
-  src/libada/AdaHandKinematicSimulationPositionCommandExecutor.cpp
-  src/libada/AdaHand.cpp
-  src/libada/Ada.cpp
-  src/libada/util.cpp
+  src/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
+  src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
+  src/AdaHand.cpp
+  src/Ada.cpp
+  src/util.cpp
 )
 
 add_library(libada SHARED ${sources})
@@ -167,7 +167,6 @@ if(pybind11_FOUND)
 
   target_link_libraries(adapy PUBLIC
     libada
-    ${libaikidopy_LIBRARIES}
     ${DART_LIBRARIES}
   )
 endif()

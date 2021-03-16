@@ -61,6 +61,7 @@ void IK(pybind11::module& m)
               -> Eigen::VectorXd {
             auto goalState = armSpace->createState();
             bool sampled = self->sample(goalState);
+            // Init to length-0 vector
             Eigen::VectorXd positions;
             if (!sampled)
               return positions;

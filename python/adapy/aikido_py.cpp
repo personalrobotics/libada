@@ -1,12 +1,12 @@
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
+#include <aikido/io/util.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/rviz/InteractiveMarkerViewer.hpp>
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/dart.hpp>
-#include <dart/utils/urdf/DartLoader.hpp>
 #include <pybind11/cast.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
@@ -50,11 +50,9 @@ void Aikido(pybind11::module& m)
               -> std::shared_ptr<::dart::dynamics::Skeleton> {
             auto transform = vectorToIsometry(objectPose);
 
-            dart::utils::DartLoader urdfLoader;
-            const auto resourceRetriever
-                = std::make_shared<aikido::io::CatkinResourceRetriever>();
             const auto skeleton
-                = urdfLoader.parseSkeleton(uri, resourceRetriever);
+                = aikido::io::loadSkeletonFromURDF(
+                  std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
 
             if (!skeleton)
               throw std::runtime_error("unable to load '" + uri + "'");
@@ -73,11 +71,9 @@ void Aikido(pybind11::module& m)
               -> std::shared_ptr<::dart::dynamics::Skeleton> {
             auto transform = matrixToIsometry(objectPose);
 
-            dart::utils::DartLoader urdfLoader;
-            const auto resourceRetriever
-                = std::make_shared<aikido::io::CatkinResourceRetriever>();
             const auto skeleton
-                = urdfLoader.parseSkeleton(uri, resourceRetriever);
+                = aikido::io::loadSkeletonFromURDF(
+                  std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
 
             if (!skeleton)
               throw std::runtime_error("unable to load '" + uri + "'");
@@ -98,14 +94,7 @@ void Aikido(pybind11::module& m)
           "get_skeleton",
           [](aikido::planner::World* self,
              int i) -> dart::dynamics::SkeletonPtr {
-            if (i + 1 <= int(self->getNumSkeletons()))
-            {
-              return self->getSkeleton(i);
-            }
-            else
-            {
-              return nullptr;
-            }
+            return self->getSkeleton(i);
           });
   py::class_<
       aikido::rviz::InteractiveMarkerViewer,

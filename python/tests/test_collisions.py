@@ -24,18 +24,22 @@ positions = arm_skeleton.get_positions()
 arm_state_space = ada.get_arm_state_space()
 
 
-collision_free_constraint = ada.set_up_collision_detection(arm_state_space, arm_skeleton, [can, table])
-full_collision_free_constraint = ada.get_full_collision_constraint(arm_state_space, arm_skeleton, collision_free_constraint)
+collision_free_constraint = ada.set_up_collision_detection(
+    arm_state_space, arm_skeleton, [can, table])
+full_collision_free_constraint = ada.get_full_collision_constraint(
+    arm_state_space, arm_skeleton, collision_free_constraint)
 
 # test original position
-safe = full_collision_free_constraint.is_satisfied(arm_state_space, arm_skeleton, positions)
+safe = full_collision_free_constraint.is_satisfied(
+    arm_state_space, arm_skeleton, positions)
 if not safe:
     print("State state is not safe!")
 
 # test self-collision
 positions2 = positions.copy()
 positions2[1] = 0.4
-safe = full_collision_free_constraint.is_satisfied(arm_state_space, arm_skeleton, positions2)
+safe = full_collision_free_constraint.is_satisfied(
+    arm_state_space, arm_skeleton, positions2)
 if not safe:
     print("Self-collision!")
 
@@ -43,14 +47,15 @@ if not safe:
 positions3 = positions.copy()
 positions3[1] -= 0.4
 positions3[2] += 0.6
-safe = full_collision_free_constraint.is_satisfied(arm_state_space, arm_skeleton, positions3)
+safe = full_collision_free_constraint.is_satisfied(
+    arm_state_space, arm_skeleton, positions3)
 if not safe:
     print("Arm body is in collision!")
 
 # test robot hand collision
 positions4 = positions.copy()
 positions4[1] = 2.1
-safe = full_collision_free_constraint.is_satisfied(arm_state_space, arm_skeleton, positions4)
+safe = full_collision_free_constraint.is_satisfied(
+    arm_state_space, arm_skeleton, positions4)
 if not safe:
     print("Hand is in collision!")
-
