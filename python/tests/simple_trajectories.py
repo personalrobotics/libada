@@ -9,11 +9,11 @@ from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
 rospy.init_node("adapy_simple_traj")
 roscpp_init('adapy_simple_traj', [])
 rate = rospy.Rate(10)
-is_sim = False
+IS_SIM = False
 
 if not rospy.is_shutdown():
-    ada = adapy.Ada(is_sim)
-    if not is_sim:
+    ada = adapy.Ada(IS_SIM)
+    if not IS_SIM:
         ada.start_trajectory_executor()
     viewer = ada.start_viewer("dart_markers/simple_trajectories", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
@@ -40,12 +40,11 @@ if not rospy.is_shutdown():
     positions4[1] -= 0.4
     positions4[2] += 0.6
 
-    waypoints = [(0.0, positions), (1.0, positions2),
-                 (2.0, positions3), (3.0, positions4)]
-    waypoints_rev = [(0.0, positions4), (1.0, positions3),
-                     (2.0, positions2), (3.0, positions)]
+    waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
+    waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
     traj = ada.compute_joint_space_path(arm_state_space, waypoints)
-    traj_rev = ada.compute_joint_space_path(arm_state_space, waypoints_rev)
+    traj_rev = ada.compute_joint_space_path(
+        arm_state_space, waypoints_rev)
 
     print("")
     print("CONTINUE TO EXECUTE")
@@ -57,8 +56,8 @@ if not rospy.is_shutdown():
     print("")
     print("CLOSING HAND")
     print("")
-    preshape = [1.1, 1.1]
-    ada.get_hand().execute_preshape(preshape)
+    PRESHAPE = [1.1, 1.1]
+    ada.get_hand().execute_preshape(PRESHAPE)
 
     print("")
     print("CONTINUE TO EXECUTE REVERSE")
@@ -76,5 +75,5 @@ if not rospy.is_shutdown():
     print("DONE! CONTINUE TO EXIT")
     print("")
     pdb.set_trace()
-    if not is_sim:
+    if not IS_SIM:
         ada.stop_trajectory_executor()

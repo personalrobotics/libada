@@ -26,8 +26,7 @@ void Pr_Tsr(pybind11::module& m)
           "set_T0_w",
           [](aikido::constraint::dart::TSR* self,
              Eigen::Matrix4d& pose) -> void {
-            auto transform = matrixToIsometry(pose);
-            self->mT0_w = transform;
+            self->mT0_w = matrixToIsometry(pose);
           })
       .def(
           "set_Bw",
@@ -43,7 +42,6 @@ void Pr_Tsr(pybind11::module& m)
           "set_Tw_e",
           [](aikido::constraint::dart::TSR* self,
              Eigen::Matrix4d& pose) -> void {
-            auto transform = matrixToIsometry(pose);
-            self->mTw_e = transform;
+            self->mTw_e = matrixToIsometry(pose);
           });
 }
