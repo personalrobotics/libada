@@ -9,7 +9,7 @@ from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
 rospy.init_node("adapy_simple_traj")
 roscpp_init('adapy_simple_traj', [])
 rate = rospy.Rate(10)
-IS_SIM = False
+IS_SIM = True
 
 if not rospy.is_shutdown():
     ada = adapy.Ada(IS_SIM)
