@@ -17,14 +17,16 @@ aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
   bool velLimitsInvalid
       = (velocityLimits.squaredNorm() == 0.0)
         || velocityLimits.size() != getVelocityLimits().size();
-  auto sentVelocityLimits
-      = velLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getVelocityLimits() : velocityLimits;
+  auto sentVelocityLimits = velLimitsInvalid
+                                ? DEFAULT_LIMITS_BUFFER * getVelocityLimits()
+                                : velocityLimits;
 
   bool accLimitsInvalid
       = (accelerationLimits.squaredNorm() == 0.0)
         || accelerationLimits.size() != getAccelerationLimits().size();
   auto sentAccelerationLimits
-      = accLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getAccelerationLimits() : accelerationLimits;
+      = accLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getAccelerationLimits()
+                         : accelerationLimits;
 
   return mRobot->postProcessPath<PostProcessor>(
       sentVelocityLimits,

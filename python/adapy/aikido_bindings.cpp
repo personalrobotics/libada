@@ -50,9 +50,8 @@ void Aikido(pybind11::module& m)
               -> std::shared_ptr<::dart::dynamics::Skeleton> {
             auto transform = vectorToIsometry(objectPose);
 
-            const auto skeleton
-                = aikido::io::loadSkeletonFromURDF(
-                  std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
+            const auto skeleton = aikido::io::loadSkeletonFromURDF(
+                std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
 
             if (!skeleton)
               throw std::runtime_error("unable to load '" + uri + "'");
@@ -71,9 +70,8 @@ void Aikido(pybind11::module& m)
               -> std::shared_ptr<::dart::dynamics::Skeleton> {
             auto transform = matrixToIsometry(objectPose);
 
-            const auto skeleton
-                = aikido::io::loadSkeletonFromURDF(
-                  std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
+            const auto skeleton = aikido::io::loadSkeletonFromURDF(
+                std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
 
             if (!skeleton)
               throw std::runtime_error("unable to load '" + uri + "'");
@@ -92,10 +90,8 @@ void Aikido(pybind11::module& m)
           })
       .def(
           "get_skeleton",
-          [](aikido::planner::World* self,
-             int i) -> dart::dynamics::SkeletonPtr {
-            return self->getSkeleton(i);
-          });
+          [](aikido::planner::World* self, int i)
+              -> dart::dynamics::SkeletonPtr { return self->getSkeleton(i); });
   py::class_<
       aikido::rviz::InteractiveMarkerViewer,
       std::shared_ptr<aikido::rviz::InteractiveMarkerViewer>>(
