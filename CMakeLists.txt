@@ -236,7 +236,13 @@ if(CLANG_FORMAT_EXECUTABLE)
 
   file(GLOB_RECURSE ALL_SOURCE_FILES
     LIST_DIRECTORIES false
-    include/*.h include/*.hpp src/*.c src/*.cpp tests/*.cpp tests/*.hpp)
+    include/*.h
+    include/*.hpp
+    src/*.c
+    src/*.cpp
+    tests/*.cpp
+    tests/*.hpp
+    python/*.cpp)
 
   clang_format_add_sources(${ALL_SOURCE_FILES})
 
