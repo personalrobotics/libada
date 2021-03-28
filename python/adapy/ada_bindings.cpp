@@ -14,43 +14,61 @@ namespace py = pybind11;
 
 using aikido::planner::kunzretimer::KunzRetimer;
 
+// NOTE: These functions are bound and define the Python API.
+
+std::shared_ptr<aikido::constraint::dart::CollisionFree>
+get_self_collision_constraint(ada::Ada* self)
+{
+  return self->getSelfCollisionConstraint(
+      self->getStateSpace(), self->getMetaSkeleton());
+}
+
+void start_trajectory_executor(ada::Ada* self)
+{
+  self->startTrajectoryExecutor();
+}
+
+void stop_trajectory_executor(ada::Ada* self)
+{
+  self->stopTrajectoryExecutor();
+}
+
+std::string get_name(ada::Ada* self)
+{
+  return self->getName();
+}
+
+aikido::planner::WorldPtr get_world(ada::Ada* self)
+{
+  return self->getWorld();
+}
+
+ada::AdaHandPtr get_hand(ada::Ada* self)
+{
+  return self->getHand();
+}
+
+dart::dynamics::MetaSkeletonPtr get_skeleton(ada::Ada* self)
+{
+  return self->getMetaSkeleton();
+}
+
+//====================================LIBADA====================================
+
 void Ada(pybind11::module& m)
 {
-  //====================================LIBADA==========================================================
   py::class_<ada::Ada, std::shared_ptr<ada::Ada>>(m, "Ada")
       .def(py::init([](bool simulation) -> std::shared_ptr<ada::Ada> {
         return std::make_shared<ada::Ada>(
             aikido::planner::World::create(), simulation);
       }))
-      .def(
-          "get_self_collision_constraint",
-          [](ada::Ada* self)
-              -> std::shared_ptr<aikido::constraint::dart::CollisionFree> {
-            return self->getSelfCollisionConstraint(
-                self->getStateSpace(), self->getMetaSkeleton());
-          })
-      .def(
-          "start_trajectory_executor",
-          [](ada::Ada* self) -> void { self->startTrajectoryExecutor(); })
-      .def(
-          "stop_trajectory_executor",
-          [](ada::Ada* self) -> void { self->stopTrajectoryExecutor(); })
-      .def(
-          "get_name",
-          [](ada::Ada* self) -> std::string { return self->getName(); })
-      .def(
-          "get_world",
-          [](ada::Ada* self) -> aikido::planner::WorldPtr {
-            return self->getWorld();
-          })
-      .def(
-          "get_hand",
-          [](ada::Ada* self) -> ada::AdaHandPtr { return self->getHand(); })
-      .def(
-          "get_skeleton",
-          [](ada::Ada* self) -> dart::dynamics::MetaSkeletonPtr {
-            return self->getMetaSkeleton();
-          })
+      .def("get_self_collision_constraint", get_self_collision_constraint)
+      .def("start_trajectory_executor", start_trajectory_executor)
+      .def("stop_trajectory_executor", stop_trajectory_executor)
+      .def("get_name", get_name)
+      .def("get_world", get_world)
+      .def("get_hand", get_hand)
+      .def("get_skeleton", get_skeleton)
       .def(
           "get_arm_skeleton",
           [](ada::Ada* self) -> dart::dynamics::MetaSkeletonPtr {
