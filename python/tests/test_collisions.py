@@ -3,10 +3,13 @@
 import adapy
 import rospy
 
+from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
+
 # import pdb
 # pdb.set_trace()
 
 rospy.init_node("adapy_simple_traj")
+roscpp_init('adapy_simple_traj', [])
 rate = rospy.Rate(10)
 
 ada = adapy.Ada(True)
