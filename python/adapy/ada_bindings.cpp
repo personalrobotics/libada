@@ -283,6 +283,7 @@ void Ada(pybind11::module& m)
       .def("plan_to_configuration", plan_to_configuration)
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
+
   py::class_<ada::AdaHand, std::shared_ptr<ada::AdaHand>>(m, "AdaHand")
       .def("get_skeleton", hand_get_skeleton)
       .def("get_state_space", hand_get_state_space)

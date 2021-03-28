@@ -143,6 +143,7 @@ void Aikido(pybind11::module& m)
       .def("add_body_from_urdf_matrix", add_body_from_urdf_matrix)
       .def("remove_skeleton", remove_skeleton)
       .def("get_skeleton", get_skeleton);
+
   py::class_<
       aikido::rviz::InteractiveMarkerViewer,
       std::shared_ptr<aikido::rviz::InteractiveMarkerViewer>>(
@@ -150,18 +151,23 @@ void Aikido(pybind11::module& m)
       .def("update", update)
       .def("add_frame", add_frame)
       .def("add_tsr_marker", add_tsr_marker);
+
   py::class_<
       aikido::constraint::dart::CollisionFree,
       std::shared_ptr<aikido::constraint::dart::CollisionFree>>(
       m, "CollisionFree");
+
   py::class_<
       aikido::statespace::dart::MetaSkeletonStateSpace,
       aikido::statespace::dart::MetaSkeletonStateSpacePtr>(
       m, "MetaSkeletonStateSpace");
+
   py::class_<aikido::trajectory::Trajectory, aikido::trajectory::TrajectoryPtr>(
       m, "Trajectory");
+
   py::class_<aikido::rviz::TSRMarker, aikido::rviz::TSRMarkerPtr>(
       m, "TSRMarker");
+
   py::class_<aikido::constraint::Testable, aikido::constraint::TestablePtr>(
       m, "FullCollisionFree")
       .def("is_satisfied", is_satisfied);

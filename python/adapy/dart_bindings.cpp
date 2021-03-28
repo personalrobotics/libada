@@ -67,6 +67,7 @@ void Dart(pybind11::module& m)
       .def("get_name", skeleton_get_name)
       .def("get_positions", skeleton_get_positions)
       .def("get_num_joints", skeleton_get_num_joints);
+
   py::class_<
       dart::dynamics::MetaSkeleton,
       std::shared_ptr<dart::dynamics::MetaSkeleton>>(m, "MetaSkeleton")
