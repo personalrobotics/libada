@@ -37,61 +37,71 @@ Eigen::Isometry3d matrixToIsometry(Eigen::Matrix4d& poseMatrix)
   return pose;
 }
 
+//==============================================================================
+// NOTE: These functions define the Python API for World.
+
+std::shared_ptr<::dart::dynamics::Skeleton> add_body_from_urdf(
+    aikido::planner::World* self,
+    const std::string& uri,
+    std::vector<double> objectPose)
+{
+  auto transform = vectorToIsometry(objectPose);
+
+  const auto skeleton = aikido::io::loadSkeletonFromURDF(
+      std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
+
+  if (!skeleton)
+    throw std::runtime_error("unable to load '" + uri + "'");
+
+  dynamic_cast<dart::dynamics::FreeJoint*>(skeleton->getJoint(0))
+      ->setTransform(transform);
+
+  self->addSkeleton(skeleton);
+  return skeleton;
+}
+
+std::shared_ptr<::dart::dynamics::Skeleton> add_body_from_urdf_matrix(
+    aikido::planner::World* self,
+    const std::string& uri,
+    Eigen::Matrix4d& objectPose)
+{
+  auto transform = matrixToIsometry(objectPose);
+
+  const auto skeleton = aikido::io::loadSkeletonFromURDF(
+      std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
+
+  if (!skeleton)
+    throw std::runtime_error("unable to load '" + uri + "'");
+
+  dynamic_cast<dart::dynamics::FreeJoint*>(skeleton->getJoint(0))
+      ->setTransform(transform);
+
+  self->addSkeleton(skeleton);
+  return skeleton;
+}
+
+void remove_skeleton(
+    aikido::planner::World* self,
+    std::shared_ptr<::dart::dynamics::Skeleton> skeleton)
+{
+  self->removeSkeleton(skeleton);
+}
+
+dart::dynamics::SkeletonPtr get_skeleton(aikido::planner::World* self, int i)
+{
+  return self->getSkeleton(i);
+}
+
+//====================================AIKIDO====================================
+
 void Aikido(pybind11::module& m)
 {
-  //====================================AIKIDO=============================================================================
   py::class_<aikido::planner::World, std::shared_ptr<aikido::planner::World>>(
       m, "World")
-      .def(
-          "add_body_from_urdf",
-          [](aikido::planner::World* self,
-             const std::string& uri,
-             std::vector<double> objectPose)
-              -> std::shared_ptr<::dart::dynamics::Skeleton> {
-            auto transform = vectorToIsometry(objectPose);
-
-            const auto skeleton = aikido::io::loadSkeletonFromURDF(
-                std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
-
-            if (!skeleton)
-              throw std::runtime_error("unable to load '" + uri + "'");
-
-            dynamic_cast<dart::dynamics::FreeJoint*>(skeleton->getJoint(0))
-                ->setTransform(transform);
-
-            self->addSkeleton(skeleton);
-            return skeleton;
-          })
-      .def(
-          "add_body_from_urdf_matrix",
-          [](aikido::planner::World* self,
-             const std::string& uri,
-             Eigen::Matrix4d& objectPose)
-              -> std::shared_ptr<::dart::dynamics::Skeleton> {
-            auto transform = matrixToIsometry(objectPose);
-
-            const auto skeleton = aikido::io::loadSkeletonFromURDF(
-                std::make_shared<aikido::io::CatkinResourceRetriever>(), uri);
-
-            if (!skeleton)
-              throw std::runtime_error("unable to load '" + uri + "'");
-
-            dynamic_cast<dart::dynamics::FreeJoint*>(skeleton->getJoint(0))
-                ->setTransform(transform);
-
-            self->addSkeleton(skeleton);
-            return skeleton;
-          })
-      .def(
-          "remove_skeleton",
-          [](aikido::planner::World* self,
-             std::shared_ptr<::dart::dynamics::Skeleton> skeleton) -> void {
-            self->removeSkeleton(skeleton);
-          })
-      .def(
-          "get_skeleton",
-          [](aikido::planner::World* self, int i)
-              -> dart::dynamics::SkeletonPtr { return self->getSkeleton(i); });
+      .def("add_body_from_urdf", add_body_from_urdf)
+      .def("add_body_from_urdf_matrix", add_body_from_urdf_matrix)
+      .def("remove_skeleton", remove_skeleton)
+      .def("get_skeleton", get_skeleton);
   py::class_<
       aikido::rviz::InteractiveMarkerViewer,
       std::shared_ptr<aikido::rviz::InteractiveMarkerViewer>>(
