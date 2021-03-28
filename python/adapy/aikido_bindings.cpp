@@ -92,6 +92,47 @@ dart::dynamics::SkeletonPtr get_skeleton(aikido::planner::World* self, int i)
   return self->getSkeleton(i);
 }
 
+//==============================================================================
+// NOTE: These functions define the Python API for InteractiveMarkerViewer.
+
+void update(aikido::rviz::InteractiveMarkerViewer* self)
+{
+  self->update();
+}
+
+void add_frame(
+    aikido::rviz::InteractiveMarkerViewer* self, dart::dynamics::BodyNode* node)
+{
+  self->addFrameMarker(node);
+}
+
+aikido::rviz::TSRMarkerPtr add_tsr_marker(
+    aikido::rviz::InteractiveMarkerViewer* self,
+    std::shared_ptr<aikido::constraint::dart::TSR> tsr)
+{
+  return self->addTSRMarker(*tsr.get());
+}
+
+//==============================================================================
+// NOTE: These functions define the Python API for Testable.
+
+bool is_satisfied(
+    aikido::constraint::Testable* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
+    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+    const Eigen::VectorXd& positions)
+{
+  auto armState = armSpace->createState();
+  armSpace->convertPositionsToState(positions, armState);
+  auto currentState
+      = armSpace->getScopedStateFromMetaSkeleton(armSkeleton.get());
+  aikido::constraint::DefaultTestableOutcome fullCollisionCheckOutcome;
+  bool collisionResult
+      = self->isSatisfied(armState, &fullCollisionCheckOutcome);
+  armSpace->setState(armSkeleton.get(), currentState);
+  return collisionResult;
+}
+
 //====================================AIKIDO====================================
 
 void Aikido(pybind11::module& m)
@@ -106,24 +147,9 @@ void Aikido(pybind11::module& m)
       aikido::rviz::InteractiveMarkerViewer,
       std::shared_ptr<aikido::rviz::InteractiveMarkerViewer>>(
       m, "InteractiveMarkerViewer")
-      .def(
-          "update",
-          [](aikido::rviz::InteractiveMarkerViewer* self) -> void {
-            self->update();
-          })
-      .def(
-          "add_frame",
-          [](aikido::rviz::InteractiveMarkerViewer* self,
-             dart::dynamics::BodyNode* node) -> void {
-            self->addFrameMarker(node);
-          })
-      .def(
-          "add_tsr_marker",
-          [](aikido::rviz::InteractiveMarkerViewer* self,
-             std::shared_ptr<aikido::constraint::dart::TSR> tsr)
-              -> aikido::rviz::TSRMarkerPtr {
-            return self->addTSRMarker(*tsr.get());
-          });
+      .def("update", update)
+      .def("add_frame", add_frame)
+      .def("add_tsr_marker", add_tsr_marker);
   py::class_<
       aikido::constraint::dart::CollisionFree,
       std::shared_ptr<aikido::constraint::dart::CollisionFree>>(
@@ -138,22 +164,5 @@ void Aikido(pybind11::module& m)
       m, "TSRMarker");
   py::class_<aikido::constraint::Testable, aikido::constraint::TestablePtr>(
       m, "FullCollisionFree")
-      .def(
-          "is_satisfied",
-          [](aikido::constraint::Testable* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 armSpace,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             const Eigen::VectorXd& positions) -> bool {
-            auto armState = armSpace->createState();
-            armSpace->convertPositionsToState(positions, armState);
-            auto currentState
-                = armSpace->getScopedStateFromMetaSkeleton(armSkeleton.get());
-            aikido::constraint::DefaultTestableOutcome
-                fullCollisionCheckOutcome;
-            bool collisionResult
-                = self->isSatisfied(armState, &fullCollisionCheckOutcome);
-            armSpace->setState(armSkeleton.get(), currentState);
-            return collisionResult;
-          });
+      .def("is_satisfied", is_satisfied);
 }
