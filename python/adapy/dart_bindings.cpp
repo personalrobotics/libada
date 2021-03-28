@@ -9,26 +9,34 @@
 
 namespace py = pybind11;
 
+//==============================================================================
+// NOTE: These functions define the Python API for Skeleton.
+
+std::string get_name(dart::dynamics::Skeleton* self)
+{
+  return self->getName();
+}
+
+Eigen::VectorXd get_positions(dart::dynamics::Skeleton* self)
+{
+  return self->getPositions();
+}
+
+int get_num_joints(dart::dynamics::Skeleton* self)
+{
+  return self->getNumJoints();
+}
+
+//==================================DART========================================
+
 void Dart(pybind11::module& m)
 {
-  //===================================================DART======================================================================
   py::class_<
       dart::dynamics::Skeleton,
       std::shared_ptr<dart::dynamics::Skeleton>>(m, "Skeleton")
-      .def(
-          "get_name",
-          [](dart::dynamics::Skeleton* self) -> std::string {
-            return self->getName();
-          })
-      .def(
-          "get_positions",
-          [](dart::dynamics::Skeleton* self) -> Eigen::VectorXd {
-            return self->getPositions();
-          })
-      .def("get_num_joints", [](dart::dynamics::Skeleton* self) -> int {
-        return self->getNumJoints();
-      });
-
+      .def("get_name", get_name)
+      .def("get_positions", get_positions)
+      .def("get_num_joints", get_num_joints);
   py::class_<
       dart::dynamics::MetaSkeleton,
       std::shared_ptr<dart::dynamics::MetaSkeleton>>(m, "MetaSkeleton")
