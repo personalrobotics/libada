@@ -14,7 +14,7 @@ namespace py = pybind11;
 
 using aikido::planner::kunzretimer::KunzRetimer;
 
-// NOTE: These functions are bound and define the Python API.
+// NOTE: These functions define the Python API for Ada.
 
 std::shared_ptr<aikido::constraint::dart::CollisionFree>
 get_self_collision_constraint(ada::Ada* self)
@@ -53,6 +53,132 @@ dart::dynamics::MetaSkeletonPtr get_skeleton(ada::Ada* self)
   return self->getMetaSkeleton();
 }
 
+dart::dynamics::MetaSkeletonPtr get_arm_skeleton(ada::Ada* self)
+{
+  return self->getArm()->getMetaSkeleton();
+}
+
+aikido::statespace::dart::MetaSkeletonStateSpacePtr get_arm_state_space(
+    ada::Ada* self)
+{
+  return self->getArm()->getStateSpace();
+}
+
+void set_positions(ada::Ada* self, const Eigen::VectorXd& configuration)
+{
+  auto arm = self->getArm();
+  auto armSkeleton = arm->getMetaSkeleton();
+  armSkeleton->setPositions(configuration);
+}
+
+std::shared_ptr<aikido::constraint::dart::CollisionFree>
+set_up_collision_detection(
+    ada::Ada* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
+    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+    const std::vector<dart::dynamics::SkeletonPtr>& envSkeletons)
+{
+  dart::collision::FCLCollisionDetectorPtr collisionDetector
+      = dart::collision::FCLCollisionDetector::create();
+  std::shared_ptr<dart::collision::CollisionGroup> armCollisionGroup
+      = collisionDetector->createCollisionGroup(self->getMetaSkeleton().get());
+  std::shared_ptr<dart::collision::CollisionGroup> envCollisionGroup
+      = collisionDetector->createCollisionGroup();
+  for (const auto& envSkeleton : envSkeletons)
+  {
+    envCollisionGroup->addShapeFramesOf(envSkeleton.get());
+  }
+  std::shared_ptr<aikido::constraint::dart::CollisionFree>
+      collisionFreeConstraint
+      = std::make_shared<aikido::constraint::dart::CollisionFree>(
+          armSpace, armSkeleton, collisionDetector);
+  collisionFreeConstraint->addPairwiseCheck(
+      armCollisionGroup, envCollisionGroup);
+  return collisionFreeConstraint;
+}
+
+aikido::constraint::TestablePtr get_full_collision_constraint(
+    ada::Ada* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
+    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFreeConstraint)
+{
+  return self->getFullCollisionConstraint(
+      armSpace, armSkeleton, collisionFreeConstraint);
+}
+
+aikido::trajectory::TrajectoryPtr compute_joint_space_path(
+    ada::Ada* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
+{
+  return self->computeRetimedJointSpacePath(stateSpace, waypoints);
+}
+
+aikido::trajectory::TrajectoryPtr compute_smooth_joint_space_path(
+    ada::Ada* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFreeConstraint
+    = nullptr)
+{
+  return self->computeSmoothJointSpacePath(
+      stateSpace, waypoints, collisionFreeConstraint);
+}
+
+aikido::trajectory::TrajectoryPtr compute_retime_path(
+    ada::Ada* self,
+    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+    aikido::trajectory::InterpolatedPtr trajectory_ptr)
+{
+  auto satisfied = std::make_shared<aikido::constraint::Satisfied>(
+      trajectory_ptr->getStateSpace());
+  return self->postProcessPath<KunzRetimer>(
+      trajectory_ptr.get(),
+      satisfied,
+      ada::KunzParams(),
+      armSkeleton->getVelocityUpperLimits(),
+      armSkeleton->getAccelerationUpperLimits());
+}
+
+aikido::trajectory::TrajectoryPtr plan_to_configuration(
+    ada::Ada* self,
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
+    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
+    const Eigen::VectorXd& configuration)
+{
+  auto state = armSpace->createState();
+  armSpace->convertPositionsToState(configuration, state);
+  auto trajectory
+      = self->planToConfiguration(armSpace, armSkeleton, state, nullptr, 10);
+  return trajectory;
+}
+
+void execute_trajectory(
+    ada::Ada* self, const aikido::trajectory::TrajectoryPtr& trajectory)
+{
+  auto future = self->executeTrajectory(trajectory);
+
+  if (!future.valid())
+  {
+    std::__throw_future_error(0);
+  }
+  future.wait();
+  // Throw any exceptions
+  future.get();
+}
+
+std::shared_ptr<aikido::rviz::InteractiveMarkerViewer> start_viewer(
+    ada::Ada* self,
+    const std::string& topicName,
+    const std::string& baseFrameName)
+{
+  auto viewer = std::make_shared<aikido::rviz::InteractiveMarkerViewer>(
+      topicName, baseFrameName, self->getWorld());
+  viewer->setAutoUpdate(true);
+  return viewer;
+}
+
 //====================================LIBADA====================================
 
 void Ada(pybind11::module& m)
@@ -69,138 +195,17 @@ void Ada(pybind11::module& m)
       .def("get_world", get_world)
       .def("get_hand", get_hand)
       .def("get_skeleton", get_skeleton)
-      .def(
-          "get_arm_skeleton",
-          [](ada::Ada* self) -> dart::dynamics::MetaSkeletonPtr {
-            return self->getArm()->getMetaSkeleton();
-          })
-      .def(
-          "get_arm_state_space",
-          [](ada::Ada* self)
-              -> aikido::statespace::dart::MetaSkeletonStateSpacePtr {
-            return self->getArm()->getStateSpace();
-          })
-      .def(
-          "set_positions",
-          [](ada::Ada* self, const Eigen::VectorXd& configuration) -> void {
-            auto arm = self->getArm();
-            auto armSkeleton = arm->getMetaSkeleton();
-            armSkeleton->setPositions(configuration);
-          })
-      .def(
-          "set_up_collision_detection",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 armSpace,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             const std::vector<dart::dynamics::SkeletonPtr>& envSkeletons)
-              -> std::shared_ptr<aikido::constraint::dart::CollisionFree> {
-            dart::collision::FCLCollisionDetectorPtr collisionDetector
-                = dart::collision::FCLCollisionDetector::create();
-            std::shared_ptr<dart::collision::CollisionGroup> armCollisionGroup
-                = collisionDetector->createCollisionGroup(
-                    self->getMetaSkeleton().get());
-            std::shared_ptr<dart::collision::CollisionGroup> envCollisionGroup
-                = collisionDetector->createCollisionGroup();
-            for (const auto& envSkeleton : envSkeletons)
-            {
-              envCollisionGroup->addShapeFramesOf(envSkeleton.get());
-            }
-            std::shared_ptr<aikido::constraint::dart::CollisionFree>
-                collisionFreeConstraint
-                = std::make_shared<aikido::constraint::dart::CollisionFree>(
-                    armSpace, armSkeleton, collisionDetector);
-            collisionFreeConstraint->addPairwiseCheck(
-                armCollisionGroup, envCollisionGroup);
-            return collisionFreeConstraint;
-          })
-      .def(
-          "get_full_collision_constraint",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 armSpace,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             const aikido::constraint::dart::CollisionFreePtr&
-                 collisionFreeConstraint) -> aikido::constraint::TestablePtr {
-            return self->getFullCollisionConstraint(
-                armSpace, armSkeleton, collisionFreeConstraint);
-          })
-      .def(
-          "compute_joint_space_path",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 stateSpace,
-             const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
-              -> aikido::trajectory::TrajectoryPtr {
-            return self->computeRetimedJointSpacePath(stateSpace, waypoints);
-          })
-      .def(
-          "compute_smooth_joint_space_path",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 stateSpace,
-             const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
-             const aikido::constraint::dart::CollisionFreePtr&
-                 collisionFreeConstraint
-             = nullptr) -> aikido::trajectory::TrajectoryPtr {
-            return self->computeSmoothJointSpacePath(
-                stateSpace, waypoints, collisionFreeConstraint);
-          })
-      .def(
-          "compute_retime_path",
-          [](ada::Ada* self,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             aikido::trajectory::InterpolatedPtr trajectory_ptr)
-              -> aikido::trajectory::TrajectoryPtr {
-            auto satisfied = std::make_shared<aikido::constraint::Satisfied>(
-                trajectory_ptr->getStateSpace());
-            return self->postProcessPath<KunzRetimer>(
-                trajectory_ptr.get(),
-                satisfied,
-                ada::KunzParams(),
-                armSkeleton->getVelocityUpperLimits(),
-                armSkeleton->getAccelerationUpperLimits());
-          })
-      .def(
-          "plan_to_configuration",
-          [](ada::Ada* self,
-             const aikido::statespace::dart::MetaSkeletonStateSpacePtr&
-                 armSpace,
-             const dart::dynamics::MetaSkeletonPtr& armSkeleton,
-             const Eigen::VectorXd& configuration)
-              -> aikido::trajectory::TrajectoryPtr {
-            auto state = armSpace->createState();
-            armSpace->convertPositionsToState(configuration, state);
-            auto trajectory = self->planToConfiguration(
-                armSpace, armSkeleton, state, nullptr, 10);
-            return trajectory;
-          })
-      .def(
-          "execute_trajectory",
-          [](ada::Ada* self,
-             const aikido::trajectory::TrajectoryPtr& trajectory) -> void {
-            auto future = self->executeTrajectory(trajectory);
-
-            if (!future.valid())
-            {
-              std::__throw_future_error(0);
-            }
-            future.wait();
-            // Throw any exceptions
-            future.get();
-          })
-      .def(
-          "start_viewer",
-          [](ada::Ada* self,
-             const std::string& topicName,
-             const std::string& baseFrameName)
-              -> std::shared_ptr<aikido::rviz::InteractiveMarkerViewer> {
-            auto viewer
-                = std::make_shared<aikido::rviz::InteractiveMarkerViewer>(
-                    topicName, baseFrameName, self->getWorld());
-            viewer->setAutoUpdate(true);
-            return viewer;
-          });
+      .def("get_arm_skeleton", get_arm_skeleton)
+      .def("get_arm_state_space", get_arm_state_space)
+      .def("set_positions", set_positions)
+      .def("set_up_collision_detection", set_up_collision_detection)
+      .def("get_full_collision_constraint", get_full_collision_constraint)
+      .def("compute_joint_space_path", compute_joint_space_path)
+      .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
+      .def("compute_retime_path", compute_retime_path)
+      .def("plan_to_configuration", plan_to_configuration)
+      .def("execute_trajectory", execute_trajectory)
+      .def("start_viewer", start_viewer);
   py::class_<ada::AdaHand, std::shared_ptr<ada::AdaHand>>(m, "AdaHand")
       .def(
           "get_skeleton",
