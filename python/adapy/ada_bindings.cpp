@@ -14,6 +14,7 @@ namespace py = pybind11;
 
 using aikido::planner::kunzretimer::KunzRetimer;
 
+//==============================================================================
 // NOTE: These functions define the Python API for Ada.
 
 std::shared_ptr<aikido::constraint::dart::CollisionFree>
@@ -179,6 +180,82 @@ std::shared_ptr<aikido::rviz::InteractiveMarkerViewer> start_viewer(
   return viewer;
 }
 
+//==============================================================================
+// NOTE: These functions define the Python API for AdaHand.
+
+dart::dynamics::MetaSkeletonPtr hand_get_skeleton(ada::AdaHand* self)
+{
+  return self->getMetaSkeleton();
+}
+
+aikido::statespace::dart::MetaSkeletonStateSpacePtr hand_get_state_space(
+    ada::AdaHand* self)
+{
+  auto handSkeleton = self->getMetaSkeleton();
+  auto handSpace
+      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
+          handSkeleton.get());
+  return handSpace;
+}
+
+void execute_preshape(ada::AdaHand* self, const Eigen::Vector2d& d)
+{
+  auto future = self->executePreshape(d);
+
+  if (!future.valid())
+  {
+    std::__throw_future_error(0);
+  }
+
+  future.wait();
+  // Throw any exceptions
+  future.get();
+}
+
+void hand_open(ada::AdaHand* self)
+{
+  auto future = self->executePreshape("open");
+
+  if (!future.valid())
+  {
+    std::__throw_future_error(0);
+  }
+
+  future.wait();
+  // Throw any exceptions
+  future.get();
+}
+
+void hand_close(ada::AdaHand* self)
+{
+  auto future = self->executePreshape("closed");
+
+  if (!future.valid())
+  {
+    std::__throw_future_error(0);
+  }
+
+  future.wait();
+  // Throw any exceptions
+  future.get();
+}
+
+Eigen::Matrix4d get_endeffector_transform(
+    ada::AdaHand* self, const std::string& objectType)
+{
+  return self->getEndEffectorTransform(objectType)->matrix();
+}
+
+dart::dynamics::BodyNode* get_endeffector_body_node(ada::AdaHand* self)
+{
+  return self->getEndEffectorBodyNode();
+}
+
+void grab(ada::AdaHand* self, dart::dynamics::SkeletonPtr object)
+{
+  self->grab(object);
+}
+
 //====================================LIBADA====================================
 
 void Ada(pybind11::module& m)
@@ -207,77 +284,12 @@ void Ada(pybind11::module& m)
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
   py::class_<ada::AdaHand, std::shared_ptr<ada::AdaHand>>(m, "AdaHand")
-      .def(
-          "get_skeleton",
-          [](ada::AdaHand* self) -> dart::dynamics::MetaSkeletonPtr {
-            return self->getMetaSkeleton();
-          })
-      .def(
-          "get_state_space",
-          [](ada::AdaHand* self)
-              -> aikido::statespace::dart::MetaSkeletonStateSpacePtr {
-            auto handSkeleton = self->getMetaSkeleton();
-            auto handSpace = std::make_shared<
-                aikido::statespace::dart::MetaSkeletonStateSpace>(
-                handSkeleton.get());
-            return handSpace;
-          })
-      .def(
-          "execute_preshape",
-          [](ada::AdaHand* self, const Eigen::Vector2d& d) -> void {
-            auto future = self->executePreshape(d);
-
-            if (!future.valid())
-            {
-              std::__throw_future_error(0);
-            }
-
-            future.wait();
-            // Throw any exceptions
-            future.get();
-          })
-      .def(
-          "open",
-          [](ada::AdaHand* self) -> void {
-            auto future = self->executePreshape("open");
-
-            if (!future.valid())
-            {
-              std::__throw_future_error(0);
-            }
-
-            future.wait();
-            // Throw any exceptions
-            future.get();
-          })
-      .def(
-          "close",
-          [](ada::AdaHand* self) -> void {
-            auto future = self->executePreshape("closed");
-
-            if (!future.valid())
-            {
-              std::__throw_future_error(0);
-            }
-
-            future.wait();
-            // Throw any exceptions
-            future.get();
-          })
-      .def(
-          "get_endeffector_transform",
-          [](ada::AdaHand* self,
-             const std::string& objectType) -> Eigen::Matrix4d {
-            return self->getEndEffectorTransform(objectType)->matrix();
-          })
-      .def(
-          "get_endeffector_body_node",
-          [](ada::AdaHand* self) -> dart::dynamics::BodyNode* {
-            return self->getEndEffectorBodyNode();
-          })
-      .def(
-          "grab",
-          [](ada::AdaHand* self, dart::dynamics::SkeletonPtr object) -> void {
-            self->grab(object);
-          });
+      .def("get_skeleton", hand_get_skeleton)
+      .def("get_state_space", hand_get_state_space)
+      .def("execute_preshape", execute_preshape)
+      .def("open", hand_open)
+      .def("close", hand_close)
+      .def("get_endeffector_transform", get_endeffector_transform)
+      .def("get_endeffector_body_node", get_endeffector_body_node)
+      .def("grab", grab);
 }
