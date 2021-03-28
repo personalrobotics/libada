@@ -177,10 +177,23 @@ public:
   // Runs step with current time.
   void update();
 
+  /// Generates a timed (but not smoothed) trajectory from the given list of
+  /// configurations.
+  /// \param[in] stateSpace The statespace for the trajectory.
+  /// \param[in] waypoints Ordered configurations to add to the trajectory, each
+  /// of which is paired with its desired time along the output trajectory.
+  /// \return Timed trajectory.
   aikido::trajectory::TrajectoryPtr computeRetimedJointSpacePath(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints);
 
+  /// Generates a timed *and* smoothed trajectory from the given list of
+  /// configurations.
+  /// \param[in] space The statespace for the trajectory.
+  /// \param[in] waypoints Ordered configurations to add to the trajectory, each
+  /// of which is paired with its desired time along the output trajectory.
+  /// \param[in] collisionFree Collision constraint during post-processing.
+  /// \return Timed amd smoothed trajectory.
   aikido::trajectory::TrajectoryPtr computeSmoothJointSpacePath(
       const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
       const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,

@@ -83,6 +83,8 @@ public:
   // Documentation inherited.
   std::future<void> executePreshape(const std::string& preshapeName) override;
 
+  /// Sets the hand to the given preshape configuration.
+  /// \param[in] preshape Configuration of the hand.
   std::future<void> executePreshape(const Eigen::Vector2d& preshape);
 
   // Documentation inherited.
