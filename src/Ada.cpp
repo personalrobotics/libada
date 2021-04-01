@@ -9,12 +9,14 @@
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/Spline.hpp>
+#include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
 #include <aikido/planner/ompl/Planner.hpp>
+#include <aikido/planner/parabolic/ParabolicSmoother.hpp>
 #include <aikido/robot/ConcreteManipulator.hpp>
 #include <aikido/robot/ConcreteRobot.hpp>
 #include <aikido/robot/util.hpp>
@@ -40,6 +42,7 @@ using aikido::constraint::dart::TSR;
 using aikido::constraint::dart::TSRPtr;
 using aikido::control::TrajectoryExecutorPtr;
 using aikido::planner::kunzretimer::KunzRetimer;
+using aikido::planner::parabolic::ParabolicSmoother;
 using aikido::robot::ConcreteManipulator;
 using aikido::robot::ConcreteManipulatorPtr;
 using aikido::robot::ConcreteRobot;
@@ -360,6 +363,62 @@ ConstAdaHandPtr Ada::getHand() const
 void Ada::update()
 {
   step(std::chrono::system_clock::now());
+}
+
+//==============================================================================
+TrajectoryPtr Ada::computeRetimedJointSpacePath(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints)
+{
+  auto satisfied = std::make_shared<aikido::constraint::Satisfied>(stateSpace);
+
+  std::shared_ptr<aikido::statespace::GeodesicInterpolator> interpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
+  std::shared_ptr<aikido::trajectory::Interpolated> traj
+      = std::make_shared<aikido::trajectory::Interpolated>(
+          stateSpace, interpolator);
+
+  for (auto& waypoint : waypoints)
+  {
+    auto state = stateSpace->createState();
+    stateSpace->convertPositionsToState(waypoint.second, state);
+    traj->addWaypoint(waypoint.first, state);
+  }
+
+  auto timedTrajectory = std::move(
+      postProcessPath<KunzRetimer>(traj.get(), satisfied, ada::KunzParams()));
+
+  return timedTrajectory;
+}
+
+//==============================================================================
+TrajectoryPtr Ada::computeSmoothJointSpacePath(
+    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
+    const CollisionFreePtr& collisionFree)
+{
+  // Use the given constraint if one was passed.
+  TestablePtr constraint = collisionFree;
+  if (!constraint)
+    constraint = std::make_shared<aikido::constraint::Satisfied>(stateSpace);
+
+  std::shared_ptr<aikido::statespace::GeodesicInterpolator> interpolator
+      = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
+  std::shared_ptr<aikido::trajectory::Interpolated> traj
+      = std::make_shared<aikido::trajectory::Interpolated>(
+          stateSpace, interpolator);
+
+  for (auto& waypoint : waypoints)
+  {
+    auto state = stateSpace->createState();
+    stateSpace->convertPositionsToState(waypoint.second, state);
+    traj->addWaypoint(waypoint.first, state);
+  }
+
+  auto smoothTrajectory = postProcessPath<ParabolicSmoother>(
+      traj.get(), constraint, ParabolicSmoother::Params());
+
+  return smoothTrajectory;
 }
 
 //==============================================================================

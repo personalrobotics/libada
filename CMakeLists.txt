@@ -1,12 +1,40 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(libada)
-set(library_VERSION 0.2.0)
+set(library_VERSION 0.3.0)
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+#================================================================================
+# Python setup
+#
+
+set(ADAPY_PYTHON_VERSION 3.8)
+find_package(PythonInterp ${ADAPY_PYTHON_VERSION})
+
+if(PythonInterp_FOUND)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+    "from distutils.sysconfig import get_python_lib;\
+    print(get_python_lib(plat_specific=True, prefix=''))"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  find_package(PythonLibs ${ADAPY_PYTHON_VERSION})
+
+  # Find pybind11
+  # Needs to set PYBIND11_PYTHON_VERSION before finding pybind11
+  set(PYBIND11_PYTHON_VERSION ${ADAPY_PYTHON_VERSION} CACHE STRING "")
+  find_package(pybind11 2.2.0)
+endif()
+
+if(NOT pybind11_FOUND)
+  message(WARNING "Could not load pybind11. Cannot build python bindings.")
+  return()
+endif()
 
 #================================================================================
 # CodeCov setup
@@ -28,7 +56,6 @@ include(ExternalProject)
 
 find_package(DART 6.8.5 REQUIRED
   COMPONENTS utils utils-urdf optimizer-nlopt
-
 )
 
 find_package(aikido 0.3.0 REQUIRED
@@ -47,6 +74,7 @@ find_package(aikido 0.3.0 REQUIRED
     robot
     statespace
     io
+    rviz
 )
 
 find_package(ada_description REQUIRED)
@@ -116,6 +144,33 @@ target_link_libraries(libada
     ${urdf_LIBRARIES}
 )
 
+#=============================================================================
+#Pybind
+if(pybind11_FOUND)
+  pybind11_add_module(adapy
+    MODULE
+    python/adapy/adapy.cpp
+    python/adapy/ada_bindings.cpp
+    python/adapy/aikido_bindings.cpp
+    python/adapy/dart_bindings.cpp
+    python/adapy/pr_tsr_bindings.cpp
+    python/adapy/ik_bindings.cpp
+  )
+
+  target_include_directories(adapy
+    SYSTEM PUBLIC
+      ${PYTHON_INCLUDE_DIRS}
+      ${pybind11_INCLUDE_DIRS}
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
+  target_link_libraries(adapy PUBLIC
+    libada
+    ${DART_LIBRARIES}
+  )
+endif()
+
 #================================================================================
 # Testing
 #
@@ -164,6 +219,10 @@ install(FILES "package.xml"
   DESTINATION "share/libada")
 
 #install(DIRECTORY resources DESTINATION share)
+if(pybind11_FOUND)
+  install(TARGETS adapy
+        LIBRARY DESTINATION lib/python3/dist-packages)
+endif()
 
 
 #================================================================================
@@ -177,7 +236,13 @@ if(CLANG_FORMAT_EXECUTABLE)
 
   file(GLOB_RECURSE ALL_SOURCE_FILES
     LIST_DIRECTORIES false
-    include/*.h include/*.hpp src/*.c src/*.cpp tests/*.cpp tests/*.hpp)
+    include/*.h
+    include/*.hpp
+    src/*.c
+    src/*.cpp
+    tests/*.cpp
+    tests/*.hpp
+    python/*.cpp)
 
   clang_format_add_sources(${ALL_SOURCE_FILES})
 

@@ -89,7 +89,8 @@ public:
       const dart::common::Uri& adaUrdfUri = defaultAdaUrdfUri,
       const dart::common::Uri& adaSrdfUri = defaultAdaSrdfUri,
       const std::string& endEffectorName = "j2n6s200_end_effector",
-      const std::string& armTrajectoryExecutorName = "trajectory_controller",
+      const std::string& armTrajectoryExecutorName
+      = "rewd_trajectory_controller",
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
@@ -175,6 +176,29 @@ public:
 
   // Runs step with current time.
   void update();
+
+  /// Generates a timed (but not smoothed) trajectory from the given list of
+  /// configurations.
+  /// \param[in] stateSpace The statespace for the trajectory.
+  /// \param[in] waypoints Ordered configurations to add to the trajectory, each
+  /// of which is paired with its desired time along the output trajectory.
+  /// \return Timed trajectory.
+  aikido::trajectory::TrajectoryPtr computeRetimedJointSpacePath(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+      const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints);
+
+  /// Generates a timed *and* smoothed trajectory from the given list of
+  /// configurations.
+  /// \param[in] space The statespace for the trajectory.
+  /// \param[in] waypoints Ordered configurations to add to the trajectory, each
+  /// of which is paired with its desired time along the output trajectory.
+  /// \param[in] collisionFree Collision constraint during post-processing.
+  /// \return Timed amd smoothed trajectory.
+  aikido::trajectory::TrajectoryPtr computeSmoothJointSpacePath(
+      const aikido::statespace::dart::MetaSkeletonStateSpacePtr& stateSpace,
+      const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
+      const aikido::constraint::dart::CollisionFreePtr& collisionFree
+      = nullptr);
 
   /// \copydoc Robot::planToConfiguration.
   aikido::trajectory::TrajectoryPtr planToConfiguration(
