@@ -30,6 +30,9 @@
 #include <dart/dart.hpp>
 #include <ros/ros.h>
 
+#include <pr_control_msgs/SetCartesianVelocityAction.h>
+#include <actionlib/client/simple_action_client.h>
+
 #include "libada/AdaHand.hpp"
 
 namespace ada {
@@ -52,6 +55,17 @@ struct KunzParams : aikido::planner::kunzretimer::KunzRetimer::Params
   {
     // Do nothing.
   }
+};
+
+// Enum for Cartesian Velocity Return Result
+enum CartVelocityResult
+{
+  kCVR_SUCCESS,
+  kCVR_INVALID,
+  kCVR_FORCE,
+  kCVR_CANCELLED,
+  kCVR_TIMEOUT,
+  kCVR_UNKNOWN
 };
 
 class Ada final : public aikido::robot::Robot
@@ -264,6 +278,29 @@ public:
   /// \return true if all controllers have been successfully switched
   bool stopTrajectoryExecutor();
 
+  /// Toggle controllers and enable/disable cartesian velocity control.
+  /// Required before calling \c moveArmCommandVelocity
+  /// \param[in] useFT whether to use the FT-enabled controller or not.
+  /// \return true if all controllers have been successfully switched
+  bool setVelocityControl(bool enabled, bool useFT = false);
+
+  /// Moves the end effector at a cartesian velocity for a specified
+  /// amount of time.
+  /// \param[in] linear, 3-D velocity in world space, m/s
+  /// \param[in] angular, 3-D velocity about world axes, rad/s
+  /// \param[in] forTime, maximum time to execute velocity 
+  /// \param[in] block, block until completed, cancelled, or aborted
+  /// \return True if the trajectory was completed successfully.
+  std::future<CartVelocityResult> moveArmCommandVelocity(
+    const Eigen::Vector3d& linear,
+    const Eigen::Vector3d& angular = Eigen::Vector3d(0.0, 0.0, 0.0),
+    ros::Duration forTime = ros::Duration(1.0),
+    bool block = false);
+
+  /// Stops any movement created by \c moveArmCommandVelocity
+  /// \return True on successful cancellation
+  bool cancelCommandVelocity();
+
   /// Sets VectorFieldPlanner parameters.
   /// TODO: To be removed with Planner API.
   /// \param[in] vfParameters VectorField Parameters
@@ -359,6 +396,15 @@ public:
   bool switchControllers(
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
+
+// Short-cuts for action client types
+protected:
+  using Action = pr_control_msgs::SetCartesianVelocityAction;
+  using ActionClient = actionlib::SimpleActionClient<Action>;
+  using GoalState = actionlib::SimpleClientGoalState;
+
+  using Result = pr_control_msgs::SetCartesianVelocityResult;
+  using ResultPtr = pr_control_msgs::SetCartesianVelocityResultConstPtr;
 
 private:
   // Named Configurations are read from a YAML file
@@ -466,6 +512,19 @@ private:
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
+
+  ////// Cartesian Velocity Variables
+  // Name of cartesian velocity action server
+  const std::string mCartesianVelocityName = "move_until_touch_cartvel_controller";
+  const std::string mCartesianVelocityNoFTName = "cartvel_controller";
+  // Action Client
+  std::shared_ptr<ActionClient> mActionClient;
+  // Transition callback for velocity goals
+  void doneCallback(const GoalState& handle, const ResultPtr& result);
+  // Promise to keep track of current velocity goal
+  std::shared_ptr<std::promise<CartVelocityResult>> mPromise;
+  // Track whether using velocity control
+  bool mVelocityControl;
 };
 
 } // namespace ada

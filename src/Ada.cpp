@@ -120,6 +120,7 @@ Ada::Ada(
   , mSmootherFeasibilityApproxTolerance(1e-3)
   , mWorld(std::move(env))
   , mEndEffectorName(endEffectorName)
+  , mVelocityControl(false)
 {
   simulation = true; // temporarily set simulation to true
 
@@ -519,6 +520,175 @@ bool Ada::stopTrajectoryExecutor()
 }
 
 //=============================================================================
+bool Ada::setVelocityControl(bool enabled, bool useFT) {
+  if(mSimulation) return false;
+  // Do not re-enable or re-disable
+  if(mVelocityControl == enabled) return true;
+
+  bool ret;
+
+  controller_manager_msgs::SwitchController srv;
+  srv.request.strictness
+      = controller_manager_msgs::SwitchControllerRequest::STRICT;
+
+  const std::string controlName = useFT ? mCartesianVelocityName : mCartesianVelocityNoFTName;
+
+  if(enabled) {
+    mActionClient = std::make_shared<ActionClient>(controlName + "/cart_velocity");
+    // Stop joint trajectory control
+    ret = stopTrajectoryExecutor();
+    if (!ret) return false;
+
+    // Switch controllers
+    srv.request.start_controllers = std::vector<std::string>{controlName};
+    srv.request.stop_controllers = std::vector<std::string>();
+    if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
+      return false;
+    }
+
+    // Ensure action client is running
+    ROS_INFO_STREAM("Starting cartesian velocity action client...");
+    if(!mActionClient->waitForServer(ros::Duration(10.0))) {
+      return false;
+    }
+    mVelocityControl = true;
+    return true;
+  } else {
+    // Kill action goals
+    ret = cancelCommandVelocity();
+    if (!ret) return false;
+
+    // Switch controllers
+    srv.request.start_controllers = std::vector<std::string>();
+    srv.request.stop_controllers = std::vector<std::string>{controlName};
+    if (!mControllerServiceClient->call(srv) || !srv.response.ok) {
+      return false;
+    }
+
+    // Start joint trajectory control
+    if(!startTrajectoryExecutor()) {
+      return false;
+    }
+    mVelocityControl = false;
+    return true;
+  }
+}
+
+//=============================================================================
+std::future<CartVelocityResult> Ada::moveArmCommandVelocity(
+    const Eigen::Vector3d& linear,
+    const Eigen::Vector3d& angular,
+    ros::Duration forTime,
+    bool block) {
+  mPromise.reset(new std::promise<CartVelocityResult>());
+  std::future<CartVelocityResult> ret = mPromise->get_future();
+  if (mSimulation || !mVelocityControl) {
+    mPromise->set_value(kCVR_INVALID);
+    return ret;
+  }
+
+  // Construct goal
+  pr_control_msgs::SetCartesianVelocityGoal goal;
+  goal.exec_time = forTime;
+  goal.command.linear.x = linear(0);
+  goal.command.linear.y = linear(1);
+  goal.command.linear.z = linear(2);
+  goal.command.angular.x = angular(0);
+  goal.command.angular.y = angular(1);
+  goal.command.angular.z = angular(2);
+
+  // Send goal
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  if (mActionClient->getState() != actionlib::SimpleClientGoalState::LOST) {
+    mActionClient->stopTrackingGoal();
+  }
+  mActionClient->sendGoal(goal, 
+    std::bind(&Ada::doneCallback, this, _1, _2));
+
+  // Block until done or time-out
+  if(block) {
+    std::future_status status = ret.wait_for(std::chrono::nanoseconds(forTime.toNSec()));
+    if (status != std::future_status::ready) {
+      // Time-out, write false
+      mPromise->set_value(kCVR_TIMEOUT);
+    }
+  }
+
+  return ret;
+}
+
+void Ada::doneCallback(const GoalState& handle, const ResultPtr& result) {
+  // Only handle current goal
+  if (!mVelocityControl) return;
+
+  if (handle.isDone())
+  {
+    std::stringstream message;
+    CartVelocityResult isSuccessful = kCVR_SUCCESS;
+
+    // Check the status of execution.
+    if (result && result->error_code != Result::SUCCESSFUL)
+    {
+      message << ": ";
+      switch(result->error_code) {
+        case Result::INVALID_CMD:
+          message << "INVALID_CMD";
+          isSuccessful = kCVR_INVALID;
+          break;
+        case Result::FORCE_THRESH:
+          message << "FORCE_THRESH";
+          isSuccessful = kCVR_FORCE;
+          break;
+        case Result::CANCELLED:
+          message << "CANCELLED";
+          isSuccessful = kCVR_CANCELLED;
+          break;
+        default:
+          message << "UNKNOWN";
+          isSuccessful = kCVR_UNKNOWN;
+      }
+
+      if (!result->error_string.empty())
+        message << " (" << result->error_string << ")";
+    }
+    // we can fail without a result for another reason
+    else if (!result) {
+      message << "Velocity Command " << handle.toString();
+
+      const auto terminalMessage = handle.getText();
+      if (!terminalMessage.empty())
+        message << " (" << terminalMessage << ")";
+
+      isSuccessful = kCVR_UNKNOWN;
+    }
+
+    if(isSuccessful != kCVR_SUCCESS) {
+      ROS_WARN_STREAM(message.str());
+    }
+
+    try {
+      mPromise->set_value(isSuccessful);
+    } catch(...) {
+      ROS_WARN_STREAM("Promise already satisfied.");
+    }
+  }
+
+}
+
+//=============================================================================
+bool Ada::cancelCommandVelocity() {
+  if(mSimulation) return false;
+  if(!mActionClient->isServerConnected()) return false;
+  if(!mVelocityControl) return false;
+  if (mActionClient->getState() != actionlib::SimpleClientGoalState::LOST) {
+    mActionClient->stopTrackingGoal();
+  }
+  mActionClient->cancelAllGoals();
+  return true;
+}
+
+//=============================================================================
 void Ada::setVectorFieldPlannerParameters(
     const VectorFieldPlannerParameters& vfParameters)
 {
@@ -635,8 +805,10 @@ bool Ada::switchControllers(
 
   if (mControllerServiceClient->call(srv) && srv.response.ok)
   {
-    mArmTrajectoryExecutorName = startControllers[0];
-    mTrajectoryExecutor = createTrajectoryExecutor();
+    if(startControllers.size() > 0) {
+      mArmTrajectoryExecutorName = startControllers[0];
+      mTrajectoryExecutor = createTrajectoryExecutor();
+    }
     ROS_INFO_STREAM("Controllers switched");
     return true;
   }
