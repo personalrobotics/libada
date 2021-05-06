@@ -1,3 +1,3 @@
-# libada [![Build Status](https://travis-ci.com/personalrobotics/libada.svg?token=pWnjqKx8jRYimj8sy6pQ&branch=master)](https://travis-ci.com/personalrobotics/libada)
+# libada [![Build Status](https://github.com/personalrobotics/libada/actions/workflows/build-test.yml/badge.svg?branch=master)](https://github.com/personalrobotics/libada/actions)
 
 C++ library for simulating and running ADA based on DART and AIKIDO
