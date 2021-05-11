@@ -360,6 +360,12 @@ public:
       const std::vector<std::string>& startControllers,
       const std::vector<std::string>& stopControllers);
 
+  /// Compute velocity limits from the MetaSkeleton
+  Eigen::VectorXd getVelocityLimits() const;
+
+  /// Compute acceleration limits from the MetaSkeleton
+  Eigen::VectorXd getAccelerationLimits() const;
+
 private:
   // Named Configurations are read from a YAML file
   using ConfigurationMap = std::unordered_map<std::string, Eigen::VectorXd>;
@@ -378,12 +384,6 @@ private:
       dart::collision::CollisionDetectorPtr collisionDetector,
       const std::shared_ptr<dart::collision::BodyNodeCollisionFilter>&
           selfCollisionFilter);
-
-  /// Compute velocity limits from the MetaSkeleton
-  Eigen::VectorXd getVelocityLimits() const;
-
-  /// Compute acceleration limits from the MetaSkeleton
-  Eigen::VectorXd getAccelerationLimits() const;
 
   /// Creates and returns a trajectory executor.
   std::shared_ptr<aikido::control::TrajectoryExecutor>
