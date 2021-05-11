@@ -2,9 +2,10 @@
 
 set -ex
 
-cd "${HOME}/workspace"
-
-if [ "${TRAVIS_OS_NAME}" = "linux" ]; then
-  cat ./build/libada/Testing/Temporary/LastTest.log
-  cat ./build/libada/Testing/Temporary/LastTestsFailed.log
+if [ "${USE_CATKIN}" = "ON" ]; then
+  cd "${HOME}/workspace/build/libada/"
 fi
+
+cat Testing/Temporary/LastTest.log
+cat Testing/Temporary/LastTestsFailed.log
+

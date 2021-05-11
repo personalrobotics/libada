@@ -14,7 +14,7 @@
   <depend>roslib</depend>
   <depend>srdfdom</depend>
   <depend>urdf</depend>
-  <depend>roscpp_initializer</depend>
+  <depend>pr_tsr</depend>
 
   <!-- Workaround to build DART with optional features enabled. -->
   <depend>nlopt</depend>
