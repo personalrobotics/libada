@@ -1,0 +1,57 @@
+name: build-test
+
+on:
+  # Pushes / merges to master
+  push:
+    branches:
+      - master
+  # On creation and updating of PR
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # Only those targeting master branch
+    branches:
+      - master
+  # Every two days
+  schedule:
+    - cron: '0 22 */2 * *'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          # Focal Catkin
+          - os: ubuntu-20.04
+            catkin: ON
+            build: FOCAL_CATKIN_FULL_RELEASE
+            config: "-DCMAKE_BUILD_TYPE=Release -DTREAT_WARNINGS_AS_ERRORS=ON"
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.build }}
+    env:
+      USE_CATKIN: ${{ matrix.catkin }}
+      BUILD_NAME: ${{ matrix.build }}
+      CATKIN_CONFIG_OPTIONS: ${{ matrix.config }}
+      BUILD_TYPE: Release
+      OS_NAME: ${{ matrix.os }}
+      DISTRIBUTION: ${{ secrets.DISTRIBUTION }}
+      REPOSITORY: libada
+      SUDO: sudo
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Before install
+        run: .ci/before_install.sh
+      - name: Install
+        run: .ci/install.sh
+      - name: Script
+        run: .ci/script.sh
+      # Report on failed tests
+      - name: After failure
+        if: ${{ failure() }}
+        run: .ci/after_failure.sh
