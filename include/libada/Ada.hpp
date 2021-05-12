@@ -36,6 +36,8 @@ namespace ada {
 
 extern dart::common::Uri defaultAdaUrdfUri;
 extern dart::common::Uri defaultAdaSrdfUri;
+extern dart::common::Uri fixedAdaUrdfUri;
+extern dart::common::Uri fixedAdaSrdfUri;
 extern std::vector<std::string> possibleTrajectoryExecutors;
 
 /// ADA-specific defaults for the KunzRetimer.
@@ -96,7 +98,52 @@ public:
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
+  Ada(aikido::planner::WorldPtr env,
+      bool simulation,
+      std::string name,
+      bool vis,
+      const dart::common::Uri adaUrdfUri = fixedAdaUrdfUri,
+      const dart::common::Uri adaSrdfUri = fixedAdaSrdfUri,
+      const std::string &endEffectorName = "j2n6s200_end_effector",
+      const std::string &armTrajectoryExecutorName = "trajectory_controller",
+      const ::ros::NodeHandle *node = nullptr,
+      aikido::common::RNG::result_type rngSeed = std::random_device{}(),
+      const dart::common::ResourceRetrieverPtr &retriever
+      = std::make_shared<aikido::io::CatkinResourceRetriever>());
+
+  /// Construct Ada metaskeleton using a URI.
+  /// \param[in] env World (either for planning, post-processing, or executing).
+  /// \param[in] simulation True if running in simulation mode.
+  /// \param[in] name
+  /// \param[in] transform
+  /// \param[in] vis
+  /// \param[in] node ROS node. Required for running in real.
+  /// \param[in] rngSeed seed for initializing random generator.
+  ///            May be nullptr if simulation is true.
+  /// \param[in] adaUrdfUri Path to Ada urdf model.
+  /// \param[in] adaSrdfUri Path to Ada srdf file.
+  /// \param[in] endEffectorName Name of end effector as in the urdf file.
+  /// \param[in] retriever Resource retriever for retrieving Ada
+  Ada(aikido::planner::WorldPtr env,
+      bool simulation,
+      std::string name,
+      const Eigen::Isometry3d &transform,
+      bool vis,
+      dart::common::Uri adaUrdfUri = defaultAdaUrdfUri,
+      dart::common::Uri adaSrdfUri = defaultAdaSrdfUri,
+      const std::string &endEffectorName = "j2n6s200_end_effector",
+      const std::string &armTrajectoryExecutorName = "trajectory_controller",
+      const ::ros::NodeHandle *node = nullptr,
+      aikido::common::RNG::result_type rngSeed = std::random_device{}(),
+      const dart::common::ResourceRetrieverPtr &retriever
+      = std::make_shared<aikido::io::CatkinResourceRetriever>());
+
   virtual ~Ada() = default;
+
+  /// Whether this ada is sim or not
+  bool ifSim() const {
+    return mSimulation;
+  }
 
   /// \copydoc ConcreteRobot::postProcessPath.
   template <typename PostProcessor>

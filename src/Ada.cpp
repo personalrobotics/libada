@@ -72,6 +72,14 @@ dart::common::Uri defaultAdaUrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.urdf"};
 dart::common::Uri defaultAdaSrdfUri{
     "package://ada_description/robots_urdf/ada_with_camera.srdf"};
+dart::common::Uri fixedAdaUrdfUri{
+    "package://ada_description/robots_urdf/ada_with_camera.urdf"};
+dart::common::Uri fixedAdaSrdfUri{
+    "package://ada_description/robots_urdf/ada_with_camera.srdf"};
+dart::common::Uri visAdaUrdfUri{"package://ada_description/robots_urdf/vis_ada_with_camera.urdf"};
+dart::common::Uri visAdaSrdfUri{"package://ada_description/robots_urdf/vis_ada_with_camera.srdf"};
+dart::common::Uri fixedvisAdaUrdfUri{"package://ada_description/robots_urdf/vis_ada_with_camera_fixed.urdf"};
+dart::common::Uri fixedvisAdaSrdfUri{"package://ada_description/robots_urdf/vis_ada_with_camera_fixed.srdf"};
 
 const dart::common::Uri namedConfigurationsUri{
     "package://libada/resources/configurations.yaml"};
@@ -247,6 +255,299 @@ Ada::Ada(
   mThread = std::make_unique<ExecutorThread>(
       std::bind(&Ada::update, this), threadExecutionCycle);
 }
+
+//==============================================================================
+Ada::Ada(
+    aikido::planner::WorldPtr env,
+    bool simulation,
+    std::string name,
+    bool vis,
+    dart::common::Uri adaUrdfUri,
+    dart::common::Uri adaSrdfUri,
+    const std::string &endEffectorName,
+    const std::string &armTrajectoryExecutorName,
+    const ::ros::NodeHandle *node,
+    aikido::common::RNG::result_type rngSeed,
+    const dart::common::ResourceRetrieverPtr &retriever)
+    : mSimulation(simulation),
+      mArmTrajectoryExecutorName(armTrajectoryExecutorName),
+      mCollisionResolution(collisionResolution),
+      mRng(rngSeed),
+      mSmootherFeasibilityCheckResolution(1e-3),
+      mSmootherFeasibilityApproxTolerance(1e-3),
+      mWorld(std::move(env)),
+      mEndEffectorName(endEffectorName) {
+  simulation = true; // temporarily set simulation to true
+
+  if (std::find(
+      availableArmTrajectoryExecutorNames.begin(),
+      availableArmTrajectoryExecutorNames.end(),
+      mArmTrajectoryExecutorName)
+      == availableArmTrajectoryExecutorNames.end()) {
+    throw std::runtime_error("Arm Trajectory Controller is not valid!");
+  }
+
+  dtinfo << "Arm Executor " << armTrajectoryExecutorName << std::endl;
+  using aikido::common::ExecutorThread;
+  using aikido::control::ros::RosJointStateClient;
+
+  if (vis) {
+    std::cout << "vis is true" << std::endl;
+    adaUrdfUri = fixedvisAdaUrdfUri;
+    adaSrdfUri = fixedvisAdaSrdfUri;
+  }
+
+  // Load Ada
+  mRobotSkeleton = mWorld->getSkeleton(name);
+  if (!mRobotSkeleton) {
+    dart::utils::DartLoader urdfLoader;
+    mRobotSkeleton = urdfLoader.parseSkeleton(adaUrdfUri, retriever);
+    mWorld->addSkeleton(mRobotSkeleton);
+  }
+
+  if (!mRobotSkeleton) {
+    throw std::runtime_error("Unable to load ADA model.");
+  }
+
+  // TODO: Read from robot configuration.
+  mRobotSkeleton->setAccelerationLowerLimits(
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -2.0));
+  mRobotSkeleton->setAccelerationUpperLimits(
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), 2.0));
+
+  // Define the collision detector and groups
+  auto collisionDetector = FCLCollisionDetector::create();
+  // auto collideWith = collisionDetector->createCollisionGroupAsSharedPtr();
+  auto selfCollisionFilter
+      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+
+  urdf::Model urdfModel;
+  std::string adaUrdfXMLString = retriever->readAll(adaUrdfUri);
+  urdfModel.initString(adaUrdfXMLString);
+
+  srdf::Model srdfModel;
+  std::string adaSrdfXMLString = retriever->readAll(adaSrdfUri);
+  srdfModel.initString(urdfModel, adaSrdfXMLString);
+  auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
+
+  for (auto disabledPair : disabledCollisions) {
+    auto body0 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link1_);
+    auto body1 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link2_);
+
+#ifndef NDEBUG
+    dtinfo << "Disabled collisions between " << disabledPair.link1_ << " and "
+           << disabledPair.link2_ << std::endl;
+#endif
+
+    selfCollisionFilter->addBodyNodePairToBlackList(body0, body1);
+  }
+
+  if (!mSimulation) {
+    if (!node) {
+      mNode = std::make_unique<::ros::NodeHandle>();
+    } else {
+      mNode = std::make_unique<::ros::NodeHandle>(*node);
+    }
+
+    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
+        mNode->serviceClient<controller_manager_msgs::SwitchController>(
+            "controller_manager/switch_controller"));
+    mJointStateClient = std::make_unique<RosJointStateClient>(
+        mRobotSkeleton, *mNode, "/joint_states", 1);
+    mJointStateThread = std::make_unique<ExecutorThread>(
+        std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
+        jointUpdateCycle);
+    ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
+  }
+
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
+
+  mTrajectoryExecutor = createTrajectoryExecutor();
+
+  // Setting arm base and end names
+  mArmBaseName = "j2n6s200_link_base";
+  mArmEndName = "j2n6s200_link_6";
+  mHandBaseName = "j2n6s200_hand_base";
+
+  // Setup the arm
+  mArm = configureArm(
+      "j2n6s200",
+      retriever,
+      mTrajectoryExecutor,
+      collisionDetector,
+      selfCollisionFilter);
+  mArm->setVectorFieldPlannerParameters(vfParams);
+
+  mArmSpace = mArm->getStateSpace();
+
+  // Set up the concrete robot from the meta skeleton
+  mRobot = std::make_shared<ConcreteRobot>(
+      "adaRobot",
+      mRobotSkeleton,
+      mSimulation,
+      cloneRNG(),
+      mTrajectoryExecutor,
+      collisionDetector,
+      selfCollisionFilter);
+
+  // TODO: When the named configurations are set in resources.
+  // Load the named configurations
+  // auto namedConfigurations = parseYAMLToNamedConfigurations(
+  //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
+  // mRobot->setNamedConfigurations(namedConfigurations);
+
+  mThread = std::make_unique<ExecutorThread>(
+      std::bind(&Ada::update, this), threadExecutionCycle);
+}
+
+//==============================================================================
+Ada::Ada(
+    aikido::planner::WorldPtr env,
+    bool simulation,
+    std::string name,
+    const Eigen::Isometry3d &transform,
+    bool vis,
+    dart::common::Uri adaUrdfUri,
+    dart::common::Uri adaSrdfUri,
+    const std::string &endEffectorName,
+    const std::string &armTrajectoryExecutorName,
+    const ::ros::NodeHandle *node,
+    aikido::common::RNG::result_type rngSeed,
+    const dart::common::ResourceRetrieverPtr &retriever)
+    : mSimulation(simulation),
+      mArmTrajectoryExecutorName(armTrajectoryExecutorName),
+      mCollisionResolution(collisionResolution),
+      mRng(rngSeed),
+      mSmootherFeasibilityCheckResolution(1e-3),
+      mSmootherFeasibilityApproxTolerance(1e-3),
+      mWorld(std::move(env)),
+      mEndEffectorName(endEffectorName) {
+  simulation = true; // temporarily set simulation to true
+
+  if (std::find(
+      availableArmTrajectoryExecutorNames.begin(),
+      availableArmTrajectoryExecutorNames.end(),
+      mArmTrajectoryExecutorName)
+      == availableArmTrajectoryExecutorNames.end()) {
+    throw std::runtime_error("Arm Trajectory Controller is not valid!");
+  }
+
+  dtinfo << "Arm Executor " << armTrajectoryExecutorName << std::endl;
+  using aikido::common::ExecutorThread;
+  using aikido::control::ros::RosJointStateClient;
+
+  if (vis) {
+    std::cout << "vis is true" << std::endl;
+    adaUrdfUri = visAdaUrdfUri;
+    adaSrdfUri = visAdaSrdfUri;
+  }
+
+  // Load Ada
+  mRobotSkeleton = mWorld->getSkeleton(name);
+  if (!mRobotSkeleton) {
+    dart::utils::DartLoader urdfLoader;
+    mRobotSkeleton = urdfLoader.parseSkeleton(adaUrdfUri, retriever);
+    dart::dynamics::Joint *baseJoint = mRobotSkeleton->getJoint(0);
+    dart::dynamics::FreeJoint *freeBaseJoint = dynamic_cast<dart::dynamics::FreeJoint *>(baseJoint);
+    freeBaseJoint->setTransform(transform);
+    mWorld->addSkeleton(mRobotSkeleton);
+  }
+
+  if (!mRobotSkeleton) {
+    throw std::runtime_error("Unable to load ADA model.");
+  }
+
+  // TODO: Read from robot configuration.
+  mRobotSkeleton->setAccelerationLowerLimits(
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), -2.0));
+  mRobotSkeleton->setAccelerationUpperLimits(
+      Eigen::VectorXd::Constant(mRobotSkeleton->getNumDofs(), 2.0));
+
+  // Define the collision detector and groups
+  auto collisionDetector = FCLCollisionDetector::create();
+  // auto collideWith = collisionDetector->createCollisionGroupAsSharedPtr();
+  auto selfCollisionFilter
+      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+
+  urdf::Model urdfModel;
+  std::string adaUrdfXMLString = retriever->readAll(adaUrdfUri);
+  urdfModel.initString(adaUrdfXMLString);
+
+  srdf::Model srdfModel;
+  std::string adaSrdfXMLString = retriever->readAll(adaSrdfUri);
+  srdfModel.initString(urdfModel, adaSrdfXMLString);
+  auto disabledCollisions = srdfModel.getDisabledCollisionPairs();
+
+  for (auto disabledPair : disabledCollisions) {
+    auto body0 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link1_);
+    auto body1 = getBodyNodeOrThrow(mRobotSkeleton, disabledPair.link2_);
+
+#ifndef NDEBUG
+    dtinfo << "Disabled collisions between " << disabledPair.link1_ << " and "
+           << disabledPair.link2_ << std::endl;
+#endif
+
+    selfCollisionFilter->addBodyNodePairToBlackList(body0, body1);
+  }
+
+  if (!mSimulation) {
+    if (!node) {
+      mNode = std::make_unique<::ros::NodeHandle>();
+    } else {
+      mNode = std::make_unique<::ros::NodeHandle>(*node);
+    }
+
+    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
+        mNode->serviceClient<controller_manager_msgs::SwitchController>(
+            "controller_manager/switch_controller"));
+    mJointStateClient = std::make_unique<RosJointStateClient>(
+        mRobotSkeleton, *mNode, "/joint_states", 1);
+    mJointStateThread = std::make_unique<ExecutorThread>(
+        std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
+        jointUpdateCycle);
+    ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
+  }
+
+  mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
+
+  mTrajectoryExecutor = createTrajectoryExecutor();
+
+  // Setting arm base and end names
+  mArmBaseName = "j2n6s200_link_base";
+  mArmEndName = "j2n6s200_link_6";
+  mHandBaseName = "j2n6s200_hand_base";
+
+  // Setup the arm
+  mArm = configureArm(
+      "j2n6s200",
+      retriever,
+      mTrajectoryExecutor,
+      collisionDetector,
+      selfCollisionFilter);
+  mArm->setVectorFieldPlannerParameters(vfParams);
+
+  mArmSpace = mArm->getStateSpace();
+
+  // Set up the concrete robot from the meta skeleton
+  mRobot = std::make_shared<ConcreteRobot>(
+      "adaRobot",
+      mRobotSkeleton,
+      mSimulation,
+      cloneRNG(),
+      mTrajectoryExecutor,
+      collisionDetector,
+      selfCollisionFilter);
+
+  // TODO: When the named configurations are set in resources.
+  // Load the named configurations
+  // auto namedConfigurations = parseYAMLToNamedConfigurations(
+  //     aikido::io::loadYAML(namedConfigurationsUri, retriever));
+  // mRobot->setNamedConfigurations(namedConfigurations);
+
+  mThread = std::make_unique<ExecutorThread>(
+      std::bind(&Ada::update, this), threadExecutionCycle);
+}
+
 
 //==============================================================================
 std::future<void> Ada::executeTrajectory(const TrajectoryPtr& trajectory) const
