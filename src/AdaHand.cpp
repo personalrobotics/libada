@@ -177,17 +177,17 @@ void AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
     throw std::runtime_error(ss.str());
   }
 
-  // Assume the skeleton is a single pair of FreeJoint and BodyNode
-  if (bodyToGrab->getNumBodyNodes() != 1)
-  {
-    std::stringstream ss;
-    // TODO: use proper logging
-    ss << "[Hand::grab] Only Skeletons with one BodyNode may be "
-       << "grabbed. Skeleton '" << bodyToGrab->getName() << "' has "
-       << bodyToGrab->getNumBodyNodes() << " BodyNodes" << std::endl;
-
-    throw std::runtime_error(ss.str());
-  }
+//  // Assume the skeleton is a single pair of FreeJoint and BodyNode
+//  if (bodyToGrab->getNumBodyNodes() != 1)
+//  {
+//    std::stringstream ss;
+//    // TODO: use proper logging
+//    ss << "[Hand::grab] Only Skeletons with one BodyNode may be "
+//       << "grabbed. Skeleton '" << bodyToGrab->getName() << "' has "
+//       << bodyToGrab->getNumBodyNodes() << " BodyNodes" << std::endl;
+//
+//    throw std::runtime_error(ss.str());
+//  }
 
   // TODO: this should be Skeleton::getRootJoint() once DART 6.2 is released
   Joint* joint = bodyToGrab->getJoint(0);
