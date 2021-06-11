@@ -1,0 +1,41 @@
+<launch>
+
+  <arg name="adareal" default="false" />
+
+  <!-- Camera Calibration -->
+  <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0.10909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
+
+  <!-- Simulation -->
+  <group unless="$(arg adareal)">
+    <node pkg="ada_demos"
+          name="simple_percpetion"
+          type="simple_perception"
+          args="--adasim"
+          output="screen" />
+
+    <!-- Define Map -->
+    <node name="st_map2base" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+        args="0 0 0 0 0 0 1 map j2n6s200_link_base 10"/>
+
+    <!-- From realsense node -->
+    <node name="st_camera2optical" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+            args="0 0.015 0 0.504 -0.5 0.499 -0.497 camera_link camera_color_optical_frame 10"/>
+
+    <!-- Simulated pose estimator -->
+    <node pkg="deep_pose_estimators"
+          name="sim_perception_module"
+          type="run_sim_perception_module.py"
+          output="screen" />
+  </group>
+
+  <!-- Real Robot -->
+  <group if="$(arg adareal)">
+    <node pkg="ada_demos"
+          name="simple_percpetion"
+          type="simple_perception"
+          output="screen" />
+  </group>
+
+</launch>
+
