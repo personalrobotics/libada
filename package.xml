@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>libada</name>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <description>C++ library for simulating and running ADA based on DART</description>
   <maintainer email="ekgordon@cs.uw.edu">Ethan K Gordon</maintainer>
   <author email="tapomayukh@cornell.edu">Tapomayukh Bhattacharjee</author>
