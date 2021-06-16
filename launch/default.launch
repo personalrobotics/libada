@@ -2,6 +2,8 @@
 
   <arg name="feeding" default="false" doc="Boolean flag of whether to set up the robot for the feeding demo"/>
   <arg name="perception" default="true" doc="Boolean flag of whether to set up the real perception for the feeding demo"/>
+  <!-- Other options: retinanet, spnet, spanet -->
+  <!-- See possible networks in https://github.com/personalrobotics/food_detector/ -->
   <arg name="detector" default="retinanet" doc="Which network to use for food perception."/>
 
    <!-- the controller node itself -->
@@ -15,10 +17,7 @@
 
    <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
-      args="
-         joint_state_controller
-
-         " />
+      args="joint_state_controller" />
    <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="
