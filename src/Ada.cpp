@@ -205,7 +205,9 @@ Ada::Ada(
         std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
         jointUpdateCycle);
     ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
-  } else {
+  }
+  else
+  {
     // Simulation, create publisher
     mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
   }
@@ -366,13 +368,16 @@ void Ada::update()
 {
   step(std::chrono::system_clock::now());
 
-  if(mSimulation) {
+  if (mSimulation)
+  {
     // Publish joint states to /joint_states
     sensor_msgs::JointState state;
     state.header.stamp = ros::Time::now();
     auto armSkeleton = mRobot->getMetaSkeleton();
-    for(auto joint : armSkeleton->getJoints()) {
-      if(joint->getNumDofs() < 1) {
+    for (auto joint : armSkeleton->getJoints())
+    {
+      if (joint->getNumDofs() < 1)
+      {
         continue;
       }
       state.name.push_back(joint->getName());
