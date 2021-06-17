@@ -186,17 +186,16 @@ Ada::Ada(
     selfCollisionFilter->addBodyNodePairToBlackList(body0, body1);
   }
 
+  if (!node)
+  {
+    mNode = std::make_unique<::ros::NodeHandle>();
+  }
+  else
+  {
+    mNode = std::make_unique<::ros::NodeHandle>(*node);
+  }
   if (!mSimulation)
   {
-    if (!node)
-    {
-      mNode = std::make_unique<::ros::NodeHandle>();
-    }
-    else
-    {
-      mNode = std::make_unique<::ros::NodeHandle>(*node);
-    }
-
     mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
@@ -206,6 +205,9 @@ Ada::Ada(
         std::bind(&RosJointStateClient::spin, mJointStateClient.get()),
         jointUpdateCycle);
     ros::Duration(0.3).sleep(); // first callback at around 0.12 - 0.25 seconds
+  } else {
+    // Simulation, create publisher
+    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
   }
 
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
@@ -363,6 +365,23 @@ ConstAdaHandPtr Ada::getHand() const
 void Ada::update()
 {
   step(std::chrono::system_clock::now());
+
+  if(mSimulation) {
+    // Publish joint states to /joint_states
+    sensor_msgs::JointState state;
+    state.header.stamp = ros::Time::now();
+    auto armSkeleton = mRobot->getMetaSkeleton();
+    for(auto joint : armSkeleton->getJoints()) {
+      if(joint->getNumDofs() < 1) {
+        continue;
+      }
+      state.name.push_back(joint->getName());
+      state.position.push_back(joint->getPosition(0));
+      state.velocity.push_back(joint->getVelocity(0));
+      state.effort.push_back(joint->getForce(0));
+    }
+    mPub.publish(state);
+  }
 }
 
 //==============================================================================
