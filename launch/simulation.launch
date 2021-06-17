@@ -1,0 +1,28 @@
+<launch>
+
+  <!-- Camera Calibration -->
+  <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0.10909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
+
+  <!-- Define Map -->
+  <node name="st_map2base" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+      args="0 0 0 0 0 0 1 map j2n6s200_link_base 10"/>
+
+  <!-- From realsense node -->
+  <node name="st_camera2optical" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0 0.015 0 0.504 -0.5 0.499 -0.497 camera_link camera_color_optical_frame 10"/>
+
+  <!-- Simulated pose estimators -->
+  <node pkg="food_detector"
+        name="food_detector"
+        type="run_sim_food_detector.py"
+        output="screen" />
+
+  <!-- Simulated pose estimator -->
+  <node pkg="food_detector"
+        name="face_detector"
+        type="run_sim_face_detector.py"
+        output="screen" />
+
+</launch>
+

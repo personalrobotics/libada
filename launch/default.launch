@@ -1,0 +1,59 @@
+<launch>
+
+  <arg name="feeding" default="false" doc="Boolean flag of whether to set up the robot for the feeding demo"/>
+  <arg name="perception" default="true" doc="Boolean flag of whether to set up the real perception for the feeding demo"/>
+  <!-- Other options: retinanet, spnet, spanet -->
+  <!-- See possible networks in https://github.com/personalrobotics/food_detector/ -->
+  <arg name="detector" default="retinanet" doc="Which network to use for food perception."/>
+
+   <!-- the controller node itself -->
+   <node pkg="jaco_hardware"
+          name="ros_control_kinova_jaco"
+          type="jaco_hardware"
+          output="screen" />
+
+   <!-- load controllers -->
+   <rosparam file="$(find ada_launch)/config/controllers.yaml" command="load" />
+
+   <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen"
+      args="joint_state_controller" />
+   <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen"
+      args="
+         --stopped
+         move_until_touch_topic_controller
+         trajectory_controller
+         rewd_trajectory_controller
+         j2n6s200_hand_controller
+         " />
+
+   <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
+
+   <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+      args="0 0 0 0 0 0 1 map world 10"/>
+
+
+  <group unless="$(arg feeding)">
+    <!-- load ada urdf -->
+    <param name="robot_description"
+          command="cat $(find ada_description)/robots_urdf/ada.urdf"/>
+  </group>
+
+  <group if="$(arg feeding)">
+    <!-- load ada urdf -->
+    <param name="robot_description"
+          command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
+
+    <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
+
+    <!-- start sim/real perception node-->
+    <node pkg="food_detector" type="run_perception_module.py" name="food_detector"
+          args="--demo-type $(arg detector)" output="screen" cwd="node" if="$(arg perception)"/>
+    <node pkg="food_detector" type="run_sim_food_detector.py" name="food_detector"
+          output="screen" cwd="node" unless="$(arg perception)"/>
+  </group>
+
+</launch>
+
