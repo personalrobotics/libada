@@ -13,7 +13,7 @@
           output="screen" />
 
    <!-- load controllers -->
-   <rosparam file="$(find ada_launch)/config/controllers.yaml" command="load" />
+   <rosparam file="$(find libada)/config/controllers.yaml" command="load" />
 
    <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
