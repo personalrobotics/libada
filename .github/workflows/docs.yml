@@ -19,7 +19,6 @@ jobs:
           # Docs
           - os: ubuntu-20.04
             catkin: ON
-            aikidopy: OFF
             build: DOCS
             config: ""
     runs-on: ${{ matrix.os }}
@@ -28,10 +27,9 @@ jobs:
       USE_CATKIN: ${{ matrix.catkin }}
       BUILD_NAME: ${{ matrix.build }}
       CATKIN_CONFIG_OPTIONS: ${{ matrix.config }}
-      BUILD_AIKIDOPY: ${{ matrix.aikidopy }}
       BUILD_TYPE: Release
       DISTRIBUTION: ${{ secrets.DISTRIBUTION }}
-      REPOSITORY: aikido
+      REPOSITORY: libada
       SUDO: sudo
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:

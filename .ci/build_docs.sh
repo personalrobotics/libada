@@ -12,7 +12,7 @@ LIBADA_DIR="${HOME}/workspace/src/libada"
 # tags. We fix this by deleting and re-cloning the full repository.
 # TODO: Unsure if we still need to do this for Github Actions
 rm -rf ${LIBADA_DIR}
-git clone "git@github.com:${GITHUB_REPOSITORY}.git" ${LIBADA_DIR}
+git clone "https://github.com/${GITHUB_REPOSITORY}.git" ${LIBADA_DIR}
 
 # Organize into "gh-pages" directory
 mkdir -p ${GITHUB_WORKSPACE}/gh-pages
