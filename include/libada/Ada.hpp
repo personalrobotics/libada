@@ -466,6 +466,9 @@ private:
 
   // For trajectory executions.
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
+
+  // State Publisher in Simulation
+  ros::Publisher mPub;
 };
 
 } // namespace ada
