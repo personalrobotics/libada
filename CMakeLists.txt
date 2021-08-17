@@ -33,7 +33,6 @@ endif()
 
 if(NOT pybind11_FOUND)
   message(WARNING "Could not load pybind11. Cannot build python bindings.")
-  return()
 endif()
 
 #================================================================================
