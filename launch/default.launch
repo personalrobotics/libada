@@ -1,32 +1,36 @@
 <launch>
 
-  <arg name="feeding" default="false" doc="Boolean flag of whether to set up the robot for the feeding demo"/>
-  <arg name="perception" default="true" doc="Boolean flag of whether to set up the real perception for the feeding demo"/>
+  <arg name="use_forque" default="false" doc="Add forque to URDF and spawned controllers."/>
+  <arg name="perception" default="false" doc="Boolean flag of whether to set up the perception on ADA" />
   <!-- Other options: retinanet, spnet, spanet -->
   <!-- See possible networks in https://github.com/personalrobotics/food_detector/ -->
-  <arg name="detector" default="retinanet" doc="Which network to use for food perception."/>
+  <arg name="detector" default="false" doc="Which network to use for food perception. Set to 'false' for simulation."/>
+  <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
+  <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
 
    <!-- the controller node itself -->
    <node pkg="jaco_hardware"
           name="ros_control_kinova_jaco"
           type="jaco_hardware"
-          output="screen" />
+          output="screen"
+          if="$(eval arg('version') == '2')" />
 
    <!-- load controllers -->
-   <rosparam file="$(find libada)/config/controllers.yaml" command="load" />
+   <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
 
    <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="joint_state_controller" />
-   <node name="controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+   <!-- <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="
-         --stopped
-         move_until_touch_topic_controller
+         stopped
+         position_controller
+         velocity_controller
+         effort_controller
          trajectory_controller
-         rewd_trajectory_controller
-         j2n6s200_hand_controller
-         " />
+         hand_controller
+         " /> -->
 
    <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
 
@@ -34,13 +38,13 @@
       args="0 0 0 0 0 0 1 map world 10"/>
 
 
-  <group unless="$(arg feeding)">
+  <group unless="$(arg use_forque)">
     <!-- load ada urdf -->
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada.urdf"/>
   </group>
 
-  <group if="$(arg feeding)">
+  <group if="$(arg use_forque)">
     <!-- load ada urdf -->
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
@@ -48,11 +52,20 @@
     <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
           args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
 
+    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen"
+      args="
+         --stopped
+         move_until_touch_topic_controller
+         " />
+  </group>
+
+  <group if="$(arg perception)">
     <!-- start sim/real perception node-->
     <node pkg="food_detector" type="run_perception_module.py" name="food_detector"
-          args="--demo-type $(arg detector)" output="screen" cwd="node" if="$(arg perception)"/>
+          args="--demo-type $(arg detector)" output="screen" cwd="node" unless="$(eval arg('detector') == 'false' )"/>
     <node pkg="food_detector" type="run_sim_food_detector.py" name="food_detector"
-          output="screen" cwd="node" unless="$(arg perception)"/>
+          output="screen" cwd="node" if="$(eval arg('detector') == 'false' )"/>
   </group>
 
 </launch>
