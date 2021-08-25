@@ -13,7 +13,7 @@
           name="ros_control_kinova_jaco"
           type="jaco_hardware"
           output="screen"
-          if="$(eval arg('version') == '2')" />
+          if="$(eval arg('version') == 2)" />
 
    <!-- load controllers -->
    <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
@@ -21,16 +21,16 @@
    <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="joint_state_controller" />
-   <!-- <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+   <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="
-         stopped
+         --stopped
          position_controller
          velocity_controller
          effort_controller
          trajectory_controller
          hand_controller
-         " /> -->
+         " />
 
    <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
 
