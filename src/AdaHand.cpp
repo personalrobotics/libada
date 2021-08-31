@@ -419,7 +419,7 @@ AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr& robot)
   else
   {
     // TODO (k):need to check trajectory_controller exists?
-    std::string serverName = "j2n6s200_hand_controller/follow_joint_trajectory";
+    std::string serverName = "hand_controller/follow_joint_trajectory";
     return std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,

@@ -404,7 +404,7 @@ private:
 
   // Names of the trajectory executors
   std::string mArmTrajectoryExecutorName;
-  const std::string mHandTrajectoryExecutorName = "j2n6s200_hand_controller";
+  const std::string mHandTrajectoryExecutorName = "hand_controller";
 
   // Collision resolution.
   double mCollisionResolution;
