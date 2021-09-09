@@ -7,6 +7,11 @@
   <arg name="detector" default="false" doc="Which network to use for food perception. Set to 'false' for simulation."/>
   <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
   <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
+  <arg name="ip_address" default="132.236.20.28" doc="IP address for TCP/UDP comms"/>
+  <arg name="username" default="admin" doc="Username for kortex session"/>
+  <arg name="password" default="admin" doc="Password for kortex session"/>
+  <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
+  <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
 
    <!-- the controller node itself -->
    <node pkg="jaco_hardware"
@@ -14,6 +19,15 @@
           type="jaco_hardware"
           output="screen"
           if="$(eval arg('version') == 2)" />
+  
+   <node name="kortex_hardware" pkg="kortex_hardware" type="kortex_hardware"
+          output="screen" if="$(eval arg('version') == 3)">
+      <param name="ip_address" value="$(arg ip_address)"/>
+      <param name="username" value="$(arg username)"/>
+      <param name="password" value="$(arg password)"/>
+      <param name="api_session_inactivity_timeout_ms" value="$(arg api_session_inactivity_timeout_ms)"/>
+      <param name="api_connection_inactivity_timeout_ms" value="$(arg api_connection_inactivity_timeout_ms)"/>
+   </node>
 
    <!-- load controllers -->
    <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
@@ -30,6 +44,7 @@
          effort_controller
          trajectory_controller
          hand_controller
+         group_joint_velocity_controller
          " />
 
    <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
