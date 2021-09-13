@@ -15,59 +15,72 @@
   <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
   <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
 
-   <!-- the controller node itself -->
-   <node pkg="jaco_hardware"
-          name="ros_control_kinova_jaco"
+  <!-- Gen2 Hardware Node -->
+  <node name="jaco_hardware"
+          pkg="jaco_hardware"
           type="jaco_hardware"
           output="screen"
           if="$(eval arg('version') == 2)" />
   
-   <node name="kortex_hardware" pkg="kortex_hardware" type="kortex_hardware"
+  <!-- Gen3 Hardware Node -->
+  <node name="kortex_hardware" pkg="kortex_hardware" type="kortex_hardware"
           output="screen" if="$(eval arg('version') == 3)">
       <param name="ip_address" value="$(arg ip_address)"/>
       <param name="username" value="$(arg username)"/>
       <param name="password" value="$(arg password)"/>
       <param name="api_session_inactivity_timeout_ms" value="$(arg api_session_inactivity_timeout_ms)"/>
       <param name="api_connection_inactivity_timeout_ms" value="$(arg api_connection_inactivity_timeout_ms)"/>
-   </node>
+  </node>
 
-   <!-- load controllers -->
-   <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
+  <!-- load controller configuration -->
+  <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
 
-   <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
+  <!-- start joint state controller (required) -->
+  <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
       args="joint_state_controller" />
-   <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+
+  <!-- Gen2 Controllers -->
+  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen" if="$(eval arg('version') == 2)"
       args="
-         --stopped
-         position_controller
-         velocity_controller
-         effort_controller
-         trajectory_controller
-         hand_controller
-         " />
+        --stopped
+        position_controller
+        velocity_controller
+        effort_controller
+        trajectory_controller
+        hand_controller
+        " />
 
-   <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+  <!-- Gen3 Controllers -->
+  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen" if="$(eval arg('version') == 3)"
       args="
-         --stopped
-         group_joint_velocity_controller
-         " />
+        --stopped
+        velocity_controller
+        trajectory_controller
+        " />
+
+  <!-- TODO: Initialize controllers directly via Aikido -->
+
+
+  <!-- Load Base URDF Files -->
+  <group unless="$(arg use_forque)">
+    <!-- load ada urdf -->
+    <param name="robot_description"
+          command="cat $(find ada_description)/robots_urdf/ada.urdf" if="$(eval arg('version') == 2)"/>
+    <param name="robot_description"
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
+  </group>
 
    <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
 
    <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
       args="0 0 0 0 0 0 1 map world 10"/>
 
-
-  <group unless="$(arg use_forque)">
-    <!-- load ada urdf -->
-    <param name="robot_description"
-          command="cat $(find ada_description)/robots_urdf/ada.urdf"/>
-  </group>
-
+  <!-- Initialize F/T Sensor -->
   <group if="$(arg use_forque)">
+  <group if="$(eval arg('version') == 2)">
     <!-- load ada urdf -->
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
@@ -81,6 +94,7 @@
          --stopped
          move_until_touch_topic_controller
          " />
+  </group>
   </group>
 
   <group if="$(arg perception)">
