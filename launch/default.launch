@@ -35,10 +35,13 @@
   <!-- load controller configuration -->
   <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
 
-  <!-- start joint state controller (required) -->
+  <!-- start joint state and mode controllers -->
   <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
-      args="joint_state_controller" />
+      args="
+        joint_state_controller
+        joint_mode_controller
+      " />
 
   <!-- Gen2 Controllers -->
   <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"

@@ -1,12 +1,18 @@
 # Publish all joint states -----------------------------------
 joint_state_controller:
   type: joint_state_controller/JointStateController
-  publish_rate: 50  
+  publish_rate: 50
+
+# whole-arm joint mode controller
+joint_mode_controller:
+  mode: MODE
+  type: pr_ros_controllers/JointModeController
+  default: VELOCITY
+  joints: [joint_mode]
 
 # whole-arm base velocity controller
 velocity_controller:
   mode: VELOCITY
-  mode_handle: joint_mode
   type: pr_ros_controllers/JointGroupVelocityController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
@@ -14,7 +20,6 @@ velocity_controller:
 # whole-arm base position controller
 position_controller:
   mode: POSITION
-  mode_handle: joint_mode
   type: pr_ros_controllers/JointGroupPositionController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
@@ -22,7 +27,6 @@ position_controller:
 # whole-arm base effort controller
 effort_controller:
   mode: EFFORT
-  mode_handle: joint_mode
   type: pr_ros_controllers/JointGroupEffortController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]

@@ -88,6 +88,11 @@ find_package(srdfdom REQUIRED)
 
 find_package(urdf REQUIRED)
 
+find_package(pr_tsr QUIET)
+if(NOT pr_tsr_FOUND)
+  message(WARNING "pr_tsr not found. Cannot build pr_tsr python bindings.")
+endif()
+
 
 #================================================================================
 # Compiler settings
@@ -146,14 +151,22 @@ target_link_libraries(libada
 #=============================================================================
 #Pybind
 if(pybind11_FOUND)
-  pybind11_add_module(adapy
-    MODULE
+
+  set(pybind_sources
     python/adapy/adapy.cpp
     python/adapy/ada_bindings.cpp
     python/adapy/aikido_bindings.cpp
     python/adapy/dart_bindings.cpp
-    python/adapy/pr_tsr_bindings.cpp
     python/adapy/ik_bindings.cpp
+  )
+
+  if(pr_tsr_FOUND)
+    list(APPEND pybind_sources python/adapy/pr_tsr_bindings.cpp)
+  endif()
+
+  pybind11_add_module(adapy
+    MODULE
+    ${pybind_sources}
   )
 
   target_include_directories(adapy
