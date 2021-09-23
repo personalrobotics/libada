@@ -3,107 +3,46 @@ namespace ada {
 
 //==============================================================================
 template <typename PostProcessor>
-aikido::trajectory::UniqueSplinePtr Ada::postProcessPath(
-    const aikido::trajectory::Trajectory* path,
-    const aikido::constraint::TestablePtr& constraint,
-    const typename PostProcessor::Params& postProcessorParams,
+void Ada::setDefaultPostProcessor(
     const Eigen::VectorXd& velocityLimits,
-    const Eigen::VectorXd& accelerationLimits)
+    const Eigen::VectorXd& accelerationLimits,
+    const typename PostProcessor::Params& params)
 {
-  // Don't plan above 70% hard velocity limit
-  // Unless requested explicitly
-  const double DEFAULT_LIMITS_BUFFER = 0.7;
 
+  // See if the passed-in values aree valid or not
   bool velLimitsInvalid
       = (velocityLimits.squaredNorm() == 0.0)
-        || velocityLimits.size() != getVelocityLimits().size();
-  auto sentVelocityLimits = velLimitsInvalid
-                                ? DEFAULT_LIMITS_BUFFER * getVelocityLimits()
-                                : velocityLimits;
+        || ((std::size_t)velocityLimits.size() != mMetaSkeleton->getNumDofs()
+            && (std::size_t)velocityLimits.size() != mArm->getMetaSkeleton()->getNumDofs());
+  auto vLimit
+      = velLimitsInvalid ? mDefaultVelocityLimits
+                         : velocityLimits;
+  mSoftVelocityLimits.segment(0, vLimit.size()) = vLimit;
 
   bool accLimitsInvalid
       = (accelerationLimits.squaredNorm() == 0.0)
-        || accelerationLimits.size() != getAccelerationLimits().size();
-  auto sentAccelerationLimits
-      = accLimitsInvalid ? DEFAULT_LIMITS_BUFFER * getAccelerationLimits()
+        || ((std::size_t)accelerationLimits.size() != mMetaSkeleton->getNumDofs()
+            && (std::size_t)accelerationLimits.size() != mArm->getMetaSkeleton()->getNumDofs());
+  auto aLimit
+      = accLimitsInvalid ? mDefaultAccelerationLimits
                          : accelerationLimits;
+  mSoftAccelerationLimits.segment(0, aLimit.size()) = aLimit;
 
-  return mRobot->postProcessPath<PostProcessor>(
-      sentVelocityLimits,
-      sentAccelerationLimits,
-      path,
-      constraint,
-      postProcessorParams);
-}
+  // Update whole-arm postprocessor
+  auto postprocessor = std::make_shared<PostProcessor>(mSoftVelocityLimits, mSoftAccelerationLimits, params);
+  Robot::setDefaultPostProcessor(postprocessor);
 
-//==============================================================================
-template <typename PostProcessor>
-bool Ada::moveArmToTSR(
-    const aikido::constraint::dart::TSR& tsr,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    double timelimit,
-    size_t maxNumTrials,
-    const aikido::distance::ConfigurationRankerPtr& ranker,
-    const Eigen::Vector6d& velocityLimits,
-    const typename PostProcessor::Params& params)
-{
-  auto trajectory
-      = planArmToTSR(tsr, collisionFree, timelimit, maxNumTrials, ranker);
+  // Update arm-only post-processor
+  postprocessor = std::make_shared<PostProcessor>(mSoftVelocityLimits.segment(0, mArm->getMetaSkeleton()->getNumDofs()), 
+    mSoftAccelerationLimits.segment(0, mArm->getMetaSkeleton()->getNumDofs()),
+    params);
+  mArm->setDefaultPostProcessor(postprocessor);
 
-  if (!trajectory)
-  {
-    dtwarn << "Failed to plan to TSR" << std::endl;
-    return false;
-  }
-
-  return moveArmOnTrajectory<PostProcessor>(
-      trajectory, collisionFree, velocityLimits, params);
-}
-
-//==============================================================================
-template <typename PostProcessor>
-bool Ada::moveArmOnTrajectory(
-    aikido::trajectory::TrajectoryPtr trajectory,
-    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-    const Eigen::Vector6d& velocityLimits,
-    const typename PostProcessor::Params& params)
-{
-  if (!trajectory)
-    return false;
-
-  std::vector<aikido::constraint::ConstTestablePtr> constraints;
-
-  if (collisionFree)
-  {
-    constraints.push_back(collisionFree);
-  }
-  auto testable = std::make_shared<aikido::constraint::TestableIntersection>(
-      mArmSpace, constraints);
-
-  aikido::trajectory::TrajectoryPtr timedTrajectory;
-
-  auto armSkeleton = mArm->getMetaSkeleton();
-
-  timedTrajectory = postProcessPath<PostProcessor>(
-      trajectory.get(), testable, params, velocityLimits);
-
-  // TODO: Have this die more gracefully
-  if (!timedTrajectory)
-  {
-    throw std::runtime_error("Retiming failed");
-  }
-
-  auto future = executeTrajectory(std::move(timedTrajectory));
-  try
-  {
-    future.get();
-  }
-  catch (const std::exception& e)
-  {
-    dtwarn << "Exception in trajectoryExecution: " << e.what() << std::endl;
-    return false;
-  }
-  return true;
+  // Update hand-only post-processor
+  postprocessor = std::make_shared<PostProcessor>(mSoftVelocityLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHand->getMetaSkeleton()->getNumDofs()), 
+    mSoftAccelerationLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHand->getMetaSkeleton()->getNumDofs()),
+    params);
+  mHand->setDefaultPostProcessor(postprocessor);
 }
 
 } // namespace ada

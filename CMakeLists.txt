@@ -107,9 +107,6 @@ endif()
 #
 
 set(sources
-  src/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHand.cpp
   src/Ada.cpp
   src/util.cpp
 )
@@ -150,7 +147,8 @@ target_link_libraries(libada
 
 #=============================================================================
 #Pybind
-if(pybind11_FOUND)
+option(BUILD_ADAPY "Build adapy (the python binding)" ON)
+if(pybind11_FOUND AND BUILD_ADAPY)
 
   set(pybind_sources
     python/adapy/adapy.cpp
@@ -231,7 +229,7 @@ install(FILES "package.xml"
   DESTINATION "share/libada")
 
 #install(DIRECTORY resources DESTINATION share)
-if(pybind11_FOUND)
+if(pybind11_FOUND AND BUILD_ADAPY)
   install(TARGETS adapy
         LIBRARY DESTINATION lib/python3/dist-packages)
 endif()
