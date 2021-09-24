@@ -39,10 +39,10 @@ void Ada::setDefaultPostProcessor(
   mArm->setDefaultPostProcessor(postprocessor);
 
   // Update hand-only post-processor
-  postprocessor = std::make_shared<PostProcessor>(mSoftVelocityLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHand->getMetaSkeleton()->getNumDofs()), 
-    mSoftAccelerationLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHand->getMetaSkeleton()->getNumDofs()),
+  postprocessor = std::make_shared<PostProcessor>(mSoftVelocityLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHandRobot->getMetaSkeleton()->getNumDofs()), 
+    mSoftAccelerationLimits.segment(mArm->getMetaSkeleton()->getNumDofs(), mHandRobot->getMetaSkeleton()->getNumDofs()),
     params);
-  mHand->setDefaultPostProcessor(postprocessor);
+  mHandRobot->setDefaultPostProcessor(postprocessor);
 }
 
 } // namespace ada

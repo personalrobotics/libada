@@ -26,6 +26,8 @@
 #include <dart/dart.hpp>
 #include <ros/ros.h>
 
+#include <iostream>
+
 namespace ada {
 
 /// ADA-specific defaults for postprocessors
@@ -62,19 +64,19 @@ struct SmoothParams : aikido::planner::parabolic::ParabolicSmoother::Params
 class Ada final : public aikido::robot::ros::RosRobot
 {
 public:
+  /// Inner AdaHand class that implements Aikido's Hand Interface
+  class AdaHand;
+  
   // Default Parameters
-  constexpr static std::chrono::milliseconds defaultThreadExecutionCycle = std::chrono::milliseconds(10);
-  constexpr static double defaultRosTrajectoryInterpolationTimestep = 0.1;
-  constexpr static double defaultRosTrajectoryGoalTimeTolerance = 5.0;
-  constexpr static auto defaultConfObjectNamespace ="adaConf";
-  // Default if not provided in adaConf
-  const dart::common::Uri defaultAdaUrdfUri{
-      "package://ada_description/robots_urdf/ada_with_camera.urdf"};
-  const dart::common::Uri defaultAdaSrdfUri{
-      "package://ada_description/robots_urdf/ada_with_camera.srdf"};
-  constexpr static auto defaultArmTrajController = "trajectory_controller";
-  constexpr static auto defaultHandTrajController = "trajectory_controller";
-  constexpr static auto defaultEndEffectorName = "end_effector";
+  #define DEFAULT_THREAD_CYCLE std::chrono::milliseconds(10)
+  #define DEFAULT_ROS_TRAJ_INTERP_TIME 0.1
+  #define DEFAULT_ROS_TRAJ_GOAL_TIME_TOL 5.0
+  #define DEFAULT_CONF_OBJ_NS "adaConf"
+  #define DEFAULT_ARM_TRAJ_CTRL "trajectory_controller"
+  #define DEFAULT_HAND_TRAJ_CTRL "hand_controller"
+  #define DEFAULT_EE_NAME "end_effector"
+  #define DEFAULT_URDF "package://ada_description/robots_urdf/ada_with_camera.urdf"
+  #define DEFAULT_SRDF "package://ada_description/robots_urdf/ada_with_camera.srdf"
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] simulation True if running in simulation mode.
@@ -90,15 +92,15 @@ public:
   Ada(bool simulation,
       const dart::common::Uri& adaUrdfUri = dart::common::Uri(""),
       const dart::common::Uri& adaSrdfUri = dart::common::Uri(""),
-      const std::string confNamespace = defaultConfObjectNamespace,
-      const std::chrono::milliseconds threadCycle = defaultThreadExecutionCycle,
-      aikido::planner::WorldPtr env = aikido::planner::World::create(),
+      const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
+      const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
+      aikido::planner::WorldPtr env = nullptr,
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
-  virtual ~Ada() = default;
+  virtual ~Ada();
 
   /// Simulates up to the provided timepoint.
   /// Assumes that parent robot is locked.
@@ -111,11 +113,14 @@ public:
   /// Get the const arm.
   aikido::robot::ConstRobotPtr getArm() const;
 
-  /// Get the hand.
-  aikido::robot::RobotPtr getHand();
+  /// Get the hand as an Aikido::Robot
+  aikido::robot::RobotPtr getHandRobot();
 
-  /// Get the const hand.
-  aikido::robot::ConstRobotPtr getHand() const;
+  /// Get the const hand as an Aikido::Robot
+  aikido::robot::ConstRobotPtr getHandRobot() const;
+
+  /// Get the hand as an Aikido::Hand
+  std::shared_ptr<AdaHand> getHand();
 
   /// Generates an arm-only trajectory from the given list of configurations.
   /// Runs through the provided or default postprocessor if enabled.
@@ -223,18 +228,23 @@ private:
   // The robot arm
   aikido::robot::RobotPtr mArm;
 
-  // The robot hand
-  aikido::robot::RobotPtr mHand;
+  // The robot hand as an Aikido Robot
+  aikido::robot::RobotPtr mHandRobot;
 
   // Self-driving thread
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
 
   // State Publisher in Simulation
   ros::Publisher mPub;
+
+  // Inner Hand Object
+  std::shared_ptr<AdaHand> mHand;
 };
 
 } // namespace ada
 
 #include "detail/Ada-impl.hpp"
+
+#include "libada/AdaHand.hpp"
 
 #endif // LIBADA_ADA_HPP_

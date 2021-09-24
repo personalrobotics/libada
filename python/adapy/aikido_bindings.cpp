@@ -118,19 +118,12 @@ aikido::rviz::TSRMarkerPtr add_tsr_marker(
 
 bool is_satisfied(
     aikido::constraint::Testable* self,
-    const aikido::statespace::dart::MetaSkeletonStateSpacePtr& armSpace,
-    const dart::dynamics::MetaSkeletonPtr& armSkeleton,
     const Eigen::VectorXd& positions)
 {
-  auto armState = armSpace->createState();
-  armSpace->convertPositionsToState(positions, armState);
-  auto currentState
-      = armSpace->getScopedStateFromMetaSkeleton(armSkeleton.get());
-  aikido::constraint::DefaultTestableOutcome fullCollisionCheckOutcome;
-  bool collisionResult
-      = self->isSatisfied(armState, &fullCollisionCheckOutcome);
-  armSpace->setState(armSkeleton.get(), currentState);
-  return collisionResult;
+  auto armSpace = self->getStateSpace();
+  auto testState = armSpace->createState();
+  armSpace->expMap(positions, testState);
+  return self->isSatisfied(testState);
 }
 
 //====================================AIKIDO====================================
@@ -153,11 +146,6 @@ void Aikido(pybind11::module& m)
       .def("add_tsr_marker", add_tsr_marker);
 
   py::class_<
-      aikido::constraint::dart::CollisionFree,
-      std::shared_ptr<aikido::constraint::dart::CollisionFree>>(
-      m, "CollisionFree");
-
-  py::class_<
       aikido::statespace::dart::MetaSkeletonStateSpace,
       aikido::statespace::dart::MetaSkeletonStateSpacePtr>(
       m, "MetaSkeletonStateSpace");
@@ -169,6 +157,6 @@ void Aikido(pybind11::module& m)
       m, "TSRMarker");
 
   py::class_<aikido::constraint::Testable, aikido::constraint::TestablePtr>(
-      m, "FullCollisionFree")
+      m, "Testable")
       .def("is_satisfied", is_satisfied);
 }

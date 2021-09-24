@@ -6,6 +6,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/Spline.hpp>
@@ -34,6 +35,7 @@
 
 namespace ada {
 
+// Internal Util function
 namespace internal {
 
 dart::dynamics::BodyNodePtr getBodyNodeOrThrow(
@@ -51,14 +53,14 @@ dart::dynamics::BodyNodePtr getBodyNodeOrThrow(
   return bodyNode;
 }
 
-inline const dart::common::Uri getDartURI(const dart::common::Uri providedUri, const std::string confNamespace, const std::string key, const dart::common::Uri defaultUri) {
-  if(providedUri.toString() != "") {
+inline const dart::common::Uri getDartURI(const dart::common::Uri providedUri, const std::string confNamespace, const std::string key, const std::string defaultUri) {
+  if(providedUri.toString() != "file://") {
     return providedUri;
   }
 
   // Get Default from Parameter Server
-  std::string uri;
-  ros::param::param<std::string>("/" + confNamespace + "/" + key, uri, defaultUri.toString());
+  std::string uri = "";
+  ros::param::param<std::string>("/" + confNamespace + "/" + key, uri, defaultUri);
 
   return dart::common::Uri(uri);
 }
@@ -76,12 +78,13 @@ Ada::Ada(bool simulation,
   aikido::common::RNG::result_type rngSeed,
   const dart::common::ResourceRetrieverPtr& retriever)
   : aikido::robot::ros::RosRobot(
-      internal::getDartURI(adaUrdfUri, confNamespace, "default_urdf", defaultAdaUrdfUri),
-      internal::getDartURI(adaSrdfUri, confNamespace, "default_srdf", defaultAdaSrdfUri),
+      internal::getDartURI(adaUrdfUri, confNamespace, "default_urdf", DEFAULT_URDF),
+      internal::getDartURI(adaSrdfUri, confNamespace, "default_srdf", DEFAULT_SRDF),
       "ada",
       retriever)
   , mSimulation(simulation)
 {
+
   // Metaskeleton loaded by RosRobot Constructor
   // Set up other args
   setWorld(env);
@@ -108,9 +111,6 @@ Ada::Ada(bool simulation,
       Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
       : mMetaSkeleton->getVelocityUpperLimits();
 
-  // Use limits to set default postprocessor
-  setDefaultPostProcessor(mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
-
   // Create sub-robot (arm)
   std::vector<std::string> armNodes;
   mNode->getParam("/" + confNamespace + "/arm", armNodes);
@@ -123,33 +123,39 @@ Ada::Ada(bool simulation,
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
   mArm = registerSubRobot(arm, "adaArm");
+  if(!mArm) {
+    throw std::runtime_error("Could not create arm");
+  }
 
   // Register initial End Effector Node
   std::string endEffector;
-  mNode->param<std::string>("/" + confNamespace + "/end_effector", mEndEffectorName, defaultEndEffectorName);
-  internal::getBodyNodeOrThrow(mMetaSkeleton, mEndEffectorName);
+  mNode->param<std::string>("/" + confNamespace + "/end_effector", mEndEffectorName, DEFAULT_EE_NAME);
+  auto handEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, mEndEffectorName);
 
   // Create sub-robot (hand)
-  std::string handBase;
-  if(!mNode->getParam("/" + confNamespace + "/hand_base", handBase)) {
+  std::string handBaseName;
+  if(!mNode->getParam("/" + confNamespace + "/hand_base", handBaseName)) {
     std::stringstream message;
     message << "Configuration [/" << confNamespace << "/hand_base] is required.";
     throw std::runtime_error(message.str());
   }
-  auto msCopy = getMetaSkeletonClone();
-  auto hand = internal::getBodyNodeOrThrow(msCopy, handBase)->split("adaHand");
-  mHand = registerSubRobot(hand, "adaHand");
+  auto handBase = internal::getBodyNodeOrThrow(mMetaSkeleton, handBaseName);
+  auto hand = dart::dynamics::Branch::create(dart::dynamics::Branch::Criteria(handBase), "adaHand");
+  mHandRobot = registerSubRobot(hand, "adaHand");
+  if(!mHandRobot) {
+    throw std::runtime_error("Could not create hand");
+  }
 
   // Create Trajectory Executors
   // Should not execute trajectories on whole arm by default
   setTrajectoryExecutor(nullptr);
 
   // Arm Trajectory Executor
-  mNode->param<std::string>("/" + confNamespace + "/arm_controller", mArmTrajControllerName, defaultArmTrajController);
+  mNode->param<std::string>("/" + confNamespace + "/arm_controller", mArmTrajControllerName, DEFAULT_ARM_TRAJ_CTRL);
   createTrajectoryExecutor(false);
 
   // Hand Trajectory Executor
-  mNode->param<std::string>("/" + confNamespace + "/hand_controller", mHandTrajControllerName, defaultHandTrajController);
+  mNode->param<std::string>("/" + confNamespace + "/hand_controller", mHandTrajControllerName, DEFAULT_HAND_TRAJ_CTRL);
   createTrajectoryExecutor(true);
 
   // Load the named configurations if available
@@ -157,12 +163,15 @@ Ada::Ada(bool simulation,
   if(mNode->getParam("/" + confNamespace + "/named_configs", nameConfigs)) {
     auto rootNode = aikido::io::loadYAML(nameConfigs, retriever);
     if(rootNode["hand"]) {
-      mHand->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["hand"]));
+      mHandRobot->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["hand"]));
     }
     if(rootNode["arm"]) {
-      mHand->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["arm"]));
+      mHandRobot->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["arm"]));
     }
   }
+
+  // Use limits to set default postprocessor
+  setDefaultPostProcessor(mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
 
   // Create joint state updates
   if (!mSimulation)
@@ -180,14 +189,25 @@ Ada::Ada(bool simulation,
     mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
   }
 
+  // Create Inner AdaHand
+  mHand = std::make_shared<AdaHand>(this, handBase, handEnd);
+
   // Start driving self-thread
   mThread = std::make_unique<aikido::common::ExecutorThread>(
       std::bind(&Ada::spin, this), threadCycle);
 }
 
 //==============================================================================
+Ada::~Ada()
+{
+  mThread->stop();
+}
+
+//==============================================================================
 void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
+  if(!mThread || !mThread->isRunning()) return;
+  
   Robot::step(timepoint);
   std::lock_guard<std::mutex> lock(mMetaSkeleton->getBodyNode(0)->getSkeleton()->getMutex());
 
@@ -233,13 +253,19 @@ aikido::robot::ConstRobotPtr Ada::getArm() const
 }
 
 //==============================================================================
-aikido::robot::RobotPtr Ada::getHand()
+aikido::robot::RobotPtr Ada::getHandRobot()
 {
-  return mHand;
+  return mHandRobot;
 }
 
 //==============================================================================
-aikido::robot::ConstRobotPtr Ada::getHand() const
+aikido::robot::ConstRobotPtr Ada::getHandRobot() const
+{
+  return mHandRobot;
+}
+
+//==============================================================================
+std::shared_ptr<Ada::AdaHand> Ada::getHand()
 {
   return mHand;
 }
@@ -287,7 +313,7 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
   auto postprocessor
       = (trajPostProcessor)
             ? trajPostProcessor
-            : ((mEnablePostProcessing) ? mDefaultPostProcessor : nullptr);
+            : ((mEnablePostProcessing) ? mArm->getDefaultPostProcessor() : nullptr);
   if (traj && postprocessor)
   {
     return postprocessor->postprocess(
@@ -333,10 +359,7 @@ Eigen::VectorXd Ada::getAccelerationLimits(bool armOnly) const
 void Ada::createTrajectoryExecutor(bool isHand)
 {
   std::string controller = isHand ? mHandTrajControllerName : mArmTrajControllerName;
-  aikido::robot::RobotPtr subrobot = isHand ? mHand : mArm;
-  if(isHand) {
-
-  }
+  aikido::robot::RobotPtr subrobot = isHand ? mHandRobot : mArm;
   using aikido::control::KinematicSimulationTrajectoryExecutor;
   using aikido::control::ros::RosTrajectoryExecutor;
 
@@ -352,8 +375,8 @@ void Ada::createTrajectoryExecutor(bool isHand)
     auto exec = std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,
-        defaultRosTrajectoryInterpolationTimestep,
-        defaultRosTrajectoryGoalTimeTolerance);
+        DEFAULT_ROS_TRAJ_INTERP_TIME,
+        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL);
     subrobot->setTrajectoryExecutor(exec);
   }
 }
@@ -389,33 +412,13 @@ bool Ada::switchControllers(
 //==============================================================================
 std::future<void> Ada::openHand()
 {
-  auto config = mHand->getNamedConfiguration("open");
-  if(config.size() > 0) {
-    auto traj = mHand->planToConfiguration(config);
-    return mHand->executeTrajectory(traj);
-  }
-
-  // Return excepted future
-  std::promise<void> promise; 
-  promise.set_exception(std::make_exception_ptr(
-          std::runtime_error("No 'open' configuration provided.")));
-  return promise.get_future();
+  return mHand->executePreshape("open");
 }
 
 //==============================================================================
 std::future<void> Ada::closeHand()
 {
-  auto config = mHand->getNamedConfiguration("closed");
-  if(config.size() > 0) {
-    auto traj = mHand->planToConfiguration(config);
-    return mHand->executeTrajectory(traj);
-  }
-
-  // Return excepted future
-  std::promise<void> promise; 
-  promise.set_exception(std::make_exception_ptr(
-          std::runtime_error("No 'closed' configuration provided.")));
-  return promise.get_future();
+  return mHand->executePreshape("closed");
 }
 
 //==============================================================================

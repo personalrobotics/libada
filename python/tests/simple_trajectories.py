@@ -14,7 +14,7 @@ IS_SIM = True
 if not rospy.is_shutdown():
     ada = adapy.Ada(IS_SIM)
     if not IS_SIM:
-        ada.start_trajectory_executor()
+        ada.start_trajectory_controllers()
     viewer = ada.start_viewer("dart_markers/simple_trajectories", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [1.0, 0.0, 0.73, 0, 0, 0, 1]
@@ -24,11 +24,9 @@ if not rospy.is_shutdown():
     can = world.add_body_from_urdf(canURDFUri, sodaCanPose)
     table = world.add_body_from_urdf(tableURDFUri, tablePose)
 
-    collision = ada.get_self_collision_constraint()
+    collision = ada.get_world_collision_constraint()
 
-    arm_skeleton = ada.get_arm_skeleton()
-    positions = arm_skeleton.get_positions()
-    arm_state_space = ada.get_arm_state_space()
+    positions = ada.get_arm_skeleton().get_positions()
 
     positions2 = positions.copy()
     positions3 = positions.copy()
@@ -42,9 +40,8 @@ if not rospy.is_shutdown():
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
-    traj = ada.compute_joint_space_path(arm_state_space, waypoints)
-    traj_rev = ada.compute_joint_space_path(
-        arm_state_space, waypoints_rev)
+    traj = ada.plan_to_configuration(positions4)
+    traj_rev = ada.compute_joint_space_path(waypoints_rev)
 
     print("")
     print("CONTINUE TO EXECUTE")
