@@ -94,7 +94,7 @@ public:
       const dart::common::Uri& adaSrdfUri = dart::common::Uri(""),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
-      aikido::planner::WorldPtr env = nullptr,
+      aikido::planner::WorldPtr env = aikido::planner::World::create(),
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
