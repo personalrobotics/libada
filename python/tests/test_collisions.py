@@ -25,9 +25,7 @@ can = world.add_body_from_urdf(canURDFUri, sodaCanPose)
 print("Adding Table to world")
 table = world.add_body_from_urdf(tableURDFUri, tablePose)
 
-arm_skeleton = ada.get_arm_skeleton()
-positions = arm_skeleton.get_positions()
-arm_state_space = ada.get_arm_state_space()
+positions = ada.get_arm_positions()
 
 world_constraint = ada.get_world_collision_constraint()
 self_constraint = ada.get_self_collision_constraint()
@@ -49,7 +47,7 @@ safe_self = self_constraint.is_satisfied(positions2)
 assert not safe_world, "Failed to detect world (+ self) collisions"
 assert not safe_self, "Failed to detect self collision"
 print("PASSED!")
-ada.set_positions(positions2)
+ada.set_arm_positions(positions2)
 
 input("Press Enter to Continue")
 
@@ -62,7 +60,7 @@ safe_self = self_constraint.is_satisfied(positions3)
 assert not safe_world, "Failed to detect world (+ self) collisions"
 assert safe_self, "Detected self collision where none exists"
 print("PASSED!")
-ada.set_positions(positions3)
+ada.set_arm_positions(positions3)
 
 input("Press Enter to Continue")
 
@@ -74,6 +72,6 @@ safe_self = self_constraint.is_satisfied(positions4)
 assert not safe_world, "Failed to detect world (+ self) collisions"
 assert safe_self, "Detected self collision where none exists"
 print("PASSED!")
-ada.set_positions(positions4)
+ada.set_arm_positions(positions4)
 
 input("Press Enter to Continue")

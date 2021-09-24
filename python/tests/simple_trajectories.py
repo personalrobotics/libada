@@ -26,7 +26,7 @@ if not rospy.is_shutdown():
 
     collision = ada.get_world_collision_constraint()
 
-    positions = ada.get_arm_skeleton().get_positions()
+    positions = ada.get_arm_positions()
 
     positions2 = positions.copy()
     positions3 = positions.copy()

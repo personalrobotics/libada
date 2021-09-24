@@ -70,11 +70,16 @@ aikido::statespace::dart::MetaSkeletonStateSpacePtr get_arm_state_space(
   return armSpace;
 }
 
-void set_positions(ada::Ada* self, const Eigen::VectorXd& configuration)
+void set_arm_positions(ada::Ada* self, const Eigen::VectorXd& configuration)
 {
   auto arm = self->getArm();
   auto armSkeleton = arm->getMetaSkeleton();
   armSkeleton->setPositions(configuration);
+}
+
+Eigen::VectorXd get_arm_positions(ada::Ada* self)
+{
+  return self->getArm()->getCurrentConfiguration();
 }
 
 aikido::constraint::TestablePtr get_world_collision_constraint(
@@ -261,7 +266,8 @@ void Ada(pybind11::module& m)
       .def("get_skeleton", get_skeleton)
       .def("get_arm_skeleton", get_arm_skeleton)
       .def("get_arm_state_space", get_arm_state_space)
-      .def("set_positions", set_positions)
+      .def("set_arm_positions", set_arm_positions)
+      .def("get_arm_positions", get_arm_positions)
       .def("get_world_collision_constraint", get_world_collision_constraint, "Get collision constraint with requested bodies in world (or all bodies if left blank)", py::arg("bodyNames") = std::vector<std::string>())
       .def("compute_joint_space_path", compute_joint_space_path)
       .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
