@@ -5,6 +5,7 @@
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
+#include <aikido/control/util.hpp>
 #include <aikido/planner/SnapConfigurationToConfigurationPlanner.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/dart/ConfigurationToConfiguration.hpp>
@@ -424,7 +425,8 @@ AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr& robot)
         *mNode,
         serverName,
         rosTrajectoryInterpolationTimestep,
-        rosTrajectoryGoalTimeTolerance);
+        rosTrajectoryGoalTimeTolerance,
+        aikido::control::skeletonToJointNames(mHand));
   }
 }
 

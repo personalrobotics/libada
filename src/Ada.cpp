@@ -12,6 +12,7 @@
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
+#include <aikido/control/util.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
@@ -636,7 +637,8 @@ Ada::createTrajectoryExecutor()
         *mNode,
         serverName,
         rosTrajectoryInterpolationTimestep,
-        rosTrajectoryGoalTimeTolerance);
+        rosTrajectoryGoalTimeTolerance,
+        aikido::control::skeletonToJointNames(mArm->getMetaSkeleton()));
   }
 }
 
