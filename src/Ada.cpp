@@ -215,8 +215,6 @@ Ada::Ada(
 
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mRobotSkeleton.get());
 
-  mTrajectoryExecutor = createTrajectoryExecutor();
-
   // Setting arm base and end names
   mArmBaseName = "j2n6s200_link_base";
   mArmEndName = "j2n6s200_link_6";
@@ -232,6 +230,8 @@ Ada::Ada(
   mArm->setVectorFieldPlannerParameters(vfParams);
 
   mArmSpace = mArm->getStateSpace();
+
+  mTrajectoryExecutor = createTrajectoryExecutor();
 
   // Set up the concrete robot from the meta skeleton
   mRobot = std::make_shared<ConcreteRobot>(
@@ -627,7 +627,7 @@ Ada::createTrajectoryExecutor()
   if (mSimulation)
   {
     return std::make_shared<KinematicSimulationTrajectoryExecutor>(
-        mRobotSkeleton);
+        mArm->getMetaSkeleton());
   }
   else
   {
@@ -638,7 +638,7 @@ Ada::createTrajectoryExecutor()
         serverName,
         rosTrajectoryInterpolationTimestep,
         rosTrajectoryGoalTimeTolerance,
-        aikido::control::skeletonToJointNames(mArm->getMetaSkeleton()));
+        mArm->getMetaSkeleton()->getDofs());
   }
 }
 

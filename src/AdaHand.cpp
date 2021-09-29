@@ -106,7 +106,6 @@ AdaHand::AdaHand(
     mNode = std::make_unique<::ros::NodeHandle>(*node);
   }
 
-  auto robotSkeleton = mHandBaseBodyNode->getSkeleton();
   std::vector<BodyNode*> bodyNodes;
   bodyNodes.reserve(mHandBaseBodyNode->getNumChildBodyNodes());
   for (size_t i = 0; i < mHandBaseBodyNode->getNumChildBodyNodes(); ++i)
@@ -117,10 +116,7 @@ AdaHand::AdaHand(
   mHand = Group::create("Hand", bodyNodes);
   mSpace = std::make_shared<MetaSkeletonStateSpace>(mHand.get());
 
-  mExecutor = createTrajectoryExecutor(robotSkeleton);
-
-  // TODO(Gilwoo): Use this to find the set point when grabbing object.
-  // mSimExecutor = createSimPositionCommandExecutor(robotSkeleton);
+  mExecutor = createTrajectoryExecutor(mHand);
 
   loadPreshapes(preshapesUri, retriever);
 
@@ -408,7 +404,7 @@ AdaHand::EndEffectorTransformMap AdaHand::parseYAMLToEndEffectorTransforms(
 
 //==============================================================================
 std::shared_ptr<aikido::control::TrajectoryExecutor>
-AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr& robot)
+AdaHand::createTrajectoryExecutor(const dart::dynamics::MetaSkeletonPtr& robot)
 {
   using aikido::control::KinematicSimulationTrajectoryExecutor;
   using aikido::control::ros::RosTrajectoryExecutor;
@@ -426,7 +422,7 @@ AdaHand::createTrajectoryExecutor(const dart::dynamics::SkeletonPtr& robot)
         serverName,
         rosTrajectoryInterpolationTimestep,
         rosTrajectoryGoalTimeTolerance,
-        aikido::control::skeletonToJointNames(mHand));
+        mHand->getDofs());
   }
 }
 

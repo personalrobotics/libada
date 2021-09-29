@@ -142,7 +142,7 @@ private:
   ///
   /// \param[in] robot Robot to construct executor for
   std::shared_ptr<aikido::control::TrajectoryExecutor> createTrajectoryExecutor(
-      const dart::dynamics::SkeletonPtr& robot);
+      const dart::dynamics::MetaSkeletonPtr& robot);
 
   /// Create a controller for simulated hand movement.
   ///
