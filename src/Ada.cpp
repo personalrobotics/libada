@@ -225,20 +225,16 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
   else {
     // Lock Skeleton
     std::lock_guard<std::mutex> lock(getRootSkeleton()->getMutex());
-    
+
     // Publish joint states to /joint_states
     sensor_msgs::JointState state;
     state.header.stamp = ros::Time::now();
     for (auto joint : mMetaSkeleton->getDofs())
     {
-      if (joint->getNumDofs() < 1)
-      {
-        continue;
-      }
       state.name.push_back(joint->getName());
-      state.position.push_back(joint->getPosition(0));
-      state.velocity.push_back(joint->getVelocity(0));
-      state.effort.push_back(joint->getForce(0));
+      state.position.push_back(joint->getPosition());
+      state.velocity.push_back(joint->getVelocity());
+      state.effort.push_back(joint->getForce());
     }
     mPub.publish(state);
   }
