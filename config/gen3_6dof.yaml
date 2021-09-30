@@ -156,3 +156,33 @@ rewd_trajectory_controller:
     joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
     joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
   control_type: velocity
+
+##############################################
+
+# gripper base velocity controller
+hand_velocity_controller:
+  mode: VELOCITY
+  type: pr_ros_controllers/JointGroupVelocityController
+  joints: [finger_joint]
+
+# gripper base position controller
+hand_position_controller:
+  mode: POSITION
+  type: pr_ros_controllers/JointGroupPositionController
+  joints: [finger_joint]
+
+# gripper base effort controller
+hand_effort_controller:
+  mode: EFFORT
+  type: pr_ros_controllers/JointGroupEffortController
+  joints: [finger_joint]
+
+hand_controller:
+  mode: TRAJECTORY
+  type: velocity_controllers/JointTrajectoryController
+  joints: [finger_joint]
+  constraints:
+    stopped_velocity_tolerance: 1.0
+  gains: # Required because we're controlling a velocity interface
+    finger_joint: {p: 1,  d: 0, i: 0, i_clamp: 1}
+

@@ -62,6 +62,7 @@
         --stopped
         velocity_controller
         trajectory_controller
+        hand_controller
         " />
 
   <!-- TODO: Initialize controllers directly via Aikido -->
