@@ -24,14 +24,14 @@ aikido::constraint::TestablePtr get_self_collision_constraint(ada::Ada* self)
   return self->getArm()->getSelfCollisionConstraint();
 }
 
-void start_trajectory_controllers(ada::Ada* self)
+bool start_trajectory_controllers(ada::Ada* self)
 {
-  self->startTrajectoryControllers();
+  return self->startTrajectoryControllers();
 }
 
-void stop_trajectory_controllers(ada::Ada* self)
+bool stop_trajectory_controllers(ada::Ada* self)
 {
-  self->stopTrajectoryControllers();
+  return self->stopTrajectoryControllers();
 }
 
 std::string get_name(ada::Ada* self)

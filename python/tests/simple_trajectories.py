@@ -2,6 +2,7 @@
 
 import adapy
 import rospy
+import sys
 
 import pdb
 from moveit_ros_planning_interface._moveit_roscpp_initializer import roscpp_init
@@ -14,7 +15,9 @@ IS_SIM = True
 if not rospy.is_shutdown():
     ada = adapy.Ada(IS_SIM)
     if not IS_SIM:
-        ada.start_trajectory_controllers()
+        if not ada.start_trajectory_controllers():
+            print("Could not start trajectory controller.")
+            sys.exit(1) 
     viewer = ada.start_viewer("dart_markers/simple_trajectories", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [1.0, 0.0, 0.73, 0, 0, 0, 1]
@@ -73,4 +76,5 @@ if not rospy.is_shutdown():
     print("")
     pdb.set_trace()
     if not IS_SIM:
-        ada.stop_trajectory_executor()
+        if not ada.stop_trajectory_controllers():
+            print("Could not stop trajectory controllers.")
