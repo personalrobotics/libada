@@ -209,23 +209,27 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
   if(!mThread || !mThread->isRunning()) return;
   
   Robot::step(timepoint);
-  std::lock_guard<std::mutex> lock(mMetaSkeleton->getBodyNode(0)->getSkeleton()->getMutex());
 
   if (!mSimulation && mJointStateClient)
   {
     // Spin joint state client
     mJointStateClient->spin();
 
+    // Lock Skeleton
+    std::lock_guard<std::mutex> lock(getRootSkeleton()->getMutex());
+
     // Get most recent joint states
-    auto armSkeleton = mMetaSkeleton->getBodyNode(0)->getSkeleton();
     mMetaSkeleton->setPositions(
-        mJointStateClient->getLatestPosition(*armSkeleton));
+        mJointStateClient->getLatestPosition(*mMetaSkeleton));
   }
   else {
+    // Lock Skeleton
+    std::lock_guard<std::mutex> lock(getRootSkeleton()->getMutex());
+    
     // Publish joint states to /joint_states
     sensor_msgs::JointState state;
     state.header.stamp = ros::Time::now();
-    for (auto joint : mMetaSkeleton->getJoints())
+    for (auto joint : mMetaSkeleton->getDofs())
     {
       if (joint->getNumDofs() < 1)
       {
