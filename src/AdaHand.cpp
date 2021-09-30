@@ -95,12 +95,14 @@ void Ada::AdaHand::grab(const dart::dynamics::SkeletonPtr& bodyToGrab)
   // Connect grabbed BodyNode to end effector
   WeldJoint::Properties weldJointProperties;
   weldJointProperties.mT_ParentBodyToJoint = endEffectorToBodyTransform;
-  bodyNode->moveTo<WeldJoint>(mAda->getRootSkeleton(), mEndEffectorBodyNode, weldJointProperties);
+  bodyNode->moveTo<WeldJoint>(
+      mAda->getRootSkeleton(), mEndEffectorBodyNode, weldJointProperties);
 
   // Moving the grabbed object into the same skeleton as the hand means that it
   // will be considered during self-collision checking. Therefore, we need to
   // disable self-collision checking between grabbed object and hand.
-  std::vector<std::pair<std::string, std::string>> vec{std::make_pair(mEndEffectorBodyNode->getName(),bodyNodeName)};
+  std::vector<std::pair<std::string, std::string>> vec{
+      std::make_pair(mEndEffectorBodyNode->getName(), bodyNodeName)};
   mAda->ignoreSelfCollisionPairs(vec);
 
   mGrabMetadata = std::make_unique<aikido::robot::GrabMetadata>(
@@ -129,7 +131,8 @@ void Ada::AdaHand::ungrab()
   Eigen::Isometry3d grabbedBodyTransform = grabbedBodyNode->getTransform();
 
   // Re-enable self-collision checking between grabbed object and hand
-  std::vector<std::pair<std::string, std::string>> vec{std::make_pair(mEndEffectorBodyNode->getName(),grabbedBodyNode->getName())};
+  std::vector<std::pair<std::string, std::string>> vec{std::make_pair(
+      mEndEffectorBodyNode->getName(), grabbedBodyNode->getName())};
   mAda->enforceSelfCollisionPairs(vec);
 
   // Move grabbed BodyNode to root of the old object Skeleton
@@ -163,11 +166,12 @@ std::future<void> Ada::AdaHand::executePreshape(const std::string& preshapeName)
 {
   auto config = mAda->mHandRobot->getNamedConfiguration(preshapeName);
 
-  if(config.size() == 0) {
+  if (config.size() == 0)
+  {
     // Return excepted future
-    std::promise<void> promise; 
+    std::promise<void> promise;
     promise.set_exception(std::make_exception_ptr(
-            std::runtime_error("No 'open' configuration provided.")));
+        std::runtime_error("No 'open' configuration provided.")));
     return promise.get_future();
   }
 
@@ -182,7 +186,8 @@ std::future<void> Ada::AdaHand::executePreshape(const Eigen::VectorXd& preshape)
 }
 
 //==============================================================================
-void Ada::AdaHand::step(const std::chrono::system_clock::time_point& /*timepoint */)
+void Ada::AdaHand::step(
+    const std::chrono::system_clock::time_point& /*timepoint */)
 {
   // Do Nothing, Ada handles step()
 }

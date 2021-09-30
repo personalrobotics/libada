@@ -19,8 +19,7 @@ using aikido::planner::parabolic::ParabolicSmoother;
 //==============================================================================
 // NOTE: These functions define the Python API for Ada.
 
-aikido::constraint::TestablePtr
-get_self_collision_constraint(ada::Ada* self)
+aikido::constraint::TestablePtr get_self_collision_constraint(ada::Ada* self)
 {
   return self->getArm()->getSelfCollisionConstraint();
 }
@@ -117,8 +116,7 @@ aikido::trajectory::TrajectoryPtr compute_smooth_joint_space_path(
           *interpolated, *(self->cloneRNG().get()), collisionFreeConstraint);
     }
 
-    auto spline
-        = dynamic_cast<const aikido::trajectory::Spline*>(traj.get());
+    auto spline = dynamic_cast<const aikido::trajectory::Spline*>(traj.get());
     if (spline)
     {
       return postprocessor.postprocess(
@@ -131,21 +129,21 @@ aikido::trajectory::TrajectoryPtr compute_smooth_joint_space_path(
 }
 
 aikido::trajectory::TrajectoryPtr compute_retime_path(
-    ada::Ada* self,
-    aikido::trajectory::InterpolatedPtr trajectory_ptr)
+    ada::Ada* self, aikido::trajectory::InterpolatedPtr trajectory_ptr)
 {
   auto vLimits = self->getVelocityLimits(true);
   auto aLimits = self->getAccelerationLimits(true);
   KunzRetimer postprocessor(vLimits, aLimits, ada::KunzParams());
-  return postprocessor.postprocess(*(trajectory_ptr), *(self->cloneRNG().get()), self->getSelfCollisionConstraint());
+  return postprocessor.postprocess(
+      *(trajectory_ptr),
+      *(self->cloneRNG().get()),
+      self->getSelfCollisionConstraint());
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_configuration(
-    ada::Ada* self,
-    const Eigen::VectorXd& configuration)
+    ada::Ada* self, const Eigen::VectorXd& configuration)
 {
-  auto trajectory
-      = self->getArm()->planToConfiguration(configuration);
+  auto trajectory = self->getArm()->planToConfiguration(configuration);
   return trajectory;
 }
 
@@ -268,7 +266,12 @@ void Ada(pybind11::module& m)
       .def("get_arm_state_space", get_arm_state_space)
       .def("set_arm_positions", set_arm_positions)
       .def("get_arm_positions", get_arm_positions)
-      .def("get_world_collision_constraint", get_world_collision_constraint, "Get collision constraint with requested bodies in world (or all bodies if left blank)", py::arg("bodyNames") = std::vector<std::string>())
+      .def(
+          "get_world_collision_constraint",
+          get_world_collision_constraint,
+          "Get collision constraint with requested bodies in world (or all "
+          "bodies if left blank)",
+          py::arg("bodyNames") = std::vector<std::string>())
       .def("compute_joint_space_path", compute_joint_space_path)
       .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
       .def("compute_retime_path", compute_retime_path)
@@ -276,7 +279,8 @@ void Ada(pybind11::module& m)
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
 
-  py::class_<ada::Ada::AdaHand, std::shared_ptr<ada::Ada::AdaHand>>(m, "AdaHand")
+  py::class_<ada::Ada::AdaHand, std::shared_ptr<ada::Ada::AdaHand>>(
+      m, "AdaHand")
       .def("get_skeleton", hand_get_skeleton)
       .def("get_state_space", hand_get_state_space)
       .def("execute_preshape", execute_preshape)

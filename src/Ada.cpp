@@ -3,10 +3,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <mutex>
 #include <stdexcept>
 #include <string>
-#include <iostream>
 
 #include <aikido/common/RNG.hpp>
 #include <aikido/common/Spline.hpp>
@@ -39,7 +39,8 @@ namespace ada {
 namespace internal {
 
 dart::dynamics::BodyNodePtr getBodyNodeOrThrow(
-    const dart::dynamics::MetaSkeletonPtr& skeleton, const std::string& bodyNodeName)
+    const dart::dynamics::MetaSkeletonPtr& skeleton,
+    const std::string& bodyNodeName)
 {
   auto bodyNode = skeleton->getBodyNode(bodyNodeName);
 
@@ -53,14 +54,21 @@ dart::dynamics::BodyNodePtr getBodyNodeOrThrow(
   return bodyNode;
 }
 
-inline const dart::common::Uri getDartURI(const dart::common::Uri providedUri, const std::string confNamespace, const std::string key, const std::string defaultUri) {
-  if(providedUri.toString() != "file://") {
+inline const dart::common::Uri getDartURI(
+    const dart::common::Uri providedUri,
+    const std::string confNamespace,
+    const std::string key,
+    const std::string defaultUri)
+{
+  if (providedUri.toString() != "file://")
+  {
     return providedUri;
   }
 
   // Get Default from Parameter Server
   std::string uri = "";
-  ros::param::param<std::string>("/" + confNamespace + "/" + key, uri, defaultUri);
+  ros::param::param<std::string>(
+      "/" + confNamespace + "/" + key, uri, defaultUri);
 
   return dart::common::Uri(uri);
 }
@@ -68,20 +76,23 @@ inline const dart::common::Uri getDartURI(const dart::common::Uri providedUri, c
 } // namespace internal
 
 //==============================================================================
-Ada::Ada(bool simulation,
-  const dart::common::Uri& adaUrdfUri,
-  const dart::common::Uri& adaSrdfUri,
-  const std::string confNamespace,
-  const std::chrono::milliseconds threadCycle,
-  aikido::planner::WorldPtr env,
-  const ::ros::NodeHandle* node,
-  aikido::common::RNG::result_type rngSeed,
-  const dart::common::ResourceRetrieverPtr& retriever)
+Ada::Ada(
+    bool simulation,
+    const dart::common::Uri& adaUrdfUri,
+    const dart::common::Uri& adaSrdfUri,
+    const std::string confNamespace,
+    const std::chrono::milliseconds threadCycle,
+    aikido::planner::WorldPtr env,
+    const ::ros::NodeHandle* node,
+    aikido::common::RNG::result_type rngSeed,
+    const dart::common::ResourceRetrieverPtr& retriever)
   : aikido::robot::ros::RosRobot(
-      internal::getDartURI(adaUrdfUri, confNamespace, "default_urdf", DEFAULT_URDF),
-      internal::getDartURI(adaSrdfUri, confNamespace, "default_srdf", DEFAULT_SRDF),
-      "ada",
-      retriever)
+        internal::getDartURI(
+            adaUrdfUri, confNamespace, "default_urdf", DEFAULT_URDF),
+        internal::getDartURI(
+            adaSrdfUri, confNamespace, "default_srdf", DEFAULT_SRDF),
+        "ada",
+        retriever)
   , mSimulation(simulation)
 {
 
@@ -103,18 +114,21 @@ Ada::Ada(bool simulation,
   // Read default soft accleration/velocity limits
   double limit;
   mNode->param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
-  mSoftAccelerationLimits = mDefaultAccelerationLimits = (limit != 0) ?
-      Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
-      : mMetaSkeleton->getAccelerationUpperLimits();
+  mSoftAccelerationLimits = mDefaultAccelerationLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getAccelerationUpperLimits();
   mNode->param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
-  mSoftVelocityLimits = mDefaultVelocityLimits = (limit != 0) ?
-      Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
-      : mMetaSkeleton->getVelocityUpperLimits();
+  mSoftVelocityLimits = mDefaultVelocityLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getVelocityUpperLimits();
 
   // Create sub-robot (arm)
   std::vector<std::string> armNodes;
   mNode->getParam("/" + confNamespace + "/arm", armNodes);
-  if(armNodes.size() < 2) {
+  if (armNodes.size() < 2)
+  {
     std::stringstream message;
     message << "Configuration [/" << confNamespace << "/arm] is required.";
     throw std::runtime_error(message.str());
@@ -123,26 +137,32 @@ Ada::Ada(bool simulation,
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
   mArm = registerSubRobot(arm, "adaArm");
-  if(!mArm) {
+  if (!mArm)
+  {
     throw std::runtime_error("Could not create arm");
   }
 
   // Register initial End Effector Node
   std::string endEffector;
-  mNode->param<std::string>("/" + confNamespace + "/end_effector", mEndEffectorName, DEFAULT_EE_NAME);
+  mNode->param<std::string>(
+      "/" + confNamespace + "/end_effector", mEndEffectorName, DEFAULT_EE_NAME);
   auto handEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, mEndEffectorName);
 
   // Create sub-robot (hand)
   std::string handBaseName;
-  if(!mNode->getParam("/" + confNamespace + "/hand_base", handBaseName)) {
+  if (!mNode->getParam("/" + confNamespace + "/hand_base", handBaseName))
+  {
     std::stringstream message;
-    message << "Configuration [/" << confNamespace << "/hand_base] is required.";
+    message << "Configuration [/" << confNamespace
+            << "/hand_base] is required.";
     throw std::runtime_error(message.str());
   }
   auto handBase = internal::getBodyNodeOrThrow(mMetaSkeleton, handBaseName);
-  auto hand = dart::dynamics::Branch::create(dart::dynamics::Branch::Criteria(handBase), "adaHand");
+  auto hand = dart::dynamics::Branch::create(
+      dart::dynamics::Branch::Criteria(handBase), "adaHand");
   mHandRobot = registerSubRobot(hand, "adaHand");
-  if(!mHandRobot) {
+  if (!mHandRobot)
+  {
     throw std::runtime_error("Could not create hand");
   }
 
@@ -151,27 +171,40 @@ Ada::Ada(bool simulation,
   setTrajectoryExecutor(nullptr);
 
   // Arm Trajectory Executor
-  mNode->param<std::string>("/" + confNamespace + "/arm_controller", mArmTrajControllerName, DEFAULT_ARM_TRAJ_CTRL);
+  mNode->param<std::string>(
+      "/" + confNamespace + "/arm_controller",
+      mArmTrajControllerName,
+      DEFAULT_ARM_TRAJ_CTRL);
   createTrajectoryExecutor(false);
 
   // Hand Trajectory Executor
-  mNode->param<std::string>("/" + confNamespace + "/hand_controller", mHandTrajControllerName, DEFAULT_HAND_TRAJ_CTRL);
+  mNode->param<std::string>(
+      "/" + confNamespace + "/hand_controller",
+      mHandTrajControllerName,
+      DEFAULT_HAND_TRAJ_CTRL);
   createTrajectoryExecutor(true);
 
   // Load the named configurations if available
   std::string nameConfigs;
-  if(mNode->getParam("/" + confNamespace + "/named_configs", nameConfigs)) {
+  if (mNode->getParam("/" + confNamespace + "/named_configs", nameConfigs))
+  {
     auto rootNode = aikido::io::loadYAML(nameConfigs, retriever);
-    if(rootNode["hand"]) {
-      mHandRobot->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["hand"]));
+    if (rootNode["hand"])
+    {
+      mHandRobot->setNamedConfigurations(
+          aikido::robot::util::parseYAMLToNamedConfigurations(
+              rootNode["hand"]));
     }
-    if(rootNode["arm"]) {
-      mHandRobot->setNamedConfigurations(aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["arm"]));
+    if (rootNode["arm"])
+    {
+      mHandRobot->setNamedConfigurations(
+          aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["arm"]));
     }
   }
 
   // Use limits to set default postprocessor
-  setDefaultPostProcessor(mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
+  setDefaultPostProcessor(
+      mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
 
   // Create joint state updates
   if (!mSimulation)
@@ -180,8 +213,12 @@ Ada::Ada(bool simulation,
     mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
-    mJointStateClient = std::make_unique<aikido::control::ros::RosJointStateClient>(
-        mMetaSkeleton->getBodyNode(0)->getSkeleton(), *mNode, "/joint_states", 1);
+    mJointStateClient
+        = std::make_unique<aikido::control::ros::RosJointStateClient>(
+            mMetaSkeleton->getBodyNode(0)->getSkeleton(),
+            *mNode,
+            "/joint_states",
+            1);
   }
   else
   {
@@ -206,8 +243,9 @@ Ada::~Ada()
 //==============================================================================
 void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
-  if(!mThread || !mThread->isRunning()) return;
-  
+  if (!mThread || !mThread->isRunning())
+    return;
+
   Robot::step(timepoint);
 
   if (!mSimulation && mJointStateClient)
@@ -219,10 +257,18 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
     std::lock_guard<std::mutex> lock(getRootSkeleton()->getMutex());
 
     // Get most recent joint states
-    mMetaSkeleton->setPositions(
-        mJointStateClient->getLatestPosition(*mMetaSkeleton));
+    try
+    {
+      mMetaSkeleton->setPositions(
+          mJointStateClient->getLatestPosition(*mMetaSkeleton));
+    }
+    catch (const std::exception& e)
+    {
+      dtwarn << "Issue reading joints: " << e.what() << std::endl;
+    }
   }
-  else {
+  else
+  {
     // Lock Skeleton
     std::lock_guard<std::mutex> lock(getRootSkeleton()->getMutex());
 
@@ -281,13 +327,14 @@ void Ada::spin()
 
 //==============================================================================
 aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
-      const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
-      const aikido::constraint::dart::CollisionFreePtr& collisionFree,
-      const std::shared_ptr<aikido::planner::TrajectoryPostProcessor>
-          trajPostProcessor)
+    const std::vector<std::pair<double, Eigen::VectorXd>>& waypoints,
+    const aikido::constraint::dart::CollisionFreePtr& collisionFree,
+    const std::shared_ptr<aikido::planner::TrajectoryPostProcessor>
+        trajPostProcessor)
 {
-  auto stateSpace = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
-      mArm->getMetaSkeletonClone().get());
+  auto stateSpace
+      = std::make_shared<aikido::statespace::dart::MetaSkeletonStateSpace>(
+          mArm->getMetaSkeletonClone().get());
 
   std::shared_ptr<aikido::statespace::GeodesicInterpolator> interpolator
       = std::make_shared<aikido::statespace::GeodesicInterpolator>(stateSpace);
@@ -298,9 +345,11 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
   for (auto& waypoint : waypoints)
   {
     auto state = stateSpace->createState();
-    try {
+    try
+    {
       stateSpace->convertPositionsToState(waypoint.second, state);
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     {
       dtwarn << "Cannot convert configuration to robot state: " << e.what()
              << std::endl;
@@ -313,7 +362,8 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
   auto postprocessor
       = (trajPostProcessor)
             ? trajPostProcessor
-            : ((mEnablePostProcessing) ? mArm->getDefaultPostProcessor() : nullptr);
+            : ((mEnablePostProcessing) ? mArm->getDefaultPostProcessor()
+                                       : nullptr);
   if (traj && postprocessor)
   {
     return postprocessor->postprocess(
@@ -328,8 +378,7 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
 bool Ada::startTrajectoryControllers()
 {
   return switchControllers(
-      std::vector<std::string>{mArmTrajControllerName,
-                               mHandTrajControllerName},
+      std::vector<std::string>{mArmTrajControllerName, mHandTrajControllerName},
       std::vector<std::string>());
 }
 
@@ -346,32 +395,37 @@ bool Ada::stopTrajectoryControllers()
 //==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits(bool armOnly) const
 {
-  return (armOnly) ? mSoftVelocityLimits.segment(0, mArm->getMetaSkeleton()->getNumDofs()) : mSoftVelocityLimits;
+  return (armOnly) ? mSoftVelocityLimits.segment(
+                         0, mArm->getMetaSkeleton()->getNumDofs())
+                   : mSoftVelocityLimits;
 }
 
 //==============================================================================
 Eigen::VectorXd Ada::getAccelerationLimits(bool armOnly) const
 {
-  return (armOnly) ? mSoftAccelerationLimits.segment(0, mArm->getMetaSkeleton()->getNumDofs()) : mSoftAccelerationLimits;
+  return (armOnly) ? mSoftAccelerationLimits.segment(
+                         0, mArm->getMetaSkeleton()->getNumDofs())
+                   : mSoftAccelerationLimits;
 }
 
 //==============================================================================
 void Ada::createTrajectoryExecutor(bool isHand)
 {
-  std::string controller = isHand ? mHandTrajControllerName : mArmTrajControllerName;
+  std::string controller
+      = isHand ? mHandTrajControllerName : mArmTrajControllerName;
   aikido::robot::RobotPtr subrobot = isHand ? mHandRobot : mArm;
   using aikido::control::KinematicSimulationTrajectoryExecutor;
   using aikido::control::ros::RosTrajectoryExecutor;
 
   if (mSimulation)
   {
-    subrobot->setTrajectoryExecutor(std::make_shared<KinematicSimulationTrajectoryExecutor>(
-        subrobot->getMetaSkeleton()->getBodyNode(0)->getSkeleton()));
+    subrobot->setTrajectoryExecutor(
+        std::make_shared<KinematicSimulationTrajectoryExecutor>(
+            subrobot->getMetaSkeleton()->getBodyNode(0)->getSkeleton()));
   }
   else
   {
-    std::string serverName
-        = controller + "/follow_joint_trajectory";
+    std::string serverName = controller + "/follow_joint_trajectory";
     auto exec = std::make_shared<RosTrajectoryExecutor>(
         *mNode,
         serverName,

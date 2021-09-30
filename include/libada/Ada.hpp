@@ -56,8 +56,12 @@ struct SmoothParams : aikido::planner::parabolic::ParabolicSmoother::Params
       double _tolerance = DEFAULT_SMOOTH_TOLERANCE)
     : aikido::planner::parabolic::ParabolicSmoother::Params()
   {
-    aikido::planner::parabolic::ParabolicSmoother::Params::mFeasibilityCheckResolution = _resolution;
-    aikido::planner::parabolic::ParabolicSmoother::Params::mFeasibilityApproxTolerance = _tolerance;
+    aikido::planner::parabolic::ParabolicSmoother::Params::
+        mFeasibilityCheckResolution
+        = _resolution;
+    aikido::planner::parabolic::ParabolicSmoother::Params::
+        mFeasibilityApproxTolerance
+        = _tolerance;
   }
 };
 
@@ -66,17 +70,19 @@ class Ada final : public aikido::robot::ros::RosRobot
 public:
   /// Inner AdaHand class that implements Aikido's Hand Interface
   class AdaHand;
-  
-  // Default Parameters
-  #define DEFAULT_THREAD_CYCLE std::chrono::milliseconds(10)
-  #define DEFAULT_ROS_TRAJ_INTERP_TIME 0.1
-  #define DEFAULT_ROS_TRAJ_GOAL_TIME_TOL 5.0
-  #define DEFAULT_CONF_OBJ_NS "adaConf"
-  #define DEFAULT_ARM_TRAJ_CTRL "trajectory_controller"
-  #define DEFAULT_HAND_TRAJ_CTRL "hand_controller"
-  #define DEFAULT_EE_NAME "end_effector"
-  #define DEFAULT_URDF "package://ada_description/robots_urdf/ada_with_camera.urdf"
-  #define DEFAULT_SRDF "package://ada_description/robots_urdf/ada_with_camera.srdf"
+
+// Default Parameters
+#define DEFAULT_THREAD_CYCLE std::chrono::milliseconds(10)
+#define DEFAULT_ROS_TRAJ_INTERP_TIME 0.1
+#define DEFAULT_ROS_TRAJ_GOAL_TIME_TOL 5.0
+#define DEFAULT_CONF_OBJ_NS "adaConf"
+#define DEFAULT_ARM_TRAJ_CTRL "trajectory_controller"
+#define DEFAULT_HAND_TRAJ_CTRL "hand_controller"
+#define DEFAULT_EE_NAME "end_effector"
+#define DEFAULT_URDF                                                           \
+  "package://ada_description/robots_urdf/ada_with_camera.urdf"
+#define DEFAULT_SRDF                                                           \
+  "package://ada_description/robots_urdf/ada_with_camera.srdf"
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] simulation True if running in simulation mode.
@@ -143,7 +149,8 @@ public:
           trajPostProcessor
       = nullptr)
   {
-    return computeArmJointSpacePath(waypoints, getSelfCollisionConstraint(), trajPostProcessor);
+    return computeArmJointSpacePath(
+        waypoints, getSelfCollisionConstraint(), trajPostProcessor);
   }
 
   /// Sets the default trajectory post-processor

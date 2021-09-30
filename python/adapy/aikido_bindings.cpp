@@ -117,8 +117,7 @@ aikido::rviz::TSRMarkerPtr add_tsr_marker(
 // NOTE: These functions define the Python API for Testable.
 
 bool is_satisfied(
-    aikido::constraint::Testable* self,
-    const Eigen::VectorXd& positions)
+    aikido::constraint::Testable* self, const Eigen::VectorXd& positions)
 {
   auto armSpace = self->getStateSpace();
   auto testState = armSpace->createState();

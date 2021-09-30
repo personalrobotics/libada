@@ -31,9 +31,10 @@ public:
   /// \param[in] endEffectorBodyNode End-effector body node. Must be the link
   ///            that represents the palm of an AdaHand (i.e. \c hand_base),
   ///            for which inverse kinematics is solved.
-  AdaHand(Ada* ada,
-    dart::dynamics::BodyNodePtr handBaseBodyNode,
-    dart::dynamics::BodyNodePtr endEffectorBodyNode);
+  AdaHand(
+      Ada* ada,
+      dart::dynamics::BodyNodePtr handBaseBodyNode,
+      dart::dynamics::BodyNodePtr endEffectorBodyNode);
 
   virtual ~AdaHand() = default;
 
