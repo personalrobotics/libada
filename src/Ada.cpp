@@ -197,7 +197,7 @@ Ada::Ada(
     }
     if (rootNode["arm"])
     {
-      mHandRobot->setNamedConfigurations(
+      mArm->setNamedConfigurations(
           aikido::robot::util::parseYAMLToNamedConfigurations(rootNode["arm"]));
     }
   }
