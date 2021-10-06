@@ -80,9 +80,9 @@ Ada::Ada(
     bool simulation,
     const dart::common::Uri& adaUrdfUri,
     const dart::common::Uri& adaSrdfUri,
+    aikido::planner::WorldPtr env,
     const std::string confNamespace,
     const std::chrono::milliseconds threadCycle,
-    aikido::planner::WorldPtr env,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
