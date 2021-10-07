@@ -91,14 +91,13 @@
 
     <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
           args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
-
-    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen"
-      args="
-         --stopped
-         move_until_touch_topic_controller
-         " />
   </group>
+    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+          output="screen"
+          args="
+             --stopped
+             move_until_touch_topic_controller
+             " />
   </group>
 
   <group if="$(arg perception)">
