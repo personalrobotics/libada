@@ -20,11 +20,17 @@
   </group>
 
   <!-- Define Map -->
-  <node name="st_map2base" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-      args="0 0 0 0 0 0 1 map j2n6s200_link_base 10" if="$(eval arg('version') == 2)"/>
+  <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+      args="0 0 0 0 0 0 1 map world 10"/>
 
-  <node name="st_map2base" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-      args="0 0 0 0 0 0 1 map base_link 10" if="$(eval arg('version') == 3)"/>
+  <!-- Publish Robot TF Tree -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
+  <!-- load ada urdf -->
+  <param name="robot_description"
+        command="cat $(find ada_description)/robots_urdf/ada.urdf" if="$(eval arg('version') == 2)"/>
+  <param name="robot_description"
+        command="cat $(find kortex_description)/robots/gen3_6dof_vision.urdf" if="$(eval arg('version') == 3)"/>
+
 
   <group if="$(arg perception)">
     <!-- Simulated pose estimators -->
