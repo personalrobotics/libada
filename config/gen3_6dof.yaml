@@ -54,22 +54,22 @@ trajectory_controller:
     stopped_velocity_tolerance: 1.0
     joint_1:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_2:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_3:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_4:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_5:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_6:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
   gains: # Required because we're controlling a velocity interface
     joint_1: {p: 3,  d: 0, i: 0, i_clamp: 1}
     joint_2: {p: 3,  d: 0, i: 0, i_clamp: 1}
@@ -88,37 +88,38 @@ move_until_touch_topic_controller:
   # FingerVision
   # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
   # forcetorque_tare_name: /fingervision/fingerVisionTaring
-  sensor_force_limit: 50
-  sensor_torque_limit: 5
+  sensor_force_limit: 4
+  sensor_torque_limit: 1
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
   control_type: velocity
   constraints:
+    stopped_velocity_tolerance: 1.0
     joint_1:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
     joint_2:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
     joint_3:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
     joint_4:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
     joint_5:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
     joint_6:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 1
   gains: # Required because we're controlling a velocity interface
-    joint_1: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_2: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_3: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_4: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
 
 # Optional controller that might be useful for testing.
 # Should do the same thing as trajectory_controller, but this is 
@@ -132,29 +133,29 @@ rewd_trajectory_controller:
     stopped_velocity_tolerance: 1.0
     joint_1:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_2:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_3:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_4:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_5:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
     joint_6:
       goal: 0.02
-      trajectory: 0.05
+      trajectory: 10.0
   gains: # Required because we're controlling a velocity interface
-    joint_1: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_2: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_3: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_4: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_1: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_2: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_3: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_4: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_5: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_6: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
   control_type: velocity
 
 ##############################################
