@@ -92,6 +92,8 @@
     <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
           args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
   </group>
+    <param name="robot_description"
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
     <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
           output="screen"
           args="
