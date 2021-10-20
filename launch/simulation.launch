@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="perception" default="false" doc="Boolean flag of whether to set up the perception on ADA" />
+  <arg name="perception" default="true" doc="Boolean flag of whether to set up the perception on ADA" />
   <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
   <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
 
@@ -9,7 +9,7 @@
   <!-- load based on version -->
   <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
 
-  
+
   <group if="$(eval arg('version') == 2)">
     <!-- Camera Calibration -->
     <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
@@ -47,4 +47,3 @@
   </group>
 
 </launch>
-
