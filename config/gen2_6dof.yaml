@@ -178,4 +178,28 @@ hand_controller:
     j2n6s200_joint_finger_1: {p: 1,  d: 0, i: 0, i_clamp: 1}
     j2n6s200_joint_finger_2: {p: 1,  d: 0, i: 0, i_clamp: 1}
 
-
+camera_calibration_tag:
+  # Parameters for apriltag_ros's apriltag_ros_continuous_node
+  apriltag_detector:
+    # a list of all the tags the AprilTag detector should be looking for. 
+    # The first entry is used for calibration.
+    standalone_tags: [            
+      {id: 2, size: 0.0305, name: "detected_calibration_tag"}
+    ]
+    tag_family:        'tag36h11' # options: tagStandard52h13, tagStandard41h12, tag36h11, tag25h9, tag16h5, tagCustom48h12, tagCircle21h7, tagCircle49h12
+    tag_threads:       2          # default: 2
+    tag_decimate:      1.0        # default: 1.0
+    tag_blur:          0.0        # default: 0.0
+    tag_refine_edges:  1          # default: 1
+    tag_debug:         0          # default: 0
+    max_hamming_dist:  2          # default: 2 (Tunable parameter with 2 being a good choice - values >=3 consume large amounts of memory. Choose the largest value possible.)
+    publish_tf:        true
+    publish_tag_detections_image: true
+  # This transform is used anytime AprilTag does not detect the calibration tag. 
+  # This sometimes happens during the first few seconds of operation, and if 
+  # the image and camera_info messages are out-of-sync.
+  tag_to_camera_default_transform:
+    parent_frame: "calibration_tag"
+    child_frame: "camera_link"
+    translation: [0.01932, 0.11762, 0.06892]
+    rotation: [-0.08945,-0.10056, 0.69350, -0.70778]

@@ -76,10 +76,10 @@
           command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
   </group>
 
-   <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
 
-   <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-      args="0 0 0 0 0 0 1 map world 10"/>
+  <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+    args="0 0 0 0 0 0 1 map world 10"/>
 
   <!-- Initialize F/T Sensor -->
   <group if="$(arg use_forque)">
@@ -88,8 +88,19 @@
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
 
-    <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-          args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
+    <!-- <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/> -->
+
+    <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
+    <node name="st_forque2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+
+    <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
+
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
+      <remap from="image_rect" to="/camera/color/image_raw"/>
+      <remap from="camera_info" to="/camera/color/camera_info"/>
+    </node>
 
     <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
