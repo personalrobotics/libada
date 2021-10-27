@@ -195,11 +195,11 @@ camera_calibration_tag:
     max_hamming_dist:  2          # default: 2 (Tunable parameter with 2 being a good choice - values >=3 consume large amounts of memory. Choose the largest value possible.)
     publish_tf:        true
     publish_tag_detections_image: true
-  # This transform is used anytime AprilTag does not detect the calibration tag. 
-  # This sometimes happens during the first few seconds of operation, and if 
-  # the image and camera_info messages are out-of-sync.
+    transport_hint:    "compressed"      # default: raw, see http://wiki.ros.org/image_transport#Known_Transport_Packages for options
+  fixed_tag_frame: "calibration_tag"
+  camera_frame: "camera_link"
+  # This transform is used initially if AprilTag does not detect the calibration tag. 
+  # Another way to think about this is the camera's pose in the tag's frame.
   tag_to_camera_default_transform:
-    parent_frame: "calibration_tag"
-    child_frame: "camera_link"
     translation: [0.01932, 0.11762, 0.06892]
     rotation: [-0.08945,-0.10056, 0.69350, -0.70778]

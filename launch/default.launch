@@ -1,6 +1,7 @@
 <launch>
 
   <arg name="use_forque" default="false" doc="Add forque to URDF and spawned controllers."/>
+  <arg name="use_apriltag_calib" default="false" doc="Whether to compute the camera tranform in real-time using AprilTags (as opposed to using a static transform)."/>
   <arg name="perception" default="false" doc="Boolean flag of whether to set up the perception on ADA" />
   <!-- Other options: retinanet, spnet, spanet -->
   <!-- See possible networks in https://github.com/personalrobotics/food_detector/ -->
@@ -88,19 +89,25 @@
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
 
-    <!-- <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-          args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/> -->
+    <!-- Configure the transform from the robot to the camera -->
+    <group if="$(arg use_apriltag_calib)">    
+      <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
+      <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+            args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
 
-    <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
-    <node name="st_forque2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-          args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+      <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
 
-    <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
-
-    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
-      <remap from="image_rect" to="/camera/color/image_raw"/>
-      <remap from="camera_info" to="/camera/color/camera_info"/>
-    </node>
+      <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
+        <remap from="image_rect" to="/camera/color/image_raw"/>
+        <remap from="camera_info" to="/camera/color/camera_info"/>
+      </node>
+    </group>  
+    <group unless="$(arg use_apriltag_calib)">
+      <!-- If we are not using real-time-calibration, use a static transform -->
+      <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+            args="0.070 0.025 0.141 -0.045 0.806 -0.036 0.590 j2n6s200_forque camera_link 10"/>
+    </group>
+    
 
     <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
       output="screen"
