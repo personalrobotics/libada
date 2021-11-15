@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(libada)
-set(library_VERSION 0.3.0)
+project(libada VERSION 0.3.1)
 
 option(LIBADA_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
@@ -71,6 +70,7 @@ find_package(aikido 0.3.0 REQUIRED
     planner_vectorfield
     planner_kunzretimer
     robot
+    robot_ros
     statespace
     io
     rviz
@@ -107,11 +107,9 @@ endif()
 #
 
 set(sources
-  src/AdaFingerKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHandKinematicSimulationPositionCommandExecutor.cpp
-  src/AdaHand.cpp
   src/Ada.cpp
   src/util.cpp
+  src/AdaHand.cpp
 )
 
 add_library(libada SHARED ${sources})
@@ -150,7 +148,8 @@ target_link_libraries(libada
 
 #=============================================================================
 #Pybind
-if(pybind11_FOUND)
+option(BUILD_ADAPY "Build adapy (the python binding)" ON)
+if(pybind11_FOUND AND BUILD_ADAPY)
 
   set(pybind_sources
     python/adapy/adapy.cpp
@@ -231,7 +230,7 @@ install(FILES "package.xml"
   DESTINATION "share/libada")
 
 #install(DIRECTORY resources DESTINATION share)
-if(pybind11_FOUND)
+if(pybind11_FOUND AND BUILD_ADAPY)
   install(TARGETS adapy
         LIBRARY DESTINATION lib/python3/dist-packages)
 endif()

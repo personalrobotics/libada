@@ -10,7 +10,7 @@
   <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
 
   <!-- Gen3 specific arguments required by Kortex API for instantiating a private communication session -->
-  <arg name="ip_address" default="132.236.20.28" doc="IP address for TCP/UDP comms"/>
+  <arg name="ip_address" default="emprise-kortex.coecis.cornell.edu" doc="IP address for TCP/UDP comms"/>
   <arg name="username" default="admin" doc="Username for kortex session"/>
   <arg name="password" default="admin" doc="Password for kortex session"/>
   <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
@@ -63,6 +63,7 @@
         --stopped
         velocity_controller
         trajectory_controller
+        hand_controller
         " />
 
   <!-- TODO: Initialize controllers directly via Aikido -->
@@ -84,38 +85,38 @@
 
   <!-- Initialize F/T Sensor -->
   <group if="$(arg use_forque)">
-  <group if="$(eval arg('version') == 2)">
-    <!-- load ada urdf -->
-    <param name="robot_description"
-          command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
+    <group if="$(eval arg('version') == 2)">
+      <!-- load ada urdf -->
+      <param name="robot_description"
+            command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
 
-    <!-- Configure the transform from the robot to the camera -->
-    <group if="$(arg use_apriltag_calib)">    
-      <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
-      <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-            args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+      <!-- Configure the transform from the robot to the camera -->
+      <group if="$(arg use_apriltag_calib)">    
+        <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
+        <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+              args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
 
-      <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
+        <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
 
-      <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
-        <remap from="image_rect" to="/camera/color/image_raw"/>
-        <remap from="camera_info" to="/camera/color/camera_info"/>
-      </node>
-    </group>  
-    <group unless="$(arg use_apriltag_calib)">
-      <!-- If we are not using real-time-calibration, use a static transform -->
-      <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-            args="0.070 0.025 0.141 -0.045 0.806 -0.036 0.590 j2n6s200_forque camera_link 10"/>
+        <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
+          <remap from="image_rect" to="/camera/color/image_raw"/>
+          <remap from="camera_info" to="/camera/color/camera_info"/>
+        </node>
+      </group>  
+      <group unless="$(arg use_apriltag_calib)">
+        <!-- If we are not using real-time-calibration, use a static transform -->
+        <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+              args="0.0768 0.0224 0.1386 0.0085 0.7949 0.0223 0.6063 j2n6s200_forque camera_link 10"/>
+      </group>
     </group>
-    
-
+    <param name="robot_description"
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
     <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen"
-      args="
-         --stopped
-         move_until_touch_topic_controller
-         " />
-  </group>
+          output="screen"
+          args="
+             --stopped
+             move_until_touch_topic_controller
+             " />
   </group>
 
   <group if="$(arg perception)">
