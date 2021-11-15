@@ -62,6 +62,7 @@
         --stopped
         velocity_controller
         trajectory_controller
+        hand_controller
         " />
 
   <!-- TODO: Initialize controllers directly via Aikido -->
@@ -83,21 +84,22 @@
 
   <!-- Initialize F/T Sensor -->
   <group if="$(arg use_forque)">
-  <group if="$(eval arg('version') == 2)">
-    <!-- load ada urdf -->
+    <group if="$(eval arg('version') == 2)">
+      <!-- load ada urdf -->
+      <param name="robot_description"
+            command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
+
+      <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+              args="0.0768 0.0224 0.1386 0.0085 0.7949 0.0223 0.6063 j2n6s200_forque camera_link 10"/>
+    </group>
     <param name="robot_description"
-          command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
-
-    <node name="st_joule2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-          args="0.09909 0.0181061 0.0178372 2.8905 3.13479 1.59224 j2n6s200_joule camera_link 10"/>
-
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
     <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen"
-      args="
-         --stopped
-         move_until_touch_topic_controller
-         " />
-  </group>
+          output="screen"
+          args="
+             --stopped
+             move_until_touch_topic_controller
+             " />
   </group>
 
   <group if="$(arg perception)">
