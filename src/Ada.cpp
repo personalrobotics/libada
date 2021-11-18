@@ -55,16 +55,10 @@ dart::dynamics::BodyNodePtr getBodyNodeOrThrow(
 }
 
 inline const dart::common::Uri getDartURI(
-    const dart::common::Uri providedUri,
     const std::string confNamespace,
     const std::string key,
     const std::string defaultUri)
 {
-  if (providedUri.toString() != "file://")
-  {
-    return providedUri;
-  }
-
   // Get Default from Parameter Server
   std::string uri = "";
   ros::param::param<std::string>(
@@ -78,8 +72,6 @@ inline const dart::common::Uri getDartURI(
 //==============================================================================
 Ada::Ada(
     bool simulation,
-    const dart::common::Uri& adaUrdfUri,
-    const dart::common::Uri& adaSrdfUri,
     aikido::planner::WorldPtr env,
     const std::string confNamespace,
     const std::chrono::milliseconds threadCycle,
@@ -87,10 +79,8 @@ Ada::Ada(
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : aikido::robot::ros::RosRobot(
-        internal::getDartURI(
-            adaUrdfUri, confNamespace, "default_urdf", DEFAULT_URDF),
-        internal::getDartURI(
-            adaSrdfUri, confNamespace, "default_srdf", DEFAULT_SRDF),
+        internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
+        internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
         "ada",
         retriever)
   , mSimulation(simulation)
@@ -167,21 +157,25 @@ Ada::Ada(
   }
 
   // Create Trajectory Executors
+
   // Should not execute trajectories on whole arm by default
+  // This ensures that trajectories are executed on subrobots only.
   setTrajectoryExecutor(nullptr);
 
-  // Arm Trajectory Executor
+  // Load Arm Trajectory controller name
   mNode->param<std::string>(
       "/" + confNamespace + "/arm_controller",
       mArmTrajControllerName,
       DEFAULT_ARM_TRAJ_CTRL);
+  // Create executor for controller
   createTrajectoryExecutor(false);
 
-  // Hand Trajectory Executor
+  // Load Hand Trajectory controller name
   mNode->param<std::string>(
       "/" + confNamespace + "/hand_controller",
       mHandTrajControllerName,
       DEFAULT_HAND_TRAJ_CTRL);
+  // Create executor for controller
   createTrajectoryExecutor(true);
 
   // Load the named configurations if available

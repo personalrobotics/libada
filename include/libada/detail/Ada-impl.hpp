@@ -9,7 +9,7 @@ void Ada::setDefaultPostProcessor(
     const typename PostProcessor::Params& params)
 {
 
-  // See if the passed-in values aree valid or not
+  // See if the passed-in values are valid or not
   bool velLimitsInvalid
       = (velocityLimits.squaredNorm() == 0.0)
         || ((std::size_t)velocityLimits.size() != mMetaSkeleton->getNumDofs()
