@@ -86,18 +86,14 @@ public:
 
   /// Construct Ada metaskeleton using a URI.
   /// \param[in] simulation True if running in simulation mode.
-  /// \param[in] adaUrdfUri Path to Ada urdf model.
-  /// \param[in] adaSrdfUri Path to Ada srdf file.
-  /// \param[in] confNamespace rosparam naemspace of configuration object.
-  /// \param[in] threadCycle Period of self-driven spin thread (ms)
   /// \param[in] env World (either for planning, post-processing, or executing).
+  /// \param[in] confNamespace rosparam namespace of configuration object.
+  /// \param[in] threadCycle Period of self-driven spin thread (ms)
   /// \param[in] node ROS node. Required for running in real.
   /// \param[in] rngSeed seed for initializing random generator.
   ///            May be nullptr if simulation is true.
   /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(bool simulation,
-      const dart::common::Uri& adaUrdfUri = dart::common::Uri(""),
-      const dart::common::Uri& adaSrdfUri = dart::common::Uri(""),
       aikido::planner::WorldPtr env = aikido::planner::World::create(),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
@@ -172,7 +168,7 @@ public:
   /// \return true if all controllers have been successfully switched
   bool startTrajectoryControllers();
 
-  /// Turns off provided trajectory controllers controllers
+  /// Turns off provided trajectory controllers
   /// \return true if all controllers have been successfully switched
   bool stopTrajectoryControllers();
 

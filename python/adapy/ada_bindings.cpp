@@ -232,7 +232,7 @@ void hand_close(ada::Ada::AdaHand* self)
   future.get();
 }
 
-dart::dynamics::BodyNode* get_endeffector_body_node(ada::Ada::AdaHand* self)
+dart::dynamics::BodyNode* get_end_effector_body_node(ada::Ada::AdaHand* self)
 {
   return self->getEndEffectorBodyNode();
 }
@@ -286,7 +286,7 @@ void Ada(pybind11::module& m)
       .def("execute_preshape", execute_preshape)
       .def("open", hand_open)
       .def("close", hand_close)
-      .def("get_endeffector_body_node", get_endeffector_body_node)
+      .def("get_end_effector_body_node", get_end_effector_body_node)
       .def("grab", grab)
       .def("ungrab", ungrab);
 }
