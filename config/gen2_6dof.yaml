@@ -198,7 +198,7 @@ camera_calibration_tag:
     # a list of all the tags the AprilTag detector should be looking for. 
     # The first entry is used for calibration.
     standalone_tags: [            
-      {id: 2, size: 0.0305, name: "detected_calibration_tag"}
+      {id: 4, size: 0.014, name: "detected_calibration_tag"}
     ]
     tag_family:        'tag36h11' # options: tagStandard52h13, tagStandard41h12, tag36h11, tag25h9, tag16h5, tagCustom48h12, tagCircle21h7, tagCircle49h12
     tag_threads:       2          # default: 2
@@ -215,5 +215,5 @@ camera_calibration_tag:
   # This transform is used initially if AprilTag does not detect the calibration tag. 
   # Another way to think about this is the camera's pose in the tag's frame.
   tag_to_camera_default_transform:
-    translation: [0.01932, 0.11762, 0.06892]
-    rotation: [-0.08945,-0.10056, 0.69350, -0.70778]
+    translation: [0.019, 0.099, 0.066]
+    rotation: [0.123,0.104, -0.679, 0.716]

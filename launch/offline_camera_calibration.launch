@@ -9,7 +9,7 @@
 
     <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
     <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-          args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+          args="0.014 0 0.035 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
 
     <!-- The node must have this name in order to be in the same param nodespace as the online version of camera calibration -->
     <node name="camera_calibration_tag" pkg="libada" type="offline_camera_calibration.py" respawn="false" output="screen">

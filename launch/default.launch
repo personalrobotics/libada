@@ -94,7 +94,7 @@
       <group if="$(arg use_apriltag_calib)">    
         <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
         <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-              args="0 0 0.027 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+              args="0.014 0 0.035 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
 
         <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
 
@@ -106,7 +106,7 @@
       <group unless="$(arg use_apriltag_calib)">
         <!-- If we are not using real-time-calibration, use a static transform -->
         <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-              args="0.0768 0.0224 0.1386 0.0085 0.7949 0.0223 0.6063 j2n6s200_forque camera_link 10"/>
+              args="0.0804 0.0191 0.1372 0.0312 0.8066 0.0124 0.5901 j2n6s200_forque camera_link 10"/>
       </group>
     </group>
     <param name="robot_description"
