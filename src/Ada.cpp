@@ -157,7 +157,6 @@ Ada::Ada(
   }
 
   // Create Trajectory Executors
-
   // Should not execute trajectories on whole arm by default
   // This ensures that trajectories are executed on subrobots only.
   setTrajectoryExecutor(nullptr);
@@ -175,6 +174,7 @@ Ada::Ada(
       "/" + confNamespace + "/hand_controller",
       mHandTrajControllerName,
       DEFAULT_HAND_TRAJ_CTRL);
+
   // Create executor for controller
   createTrajectoryExecutor(true);
 
