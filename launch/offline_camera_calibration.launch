@@ -1,0 +1,26 @@
+<launch>
+  <arg name="calib_duration" default="10" doc="How many second to calibrate for"/>
+  <arg name="calib_parent_frame" default="j2n6s200_forque" doc="The parent frame for the transform outputted by this node."/>
+  <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)"/>
+  <arg name="dof" default="6" doc="Number of degrees of freedom in arm"/>
+
+  <!-- load controller configuration -->
+  <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
+
+    <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
+    <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+          args="0.014 0 0.035 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
+
+    <!-- The node must have this name in order to be in the same param nodespace as the online version of camera calibration -->
+    <node name="camera_calibration_tag" pkg="libada" type="offline_camera_calibration.py" respawn="false" output="screen">
+      <param name="calib_duration" value="$(arg calib_duration)"/>
+      <param name="calib_parent_frame" value="$(arg calib_parent_frame)"/>
+    </node>
+
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
+      <remap from="image_rect" to="/camera/color/image_raw"/>
+      <remap from="camera_info" to="/camera/color/camera_info"/>
+    </node>
+
+</launch>
+
