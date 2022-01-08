@@ -425,7 +425,7 @@ void Ada::createTrajectoryExecutor(bool isHand)
         serverName,
         DEFAULT_ROS_TRAJ_INTERP_TIME,
         DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
-        subrobot->getMetaSkeleton()->getDofs());
+        subrobot->getMetaSkeleton());
     subrobot->setTrajectoryExecutor(exec);
   }
 }
