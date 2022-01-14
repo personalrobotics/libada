@@ -6,7 +6,6 @@
 
 #include <Eigen/Core>
 #include <aikido/common/pointers.hpp>
-#include <aikido/control/PositionCommandExecutor.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/robot/GrabMetadata.hpp>
 #include <aikido/robot/Hand.hpp>

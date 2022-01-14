@@ -415,7 +415,7 @@ void Ada::createTrajectoryExecutor(bool isHand)
   {
     subrobot->setTrajectoryExecutor(
         std::make_shared<KinematicSimulationTrajectoryExecutor>(
-            subrobot->getMetaSkeleton()->getBodyNode(0)->getSkeleton()));
+            subrobot->getMetaSkeleton()));
   }
   else
   {
@@ -424,7 +424,8 @@ void Ada::createTrajectoryExecutor(bool isHand)
         *mNode,
         serverName,
         DEFAULT_ROS_TRAJ_INTERP_TIME,
-        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL);
+        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
+        subrobot->getMetaSkeleton());
     subrobot->setTrajectoryExecutor(exec);
   }
 }
