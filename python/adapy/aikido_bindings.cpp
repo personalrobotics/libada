@@ -101,7 +101,8 @@ void update(aikido::rviz::InteractiveMarkerViewer* self)
 }
 
 void add_frame(
-    aikido::rviz::InteractiveMarkerViewer* self, std::shared_ptr<dart::dynamics::BodyNode> node)
+    aikido::rviz::InteractiveMarkerViewer* self,
+    std::shared_ptr<dart::dynamics::BodyNode> node)
 {
   self->addFrameMarker(node);
 }
