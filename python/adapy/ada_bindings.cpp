@@ -154,6 +154,14 @@ aikido::trajectory::TrajectoryPtr plan_to_offset(
   return trajectory;
 }
 
+aikido::trajectory::TrajectoryPtr plan_to_tsr(
+    ada::Ada* self, const std::string bodyNodeName, 
+    const aikido::constraint::dart::TSRPtr& tsr)
+{
+  auto trajectory = self->getArm()->planToTSR(bodyNodeName, tsr);
+  return trajectory;
+}
+
 void execute_trajectory(
     ada::Ada* self, const aikido::trajectory::TrajectoryPtr& trajectory)
 {
@@ -284,6 +292,7 @@ void Ada(pybind11::module& m)
       .def("compute_retime_path", compute_retime_path)
       .def("plan_to_configuration", plan_to_configuration)
       .def("plan_to_offset", plan_to_offset)
+      .def("plan_to_tsr", plan_to_tsr)
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
 
