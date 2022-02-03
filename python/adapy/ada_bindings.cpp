@@ -147,6 +147,13 @@ aikido::trajectory::TrajectoryPtr plan_to_configuration(
   return trajectory;
 }
 
+aikido::trajectory::TrajectoryPtr plan_to_offset(
+    ada::Ada* self, const std::string bodyNodeName, const Eigen::Vector3d& offset)
+{
+  auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset);
+  return trajectory;
+}
+
 void execute_trajectory(
     ada::Ada* self, const aikido::trajectory::TrajectoryPtr& trajectory)
 {
@@ -276,6 +283,7 @@ void Ada(pybind11::module& m)
       .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
       .def("compute_retime_path", compute_retime_path)
       .def("plan_to_configuration", plan_to_configuration)
+      .def("plan_to_offset", plan_to_offset)
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
 

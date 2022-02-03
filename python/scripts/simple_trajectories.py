@@ -18,6 +18,8 @@ if not rospy.is_shutdown():
         if not ada.start_trajectory_controllers():
             print("Could not start trajectory controller.")
             sys.exit(1) 
+    rospy.sleep(1)  # wait for ada to initialize
+
     viewer = ada.start_viewer("dart_markers/simple_trajectories", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [1.0, 0.0, 0.73, 0, 0, 0, 1]
@@ -53,11 +55,28 @@ if not rospy.is_shutdown():
 
     ada.execute_trajectory(traj)
 
+    offset = [0., 0.1, 0.]
+    offset_rev = [0., -0.1, 0.]
+    hand_node = rospy.get_param("adaConf/hand_base")
+    traj_off = ada.plan_to_offset(hand_node, offset)
+    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev)
+
+    print("")
+    print("CONTINUE TO OFFSET")
+    print("")
+    pdb.set_trace()
+
+    if traj_off:
+        ada.execute_trajectory(traj_off)
+
     print("")
     print("CLOSING HAND")
     print("")
     PRESHAPE = [1.1, 1.1]
     ada.get_hand().execute_preshape(PRESHAPE)
+
+    if traj_off_rev:
+        ada.execute_trajectory(traj_off_rev)
 
     print("")
     print("CONTINUE TO EXECUTE REVERSE")
