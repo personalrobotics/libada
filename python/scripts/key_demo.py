@@ -38,12 +38,24 @@ if not rospy.is_shutdown():
     positions2[2] += 0.2
     positions3[0] += 1.5
     positions3[2] += 0.4
-    positions4[1] -= 0.4
-    positions4[2] += 0.6
+    positions4[1] += 0.4
+    positions4[2] += 2
+    
+    positions5 = positions4.copy()
+    positions5[1] += 0.6
+    positions5[2] += 0.5
+
+    positions6 = positions4.copy()
+    positions6[1] -= 0.3
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
-    traj = ada.plan_to_configuration(positions4)
+    
+    traj0 = ada.plan_to_configuration(positions5)
+    pdb.set_trace()
+    ada.execute_trajectory(traj0)
+
+    traj1 = ada.plan_to_configuration(positions6)
     traj_rev = ada.compute_joint_space_path(waypoints_rev)
 
     print("")
@@ -51,13 +63,14 @@ if not rospy.is_shutdown():
     print("")
     pdb.set_trace()
 
-    ada.execute_trajectory(traj)
+    ada.execute_trajectory(traj1)
 
     print("")
     print("CLOSING HAND")
     print("")
     PRESHAPE = [1.1, 1.1]
     ada.get_hand().execute_preshape(PRESHAPE)
+    ada.get_hand().close()
 
     print("")
     print("CONTINUE TO EXECUTE REVERSE")
