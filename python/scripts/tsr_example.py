@@ -29,6 +29,7 @@ if not rospy.is_shutdown():
 
     collision = ada.get_self_collision_constraint()
 
+    # get arm and hand instances
     arm_skeleton = ada.get_arm_skeleton()
     arm_state_space = ada.get_arm_state_space()
     hand = ada.get_hand()
@@ -38,7 +39,7 @@ if not rospy.is_shutdown():
     viewer.add_frame(hand_node)
 
     print("")
-    print("CREATE TSR")
+    print("CONTINUE TO CREATE TSR")
     print("")
     pdb.set_trace()
 
@@ -52,8 +53,8 @@ if not rospy.is_shutdown():
     print("Tw_e", grasp_tsr.get_Tw_e())
 
     # set T0_w to can origin
-    T0_w[0, 3] = 0.2
-    T0_w[1, 3] = 0.2
+    T0_w[0, 3] = sodaCanPose[0]
+    T0_w[1, 3] = sodaCanPose[1]
     grasp_tsr.set_T0_w(T0_w)
 
     # set default Bw
@@ -84,13 +85,15 @@ if not rospy.is_shutdown():
     print("PLAN TO TSR")
     print("")
     pdb.set_trace()
+ 
+    trials, maxTrials = 0, 10
+    while trials < maxTrials:
 
-    samples, maxSamples = 0, 10
-    while samples < maxSamples:
+        # plan_to_tsr may require more than one try to find a succesful path
         traj = ada.plan_to_tsr(rospy.get_param("adaConf/end_effector"), grasp_tsr)
         if traj:
             break
-        samples += 1
+        trials += 1
 
     print("")
     print("CONTINUE TO EXECUTE")
