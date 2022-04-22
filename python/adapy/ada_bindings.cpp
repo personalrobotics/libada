@@ -148,14 +148,17 @@ aikido::trajectory::TrajectoryPtr plan_to_configuration(
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_offset(
-    ada::Ada* self, const std::string bodyNodeName, const Eigen::Vector3d& offset)
+    ada::Ada* self,
+    const std::string bodyNodeName,
+    const Eigen::Vector3d& offset)
 {
   auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset);
   return trajectory;
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_tsr(
-    ada::Ada* self, const std::string bodyNodeName, 
+    ada::Ada* self,
+    const std::string bodyNodeName,
     const aikido::constraint::dart::TSRPtr& tsr)
 {
   auto trajectory = self->getArm()->planToTSR(bodyNodeName, tsr);
