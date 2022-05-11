@@ -100,7 +100,9 @@ public:
       const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
-      = std::make_shared<aikido::io::CatkinResourceRetriever>());
+      = std::make_shared<aikido::io::CatkinResourceRetriever>(),
+      const std::string rosControllerManagerServerName = "",
+      const std::string rosJointModeServerName = "");
 
   virtual ~Ada();
 
@@ -162,16 +164,6 @@ public:
       const Eigen::VectorXd& accelerationLimits = Eigen::VectorXd(),
       const typename PostProcessor::Params& params = KunzParams());
 
-  /// Starts the provided trajectory controllers if not started already.
-  /// Makes sure that no other controllers are running and conflicting
-  /// with the ones we are about to start.
-  /// \return true if all controllers have been successfully switched
-  bool startTrajectoryControllers();
-
-  /// Turns off provided trajectory controllers
-  /// \return true if all controllers have been successfully switched
-  bool stopTrajectoryControllers();
-
   /// Opens Ada's hand
   std::future<void> openHand();
 
@@ -188,38 +180,17 @@ public:
   dart::dynamics::BodyNodePtr getEndEffectorBodyNode();
 
 private:
-  /// Switches between controllers.
-  /// \param[in] startControllers Controllers to start.
-  /// \param[in] stopControllers Controllers to stop.
-  /// Returns true if controllers successfully switched.
-  bool switchControllers(
-      const std::vector<std::string>& startControllers,
-      const std::vector<std::string>& stopControllers);
-
   // Call to spin first to pass current time to step
   void spin();
 
-  // Utility function to (re)-create and set trajectory executors
-  void createTrajectoryExecutor(bool isHand);
-
   // True if running in simulation.
   const bool mSimulation;
-
-  // Names of the ros trajectory controllers
-  std::string mArmTrajControllerName;
-  std::string mHandTrajControllerName;
 
   // Soft velocity and acceleration limits
   Eigen::VectorXd mSoftVelocityLimits;
   Eigen::VectorXd mSoftAccelerationLimits;
   Eigen::VectorXd mDefaultVelocityLimits;
   Eigen::VectorXd mDefaultAccelerationLimits;
-
-  // Ros node associated with this robot.
-  std::unique_ptr<::ros::NodeHandle> mNode;
-
-  // Ros controller service client.
-  std::unique_ptr<::ros::ServiceClient> mControllerServiceClient;
 
   // Ros joint state client.
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;

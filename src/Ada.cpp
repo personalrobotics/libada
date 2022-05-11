@@ -77,12 +77,17 @@ Ada::Ada(
     const std::chrono::milliseconds threadCycle,
     const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
-    const dart::common::ResourceRetrieverPtr& retriever)
+    const dart::common::ResourceRetrieverPtr& retriever,
+    const std::string rosControllerManagerServerName,
+    const std::string rosJointModeServerName)
   : aikido::robot::ros::RosRobot(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
         "ada",
-        retriever)
+        retriever,
+        node,
+        rosControllerManagerServerName,
+        rosJointModeServerName)
   , mSimulation(simulation)
 {
 
@@ -90,16 +95,6 @@ Ada::Ada(
   // Set up other args
   setWorld(env);
   setRNG(std::make_unique<aikido::common::RNGWrapper<std::mt19937>>(rngSeed));
-
-  // Set up ROS Node
-  if (!node)
-  {
-    mNode = std::make_unique<::ros::NodeHandle>();
-  }
-  else
-  {
-    mNode = std::make_unique<::ros::NodeHandle>(*node);
-  }
 
   // Read default soft accleration/velocity limits
   double limit;
@@ -156,28 +151,6 @@ Ada::Ada(
     throw std::runtime_error("Could not create hand");
   }
 
-  // Create Trajectory Executors
-  // Should not execute trajectories on whole arm by default
-  // This ensures that trajectories are executed on subrobots only.
-  setTrajectoryExecutor(nullptr);
-
-  // Load Arm Trajectory controller name
-  mNode->param<std::string>(
-      "/" + confNamespace + "/arm_controller",
-      mArmTrajControllerName,
-      DEFAULT_ARM_TRAJ_CTRL);
-  // Create executor for controller
-  createTrajectoryExecutor(false);
-
-  // Load Hand Trajectory controller name
-  mNode->param<std::string>(
-      "/" + confNamespace + "/hand_controller",
-      mHandTrajControllerName,
-      DEFAULT_HAND_TRAJ_CTRL);
-
-  // Create executor for controller
-  createTrajectoryExecutor(true);
-
   // Load the named configurations if available
   std::string nameConfigs;
   if (mNode->getParam("/" + confNamespace + "/named_configs", nameConfigs))
@@ -203,10 +176,6 @@ Ada::Ada(
   // Create joint state updates
   if (!mSimulation)
   {
-    // Real Robot, create state client
-    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
-        mNode->serviceClient<controller_manager_msgs::SwitchController>(
-            "controller_manager/switch_controller"));
     mJointStateClient
         = std::make_unique<aikido::control::ros::RosJointStateClient>(
             mMetaSkeleton->getBodyNode(0)->getSkeleton(),
@@ -369,24 +338,6 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
 }
 
 //==============================================================================
-bool Ada::startTrajectoryControllers()
-{
-  return switchControllers(
-      std::vector<std::string>{mArmTrajControllerName, mHandTrajControllerName},
-      std::vector<std::string>());
-}
-
-//==============================================================================
-bool Ada::stopTrajectoryControllers()
-{
-  cancelAllTrajectories();
-  return switchControllers(
-      std::vector<std::string>(),
-      std::vector<std::string>{mArmTrajControllerName,
-                               mHandTrajControllerName});
-}
-
-//==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits(bool armOnly) const
 {
   return (armOnly) ? mSoftVelocityLimits.segment(
@@ -400,62 +351,6 @@ Eigen::VectorXd Ada::getAccelerationLimits(bool armOnly) const
   return (armOnly) ? mSoftAccelerationLimits.segment(
                          0, mArm->getMetaSkeleton()->getNumDofs())
                    : mSoftAccelerationLimits;
-}
-
-//==============================================================================
-void Ada::createTrajectoryExecutor(bool isHand)
-{
-  std::string controller
-      = isHand ? mHandTrajControllerName : mArmTrajControllerName;
-  aikido::robot::RobotPtr subrobot = isHand ? mHandRobot : mArm;
-  using aikido::control::KinematicSimulationTrajectoryExecutor;
-  using aikido::control::ros::RosTrajectoryExecutor;
-
-  if (mSimulation)
-  {
-    subrobot->setTrajectoryExecutor(
-        std::make_shared<KinematicSimulationTrajectoryExecutor>(
-            subrobot->getMetaSkeleton()));
-  }
-  else
-  {
-    std::string serverName = controller + "/follow_joint_trajectory";
-    auto exec = std::make_shared<RosTrajectoryExecutor>(
-        *mNode,
-        serverName,
-        DEFAULT_ROS_TRAJ_INTERP_TIME,
-        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
-        subrobot->getMetaSkeleton());
-    subrobot->setTrajectoryExecutor(exec);
-  }
-}
-
-//==============================================================================
-bool Ada::switchControllers(
-    const std::vector<std::string>& startControllers,
-    const std::vector<std::string>& stopControllers)
-{
-  if (!mNode)
-    throw std::runtime_error("Ros node has not been instantiated.");
-
-  if (!mControllerServiceClient)
-    throw std::runtime_error("ServiceClient not instantiated.");
-
-  controller_manager_msgs::SwitchController srv;
-  // First try stopping the started controllers
-  // Avoids us falsely detecting a failure if already started
-  srv.request.stop_controllers = startControllers;
-  srv.request.strictness
-      = controller_manager_msgs::SwitchControllerRequest::BEST_EFFORT;
-  mControllerServiceClient->call(srv); // Don't care about response code
-
-  // Actual command
-  srv.request.start_controllers = startControllers;
-  srv.request.stop_controllers = stopControllers;
-  srv.request.strictness
-      = controller_manager_msgs::SwitchControllerRequest::STRICT;
-
-  return mControllerServiceClient->call(srv) && srv.response.ok;
 }
 
 //==============================================================================

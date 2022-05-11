@@ -22,7 +22,7 @@ void waitForUser(const std::string& msg, const std::shared_ptr<Ada>& ada)
   if (input == 'n')
   {
     ROS_INFO_STREAM("Aborting with user input " << input);
-    ada->stopTrajectoryControllers();
+    ada->deactivateExecutor();
     exit(1);
   }
 }
