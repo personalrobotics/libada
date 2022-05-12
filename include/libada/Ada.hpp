@@ -12,7 +12,11 @@
 #include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
 #include <aikido/constraint/dart/TSR.hpp>
-#include <aikido/control/TrajectoryExecutor.hpp>
+#include <aikido/control/JacobianExecutor.hpp>
+#include <aikido/control/KinematicSimulationJointCommandExecutor.hpp>
+#include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
+#include <aikido/control/VisualServoingVelocityExecutor.hpp>
+#include <aikido/control/ros/RosJointModeCommandClient.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
@@ -97,7 +101,7 @@ public:
       aikido::planner::WorldPtr env = aikido::planner::World::create(),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
-      const ::ros::NodeHandle* node = nullptr,
+      std::shared_ptr<::ros::NodeHandle> node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>(),
@@ -112,16 +116,16 @@ public:
   void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   /// Get the arm.
-  aikido::robot::RobotPtr getArm();
+  aikido::robot::ros::RosRobotPtr getArm();
 
   /// Get the const arm.
-  aikido::robot::ConstRobotPtr getArm() const;
+  aikido::robot::ros::ConstRosRobotPtr getArm() const;
 
   /// Get the hand as an Aikido::Robot
-  aikido::robot::RobotPtr getHandRobot();
+  aikido::robot::ros::RosRobotPtr getHandRobot();
 
   /// Get the const hand as an Aikido::Robot
-  aikido::robot::ConstRobotPtr getHandRobot() const;
+  aikido::robot::ros::ConstRosRobotPtr getHandRobot() const;
 
   /// Get the hand as an Aikido::Hand
   std::shared_ptr<AdaHand> getHand();
@@ -179,6 +183,31 @@ public:
   /// Get Body Node of End Effector
   dart::dynamics::BodyNodePtr getEndEffectorBodyNode();
 
+  /************ Convenience Execution Methods **************/
+
+  ///
+  /// Convenience: executes given SE3 command on end-effector.
+  /// Will auto-activate a JacobianVelocityExecutor.
+  /// future will have exception if one doesn't exist
+  ///
+  /// \param[in] command SE3, applied to end-effector
+  /// \param[in] timeout Timeout for the command
+  std::future<int> executeJacobianCommand(
+      const Eigen::Vector6d command,
+      const std::chrono::duration<double>& timeout);
+
+  ///
+  /// Convenience: runs velocity-command Visual Servoing
+  /// Will auto-activate a VisualServoingVelocityExecutor.
+  /// future will have exception if one doesn't exist.
+  ///
+  /// \param[in] command SE3, applied to end-effector
+  /// \param[in] timeout Timeout for the command
+  std::future<int> executeVisualServoing(
+      std::function<std::shared_ptr<Eigen::Isometry3d>(void)> perception,
+      aikido::control::VisualServoingVelocityExecutor::Properties properties
+      = aikido::control::VisualServoingVelocityExecutor::Properties());
+
 private:
   // Call to spin first to pass current time to step
   void spin();
@@ -200,10 +229,10 @@ private:
   std::string mEndEffectorName;
 
   // The robot arm
-  aikido::robot::RobotPtr mArm;
+  aikido::robot::ros::RosRobotPtr mArm;
 
   // The robot hand as an Aikido Robot
-  aikido::robot::RobotPtr mHandRobot;
+  aikido::robot::ros::RosRobotPtr mHandRobot;
 
   // Self-driving thread
   std::unique_ptr<aikido::common::ExecutorThread> mThread;

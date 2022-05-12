@@ -7,9 +7,19 @@ adaConf:
   end_effector: j2n6s200_end_effector
   arm: [j2n6s200_link_base, j2n6s200_link_6]
   hand_base: j2n6s200_hand_base
-  arm_controller: trajectory_controller
-  hand_controller: hand_controller
   named_configs: package://libada/resources/g2_6d_named_configs.yaml
+  arm_controllers:
+    # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+    traj_controllers: ["trajectory_controller"]
+    pos_controllers: ["position_controller"]
+    vel_controllers: ["velocity_controller"]
+    eff_controllers: ["effort_controller"]
+  hand_controllers:
+    # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+    traj_controllers: ["hand_controller"]
+    pos_controllers: ["hand_position_controller"]
+    vel_controllers: ["hand_velocity_controller"]
+    eff_controllers: ["hand_effort_controller"]
 
 # hardware parameters
 soft_limits:
@@ -22,7 +32,6 @@ joint_state_controller:
 
 # whole-arm joint mode controller
 joint_mode_controller:
-  mode: MODE
   type: pr_ros_controllers/JointModeController
   default: VELOCITY
   joints: [joint_mode]
@@ -50,7 +59,7 @@ effort_controller:
 
 # whole-arm base trajectory controller
 trajectory_controller:
-  mode: TRAJECTORY
+  mode: VELOCITY
   type: velocity_controllers/JointTrajectoryController
   joints: [j2n6s200_joint_1, j2n6s200_joint_2, j2n6s200_joint_3,
     j2n6s200_joint_4, j2n6s200_joint_5, j2n6s200_joint_6]
@@ -84,7 +93,7 @@ trajectory_controller:
 
 # whole-arm base trajectory controller
 move_until_touch_topic_controller:
-  mode: TRAJECTORY
+  mode: VELOCITY
   type: rewd_controllers/MoveUntilTouchTopicController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
@@ -129,7 +138,7 @@ move_until_touch_topic_controller:
 # Should do the same thing as trajectory_controller, but this is 
 # the lab's rewd_controllers implementation
 rewd_trajectory_controller:
-  mode: TRAJECTORY
+  mode: VELOCITY
   type: rewd_controllers/JointTrajectoryController
   joints: [j2n6s200_joint_1, j2n6s200_joint_2, j2n6s200_joint_3,
     j2n6s200_joint_4, j2n6s200_joint_5, j2n6s200_joint_6]
@@ -183,7 +192,7 @@ hand_effort_controller:
   joints: [j2n6s200_joint_finger_1, j2n6s200_joint_finger_2]
 
 hand_controller:
-  mode: TRAJECTORY
+  mode: VELOCITY
   type: velocity_controllers/JointTrajectoryController
   joints: [j2n6s200_joint_finger_1, j2n6s200_joint_finger_2]
   constraints:

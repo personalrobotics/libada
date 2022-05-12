@@ -79,5 +79,26 @@ Eigen::MatrixXd createBwMatrixForTSR(
   return bw;
 }
 
+//==============================================================================
+hardware_interface::JointCommandModes modeFromString(std::string str)
+{
+  if (str == "BEGIN")
+    return hardware_interface::JointCommandModes::BEGIN;
+  if (str == "POSITION" || str == "MODE_POSITION")
+    return hardware_interface::JointCommandModes::MODE_POSITION;
+  if (str == "VELOCITY" || str == "MODE_VELOCITY")
+    return hardware_interface::JointCommandModes::MODE_VELOCITY;
+  if (str == "EFFORT" || str == "MODE_EFFORT")
+    return hardware_interface::JointCommandModes::MODE_EFFORT;
+  if (str == "NOMODE")
+    return hardware_interface::JointCommandModes::NOMODE;
+  if (str == "ESTOP" || str == "EMERGENCY_STOP")
+    return hardware_interface::JointCommandModes::EMERGENCY_STOP;
+  if (str == "SWITCHING")
+    return hardware_interface::JointCommandModes::SWITCHING;
+
+  return hardware_interface::JointCommandModes::ERROR;
+}
+
 } // namespace util
 } // namespace ada

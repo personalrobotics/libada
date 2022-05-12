@@ -12,6 +12,7 @@
 #include <aikido/common/Spline.hpp>
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
+#include <aikido/control/ros/RosJointCommandExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
@@ -75,7 +76,7 @@ Ada::Ada(
     aikido::planner::WorldPtr env,
     const std::string confNamespace,
     const std::chrono::milliseconds threadCycle,
-    const ::ros::NodeHandle* node,
+    std::shared_ptr<::ros::NodeHandle> node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever,
     const std::string rosControllerManagerServerName,
@@ -121,7 +122,8 @@ Ada::Ada(
   auto armBase = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[0]);
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
-  mArm = registerSubRobot(arm, "adaArm");
+  mArm = std::dynamic_pointer_cast<aikido::robot::ros::RosRobot>(
+      registerSubRobot(arm, "adaArm"));
   if (!mArm)
   {
     throw std::runtime_error("Could not create arm");
@@ -145,7 +147,8 @@ Ada::Ada(
   auto handBase = internal::getBodyNodeOrThrow(mMetaSkeleton, handBaseName);
   auto hand = dart::dynamics::Branch::create(
       dart::dynamics::Branch::Criteria(handBase), "adaHand");
-  mHandRobot = registerSubRobot(hand, "adaHand");
+  mHandRobot = std::dynamic_pointer_cast<aikido::robot::ros::RosRobot>(
+      registerSubRobot(hand, "adaHand"));
   if (!mHandRobot)
   {
     throw std::runtime_error("Could not create hand");
@@ -191,6 +194,113 @@ Ada::Ada(
 
   // Create Inner AdaHand
   mHand = std::make_shared<AdaHand>(this, handBase, handEnd);
+
+  // Register all executors
+  if (mSimulation)
+  {
+    // Kinematic Executors
+    for (auto subrobot :
+         std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
+    {
+      subrobot->registerExecutor(
+          std::make_shared<
+              aikido::control::KinematicSimulationTrajectoryExecutor>(
+              subrobot->getMetaSkeleton()));
+      subrobot->registerExecutor(
+          std::make_shared<
+              aikido::control::KinematicSimulationPositionExecutor>(
+              subrobot->getMetaSkeleton()));
+
+      auto jvExec = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+          handEnd);
+      auto vsExec
+          = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
+              handEnd, jvExec);
+      subrobot->registerExecutor(vsExec);
+      subrobot->registerExecutor(jvExec);
+    }
+  }
+  else
+  {
+    // Real ROS Executors
+    for (auto subrobot :
+         std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
+    {
+      bool isHand = (subrobot == mHandRobot);
+      std::string ns = isHand ? "/" + confNamespace + "/hand_controllers/"
+                              : "/" + confNamespace + "/arm_controllers/";
+      // Trajectory executors
+      auto controllerNames = mNode->param<std::vector<std::string>>(
+          ns + "traj_controllers",
+          std::vector<std::string>{isHand ? DEFAULT_HAND_TRAJ_CTRL
+                                          : DEFAULT_ARM_TRAJ_CTRL});
+      for (auto name : controllerNames)
+      {
+        auto trajExec
+            = std::make_shared<aikido::control::ros::RosTrajectoryExecutor>(
+                *mNode,
+                name + "/follow_joint_trajectory",
+                DEFAULT_ROS_TRAJ_INTERP_TIME,
+                DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
+                subrobot->getMetaSkeleton());
+        auto mode = util::modeFromString(
+            mNode->param<std::string>("/" + name + "/mode", "VELOCITY"));
+        subrobot->registerExecutor(trajExec, name, mode);
+      }
+
+      // Position Executors
+      controllerNames = mNode->param<std::vector<std::string>>(
+          ns + "pos_controllers", std::vector<std::string>());
+      for (auto name : controllerNames)
+      {
+        auto posExec
+            = std::make_shared<aikido::control::ros::RosJointPositionExecutor>(
+                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
+        auto mode = util::modeFromString(
+            mNode->param<std::string>("/" + name + "/mode", "POSITION"));
+        subrobot->registerExecutor(posExec, name, mode);
+      }
+
+      // Effort Executors
+      controllerNames = mNode->param<std::vector<std::string>>(
+          ns + "eff_controllers", std::vector<std::string>());
+      for (auto name : controllerNames)
+      {
+        auto effExec
+            = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
+                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
+        auto effJacExec
+            = std::make_shared<aikido::control::JacobianEffortExecutor>(
+                handEnd, effExec);
+        auto mode = util::modeFromString(
+            mNode->param<std::string>("/" + name + "/mode", "EFFORT"));
+        subrobot->registerExecutor(effJacExec, name, mode);
+      }
+
+      // Velocity Executors
+      controllerNames = mNode->param<std::vector<std::string>>(
+          ns + "vel_controllers", std::vector<std::string>());
+      for (auto name : controllerNames)
+      {
+        auto velExec
+            = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
+        auto jvExec
+            = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+                handEnd, velExec);
+        auto vsExec
+            = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
+                handEnd, jvExec);
+        auto mode = util::modeFromString(
+            mNode->param<std::string>("/" + name + "/mode", "VELOCITY"));
+        subrobot->registerExecutor(vsExec, name, mode);
+        subrobot->registerExecutor(jvExec, name, mode);
+      }
+    }
+  }
+
+  // Activate Trajectory Executor
+  activateExecutor(aikido::control::ExecutorType::TRAJECTORY);
 
   // Start driving self-thread
   mThread = std::make_unique<aikido::common::ExecutorThread>(
@@ -250,25 +360,25 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 }
 
 //==============================================================================
-aikido::robot::RobotPtr Ada::getArm()
+aikido::robot::ros::RosRobotPtr Ada::getArm()
 {
   return mArm;
 }
 
 //==============================================================================
-aikido::robot::ConstRobotPtr Ada::getArm() const
+aikido::robot::ros::ConstRosRobotPtr Ada::getArm() const
 {
   return mArm;
 }
 
 //==============================================================================
-aikido::robot::RobotPtr Ada::getHandRobot()
+aikido::robot::ros::RosRobotPtr Ada::getHandRobot()
 {
   return mHandRobot;
 }
 
 //==============================================================================
-aikido::robot::ConstRobotPtr Ada::getHandRobot() const
+aikido::robot::ros::ConstRosRobotPtr Ada::getHandRobot() const
 {
   return mHandRobot;
 }
@@ -369,6 +479,51 @@ std::future<void> Ada::closeHand()
 dart::dynamics::BodyNodePtr Ada::getEndEffectorBodyNode()
 {
   return internal::getBodyNodeOrThrow(mMetaSkeleton, mEndEffectorName);
+}
+
+//==============================================================================
+std::future<int> Ada::executeJacobianCommand(
+    const Eigen::Vector6d command, const std::chrono::duration<double>& timeout)
+{
+  std::shared_ptr<aikido::control::JacobianVelocityExecutor> executor;
+  // Search for last added executor of given type
+  for (int i = mExecutors.size() - 1; i >= 0; i--)
+  {
+    executor
+        = std::dynamic_pointer_cast<aikido::control::JacobianVelocityExecutor>(
+            mExecutors[i]);
+    if (executor && activateExecutor(i))
+    {
+      return executor->execute(command, timeout);
+    }
+  }
+
+  deactivateExecutor();
+  return aikido::control::make_exceptional_future<int>(
+      "No JacobianVelocityExecutor registered.");
+}
+
+//==============================================================================
+std::future<int> Ada::executeVisualServoing(
+    std::function<std::shared_ptr<Eigen::Isometry3d>(void)> perception,
+    aikido::control::VisualServoingVelocityExecutor::Properties properties)
+{
+  std::shared_ptr<aikido::control::VisualServoingVelocityExecutor> executor;
+  // Search for last added executor of given type
+  for (int i = mExecutors.size() - 1; i >= 0; i--)
+  {
+    executor = std::dynamic_pointer_cast<
+        aikido::control::VisualServoingVelocityExecutor>(mExecutors[i]);
+    if (executor && activateExecutor(i))
+    {
+      executor->resetProperties(properties);
+      return executor->execute(perception);
+    }
+  }
+
+  deactivateExecutor();
+  return aikido::control::make_exceptional_future<int>(
+      "No JacobianVelocityExecutor registered.");
 }
 
 } // namespace ada
