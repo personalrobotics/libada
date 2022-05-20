@@ -78,17 +78,13 @@ Ada::Ada(
     const std::chrono::milliseconds threadCycle,
     std::shared_ptr<::ros::NodeHandle> node,
     aikido::common::RNG::result_type rngSeed,
-    const dart::common::ResourceRetrieverPtr& retriever,
-    const std::string rosControllerManagerServerName,
-    const std::string rosJointModeServerName)
+    const dart::common::ResourceRetrieverPtr& retriever)
   : aikido::robot::ros::RosRobot(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
         "ada",
         retriever,
-        node,
-        rosControllerManagerServerName,
-        rosJointModeServerName)
+        node)
   , mSimulation(simulation)
 {
 
@@ -222,13 +218,42 @@ Ada::Ada(
   }
   else
   {
+    auto ros_controller_service_client = std::make_shared<::ros::ServiceClient>(
+        mNode->serviceClient<controller_manager_msgs::SwitchController>(
+            "controller_manager/switch_controller"));
+
     // Real ROS Executors
     for (auto subrobot :
          std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
     {
+
       bool isHand = (subrobot == mHandRobot);
       std::string ns = isHand ? "/" + confNamespace + "/hand_controllers/"
                               : "/" + confNamespace + "/arm_controllers/";
+
+      // Controller Switching Service Client
+      bool enableControllerSwitching = mNode->param<bool>(
+          ns + "enable_controller_switching",
+          false);
+
+      if(enableControllerSwitching)
+        subrobot->setRosControllerServiceClient(ros_controller_service_client);
+
+      // Mode controller
+      auto modeControllerName = mNode->param<std::string>(
+          ns + "mode_controller",
+          std::string(""));
+
+      if(!modeControllerName.empty())
+      {
+        auto rosJointModeCommandClient 
+            = std::make_shared<aikido::control::ros::RosJointModeCommandClient>(
+                *mNode,
+                modeControllerName + "/joint_mode_command",
+                std::vector<std::string>{"joint_mode"});
+          subrobot->setRosJointModeCommandClient(rosJointModeCommandClient);
+      }
+
       // Trajectory executors
       auto controllerNames = mNode->param<std::vector<std::string>>(
           ns + "traj_controllers",

@@ -104,9 +104,7 @@ public:
       std::shared_ptr<::ros::NodeHandle> node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
-      = std::make_shared<aikido::io::CatkinResourceRetriever>(),
-      const std::string rosControllerManagerServerName = "",
-      const std::string rosJointModeServerName = "");
+      = std::make_shared<aikido::io::CatkinResourceRetriever>());
 
   virtual ~Ada();
 

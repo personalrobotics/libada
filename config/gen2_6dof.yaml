@@ -9,6 +9,8 @@ adaConf:
   hand_base: j2n6s200_hand_base
   named_configs: package://libada/resources/g2_6d_named_configs.yaml
   arm_controllers:
+    enable_controller_switching: true
+    mode_controller: joint_mode_controller
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
     traj_controllers: ["trajectory_controller"]
     pos_controllers: ["position_controller"]
@@ -20,6 +22,7 @@ adaConf:
     pos_controllers: ["hand_position_controller"]
     vel_controllers: ["hand_velocity_controller"]
     eff_controllers: ["hand_effort_controller"]
+
 
 # hardware parameters
 soft_limits:

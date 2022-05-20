@@ -7,9 +7,23 @@ adaConf:
   end_effector: robotiq_arg2f_base_link
   arm: [base_link, bracelet_link]
   hand_base: end_effector_link
-  arm_controller: trajectory_controller
-  hand_controller: hand_controller
   named_configs: package://libada/resources/g2_6d_named_configs.yaml  
+  arm_controllers:
+    enable_controller_switching: true
+    mode_controller: joint_mode_controller
+    # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+    traj_controllers: ["trajectory_controller"]
+    pos_controllers: ["position_controller"]
+    vel_controllers: ["velocity_controller"]
+    eff_controllers: ["effort_controller"]
+  hand_controllers:
+    enable_controller_switching: true
+    mode_controller: hand_mode_controller
+    # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+    traj_controllers: ["hand_controller"]
+    pos_controllers: ["hand_position_controller"]
+    vel_controllers: ["hand_velocity_controller"]
+    eff_controllers: ["hand_effort_controller"]
 
 # Publish all joint states -----------------------------------
 joint_state_controller:
@@ -159,6 +173,13 @@ rewd_trajectory_controller:
   control_type: velocity
 
 ##############################################
+
+# gripper base mode controller
+hand_mode_controller:
+  mode: MODE
+  type: pr_ros_controllers/JointModeController
+  default: VELOCITY
+  joints: [finger_mode]
 
 # gripper base velocity controller
 hand_velocity_controller:
