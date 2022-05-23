@@ -108,6 +108,7 @@ std::vector<ExecutorDetails> loadExecutorsDetailsFromParameter(const ros::NodeHa
   static const std::vector<ExecutorDetails> emptyResult;
 
   XmlRpcValue executorsDetailsXml;
+  std::cout<<"parameterName: "<<parameterName<<std::endl;
   if (!nodeHandle.getParam(parameterName, executorsDetailsXml)) {
     ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
                                    << "/executors' is required.");

@@ -74,17 +74,17 @@ inline const dart::common::Uri getDartURI(
 Ada::Ada(
     bool simulation,
     aikido::planner::WorldPtr env,
+    std::string name,
     const std::string confNamespace,
     const std::chrono::milliseconds threadCycle,
-    std::shared_ptr<::ros::NodeHandle> node,
+    const ::ros::NodeHandle* node,
     aikido::common::RNG::result_type rngSeed,
     const dart::common::ResourceRetrieverPtr& retriever)
   : aikido::robot::ros::RosRobot(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
-        "ada",
-        retriever,
-        node)
+        name,
+        retriever)
   , mSimulation(simulation)
 {
 
@@ -94,17 +94,17 @@ Ada::Ada(
   setRNG(std::make_unique<aikido::common::RNGWrapper<std::mt19937>>(rngSeed));
 
   // Read default soft accleration/velocity limits
-  double limit;
-  mNode->param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
-  mSoftAccelerationLimits = mDefaultAccelerationLimits
-      = (limit != 0)
-            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
-            : mMetaSkeleton->getAccelerationUpperLimits();
-  mNode->param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
-  mSoftVelocityLimits = mDefaultVelocityLimits
-      = (limit != 0)
-            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
-            : mMetaSkeleton->getVelocityUpperLimits();
+  // double limit;
+  // mNode->param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
+  // mSoftAccelerationLimits = mDefaultAccelerationLimits
+  //     = (limit != 0)
+  //           ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+  //           : mMetaSkeleton->getAccelerationUpperLimits();
+  // mNode->param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
+  // mSoftVelocityLimits = mDefaultVelocityLimits
+  //     = (limit != 0)
+  //           ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+  //           : mMetaSkeleton->getVelocityUpperLimits();
 
   // Create sub-robot (arm)
   std::vector<std::string> armNodes;
@@ -168,9 +168,10 @@ Ada::Ada(
     }
   }
 
+  setTrajectoryLimitsFromParam("acquisition");
   // Use limits to set default postprocessor
-  setDefaultPostProcessor(
-      mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
+  // setDefaultPostProcessor(
+  //     mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
 
   // Create joint state updates
   if (!mSimulation)
@@ -185,7 +186,7 @@ Ada::Ada(
   else
   {
     // Simulation, create state publisher
-    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
+    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states_1", 5);
   }
 
   // Create Inner AdaHand
@@ -218,7 +219,11 @@ Ada::Ada(
   }
   else
   {
-    auto ros_controller_service_client = std::make_shared<::ros::ServiceClient>(
+    auto rosLoadControllerServiceClient = std::make_shared<::ros::ServiceClient>(
+        mNode->serviceClient<controller_manager_msgs::LoadController>(
+            "controller_manager/load_controller"));
+
+    auto rosSwitchControllerServiceClient = std::make_shared<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
 
@@ -227,9 +232,11 @@ Ada::Ada(
          std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
     {
 
+      subrobot->setRosLoadControllerServiceClient(rosLoadControllerServiceClient);
+
       bool isHand = (subrobot == mHandRobot);
-      std::string ns = isHand ? "/" + confNamespace + "/hand_controllers/"
-                              : "/" + confNamespace + "/arm_controllers/";
+      std::string ns = isHand ? "/" + confNamespace + "/hand_executors/"
+                              : "/" + confNamespace + "/arm_executors/";
 
       // Controller Switching Service Client
       bool enableControllerSwitching = mNode->param<bool>(
@@ -237,13 +244,14 @@ Ada::Ada(
           false);
 
       if(enableControllerSwitching)
-        subrobot->setRosControllerServiceClient(ros_controller_service_client);
+        subrobot->setRosSwitchControllerServiceClient(rosSwitchControllerServiceClient);
 
       // Mode controller
       auto modeControllerName = mNode->param<std::string>(
           ns + "mode_controller",
           std::string(""));
 
+      std::cout<<"Mode controller name: "<<modeControllerName<<std::endl;
       if(!modeControllerName.empty())
       {
         auto rosJointModeCommandClient 
@@ -256,7 +264,7 @@ Ada::Ada(
 
       std::vector<util::ExecutorDetails> executorsDetails = util::loadExecutorsDetailsFromParameter(
           *mNode,
-          ns + "/executors");
+          ns + "executors");
 
       if(executorsDetails.size() == 0)
       {
@@ -269,6 +277,7 @@ Ada::Ada(
       {
         if(executorDetails.mType == "TRAJECTORY")
         {
+          std::cout<<"Executor type is TRAJECTORY!!"<<std::endl;
           auto trajExec
             = std::make_shared<aikido::control::ros::RosTrajectoryExecutor>(
                 *mNode,
@@ -277,7 +286,7 @@ Ada::Ada(
                 DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
                 subrobot->getMetaSkeleton());
           auto controllerMode = util::modeFromString(
-            mNode->param<std::string>("/" + executorDetails.mController + "/mode", ""));
+            mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", ""));
           subrobot->registerExecutor(trajExec, executorDetails.mController, controllerMode, executorDetails.mId);
         }
         else if(executorDetails.mType == "JOINT_COMMAND")
@@ -288,7 +297,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::ros::RosJointPositionExecutor>(
                   *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "POSITION"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "POSITION"));
             subrobot->registerExecutor(posExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else if(executorDetails.mMode == "VELOCITY")
@@ -297,7 +306,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
                   *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
             subrobot->registerExecutor(velExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else if(executorDetails.mMode == "EFFORT")
@@ -306,7 +315,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
                   *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "EFFORT"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "EFFORT"));
             subrobot->registerExecutor(effExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else
@@ -327,7 +336,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::JacobianVelocityExecutor>(
                   handEnd, velExec);
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
             subrobot->registerExecutor(jvExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else if(executorDetails.mMode == "EFFORT")
@@ -339,7 +348,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::JacobianEffortExecutor>(
                   handEnd, effExec);
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "EFFORT"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "EFFORT"));
             subrobot->registerExecutor(effJacExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else
@@ -363,7 +372,7 @@ Ada::Ada(
               = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
                   handEnd, jvExec);
             auto controllerMode = util::modeFromString(
-              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+              mNode->param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
             subrobot->registerExecutor(vsExec, executorDetails.mController, controllerMode, executorDetails.mId);
           }
           else
@@ -377,12 +386,20 @@ Ada::Ada(
     }
   }
 
-  // Activate Trajectory Executor
-  activateExecutor(aikido::control::ExecutorType::TRAJECTORY);
+  std::cout<<"Creating thread for executors!"<<std::endl;
 
   // Start driving self-thread
   mThread = std::make_unique<aikido::common::ExecutorThread>(
       std::bind(&Ada::spin, this), threadCycle);
+
+  std::cout<<"Thread created!"<<std::endl;
+
+  std::cout<<"Activating trajectory executor for arm!"<<std::endl;
+
+  // Activate Trajectory Executor for Arm
+  mArm->activateExecutor(aikido::control::ExecutorType::TRAJECTORY);
+
+  std::cout<<"Activated trajectory executor!"<<std::endl;
 }
 
 //==============================================================================
@@ -398,7 +415,7 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
   if (!mThread || !mThread->isRunning())
     return;
 
-  Robot::step(timepoint);
+  RosRobot::step(timepoint);
 
   if (!mSimulation && mJointStateClient)
   {

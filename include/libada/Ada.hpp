@@ -99,9 +99,10 @@ public:
   /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(bool simulation,
       aikido::planner::WorldPtr env = aikido::planner::World::create(),
+      std::string name = std::string("ada"),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
-      std::shared_ptr<::ros::NodeHandle> node = nullptr,
+      const ::ros::NodeHandle* node = nullptr,
       aikido::common::RNG::result_type rngSeed = std::random_device{}(),
       const dart::common::ResourceRetrieverPtr& retriever
       = std::make_shared<aikido::io::CatkinResourceRetriever>());

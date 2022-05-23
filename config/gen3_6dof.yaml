@@ -1,9 +1,9 @@
 # Arm configuration parameters
 adaConf:
-  default_urdf: package://kortex_description/robots/gen3_6dof_vision.urdf
+  default_urdf: package://kortex_description/robots/gen3_6dof_vision_forque.urdf
   default_srdf: package://kortex_description/robots/gen3_6dof.srdf
   default_accel_lim: 
-    aquisition: 2.0
+    acquisition: 2.0
     transfer: 1.0
   default_vel_lim: 
     acquisition: 0.7
@@ -21,10 +21,10 @@ adaConf:
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
     executors:
       - {id: bite_transfer_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: towards_mouth_bite_transfer_controller}
-      - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: EFFORT, mode: controller: effort_controller}
+      # - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: EFFORT, controller: effort_controller}
       - {id: bite_transfer_inside_mouth_executor, type: TRAJECTORY, mode: EFFORT, controller: inside_mouth_bite_transfer_controller}
       - {id: bite_acquisition_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
-  hand_controllers:
+  hand_executors:
     enable_controller_switching: true
     mode_controller: hand_mode_controller
     # Note: type can be TRAJECTOTY / JOINT_COMMAND / TASK_COMMAND / VISUAL_SERVOING
@@ -103,6 +103,8 @@ trajectory_controller:
 # whole-arm base trajectory controller
 move_until_touch_topic_controller:
   mode: TRAJECTORY
+  controller_mode: VELOCITY
+  is_lazy: NOPE
   type: rewd_controllers/MoveUntilTouchTopicController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
@@ -112,6 +114,7 @@ move_until_touch_topic_controller:
   # forcetorque_tare_name: /fingervision/fingerVisionTaring
   sensor_force_limit: 50
   sensor_torque_limit: 5
+  max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
   control_type: velocity
@@ -148,6 +151,7 @@ towards_mouth_bite_transfer_controller:
   mode_handle: joint_mode
   is_lazy: NOPE   
   mode: TRAJECTORY
+  controller_mode: EFFORT
   type: rewd_controllers/MoveUntilTouchTopicController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
@@ -194,6 +198,7 @@ inside_mouth_bite_transfer_controller:
   mode_handle: joint_mode
   is_lazy: OKAY   
   mode: TRAJECTORY
+  controller_mode: EFFORT
   type: rewd_controllers/MoveUntilTouchTopicController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
@@ -240,6 +245,7 @@ inside_mouth_bite_transfer_controller:
 # the lab's rewd_controllers implementation
 rewd_trajectory_controller:
   mode: TRAJECTORY
+  is_lazy: NOPE
   type: rewd_controllers/JointTrajectoryController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
