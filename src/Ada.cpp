@@ -388,6 +388,7 @@ Ada::Ada(
 //==============================================================================
 Ada::~Ada()
 {
+  // deactivateExecutor();
   mThread->stop();
 }
 
@@ -602,6 +603,25 @@ std::future<int> Ada::executeVisualServoing(
   deactivateExecutor();
   return aikido::control::make_exceptional_future<int>(
       "No JacobianVelocityExecutor registered.");
+}
+
+void Ada::setTrajectoryLimitsFromParam(std::string type)
+{
+  double limit;
+  mNode->param<double>("/adaConf/default_accel_lim/"+type, limit, 0);
+  mSoftAccelerationLimits = mDefaultAccelerationLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getAccelerationUpperLimits();
+  mNode->param<double>("/adaConf/default_vel_lim/"+type, limit, 0);
+  mSoftVelocityLimits = mDefaultVelocityLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getVelocityUpperLimits();
+
+  // Use limits to set default postprocessor
+  setDefaultPostProcessor(
+      mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
 }
 
 } // namespace ada

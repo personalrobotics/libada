@@ -206,6 +206,8 @@ public:
       aikido::control::VisualServoingVelocityExecutor::Properties properties
       = aikido::control::VisualServoingVelocityExecutor::Properties());
 
+  void setTrajectoryLimitsFromParam(std::string type);
+
 private:
   // Call to spin first to pass current time to step
   void spin();
