@@ -100,5 +100,82 @@ hardware_interface::JointCommandModes modeFromString(std::string str)
   return hardware_interface::JointCommandModes::ERROR;
 }
 
+//=============================================================================
+std::vector<ExecutorDetails> loadExecutorsDetailsFromParameter(const ros::NodeHandle &nodeHandle, const std::string &parameterName) 
+{
+  using XmlRpc::XmlRpcValue;
+
+  static const std::vector<ExecutorDetails> emptyResult;
+
+  XmlRpcValue executorsDetailsXml;
+  if (!nodeHandle.getParam(parameterName, executorsDetailsXml)) {
+    ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                   << "/executors' is required.");
+  }
+
+  if (executorsDetailsXml.getType() != XmlRpcValue::TypeArray) {
+    ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                   << "/executors' is not an array.");
+    return emptyResult;
+  }
+
+  std::vector<ExecutorDetails> output;
+  for (int i = 0; i < executorsDetailsXml.size(); ++i) {
+    ExecutorDetails executorDetails;
+    auto &executorDetailsXml = executorsDetailsXml[i];
+
+    if (executorDetailsXml.getType() == XmlRpcValue::TypeStruct) {
+      
+      auto &idXml = executorDetailsXml["id"];
+      if (idXml.getType() != XmlRpcValue::TypeString) {
+        ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                       << "/executors[" << i
+                                       << "]/id' is not a string.");
+        return emptyResult;
+      }
+      executorDetails.mId = static_cast<std::string>(idXml);
+      
+      auto &typeXml = executorDetailsXml["type"];
+      if (typeXml.getType() != XmlRpcValue::TypeString) {
+        ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                       << "/executors[" << i
+                                       << "]/type' is not a string.");
+        return emptyResult;
+      }
+      executorDetails.mType = static_cast<std::string>(typeXml);
+
+      if(executorDetails.mType != "TRAJECTORY")
+      {
+        auto &modeXml = executorDetailsXml["mode"];
+        if (modeXml.getType() != XmlRpcValue::TypeString) {
+          ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                         << "/executors[" << i
+                                         << "]/mode' is not a string.");
+          return emptyResult;
+        }
+        executorDetails.mMode = static_cast<std::string>(modeXml);
+      }
+
+      auto &controllerXml = executorDetailsXml["controller"];
+      if (controllerXml.getType() != XmlRpcValue::TypeString) {
+        ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace()
+                                       << "/executors[" << i
+                                       << "]/controller' is not a string.");
+        return emptyResult;
+      }
+      executorDetails.mController = static_cast<std::string>(controllerXml);
+
+    } else {
+      ROS_ERROR_STREAM("Parameter '" << nodeHandle.getNamespace() << "/executors["
+                                     << i << "]' is not a struct.");
+      return emptyResult;
+    }
+
+    output.emplace_back(executorDetails);
+  }
+
+  return output;
+}
+
 } // namespace util
 } // namespace ada

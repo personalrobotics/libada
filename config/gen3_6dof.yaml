@@ -8,22 +8,26 @@ adaConf:
   arm: [base_link, bracelet_link]
   hand_base: end_effector_link
   named_configs: package://libada/resources/g2_6d_named_configs.yaml  
-  arm_controllers:
+  arm_executors:
     enable_controller_switching: true
     mode_controller: joint_mode_controller
+    # Note: type can be TRAJECTOTY / JOINT_COMMAND / TASK_COMMAND / VISUAL_SERVOING
+    # Note: executor mode can be different from controller mode, for example joint command position executor and impedance controller
+    # Note: type TRAJECTORY does not require mode specification
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
-    traj_controllers: ["trajectory_controller"]
-    pos_controllers: ["position_controller"]
-    vel_controllers: ["velocity_controller"]
-    eff_controllers: ["effort_controller"]
+    executors:
+      - {id: bite_acquisition_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
+      - {id: bite_transfer_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: trajectory_controller}
+      - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: EFFORT, mode: controller: effort_controller}
+      - {id: bite_transfer_inside_mouth_executor, type: TASK_COMMAND, mode: EFFORT, controller: effort_controller}
   hand_controllers:
     enable_controller_switching: true
     mode_controller: hand_mode_controller
+    # Note: type can be TRAJECTOTY / JOINT_COMMAND / TASK_COMMAND / VISUAL_SERVOING
+    # Note: executor mode can be different from controller mode, for example joint command position executor and impedance controller
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
-    traj_controllers: ["hand_controller"]
-    pos_controllers: ["hand_position_controller"]
-    vel_controllers: ["hand_velocity_controller"]
-    eff_controllers: ["hand_effort_controller"]
+    executors:
+      - {id: forque_pickup_executor, type: JOINT_COMMAND, mode: POSITION, controller: hand_position_controller}
 
 # Publish all joint states -----------------------------------
 joint_state_controller:

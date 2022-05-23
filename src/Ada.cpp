@@ -254,72 +254,125 @@ Ada::Ada(
           subrobot->setRosJointModeCommandClient(rosJointModeCommandClient);
       }
 
-      // Trajectory executors
-      auto controllerNames = mNode->param<std::vector<std::string>>(
-          ns + "traj_controllers",
-          std::vector<std::string>{isHand ? DEFAULT_HAND_TRAJ_CTRL
-                                          : DEFAULT_ARM_TRAJ_CTRL});
-      for (auto name : controllerNames)
+      std::vector<util::ExecutorDetails> executorsDetails = util::loadExecutorsDetailsFromParameter(
+          *mNode,
+          ns + "/executors");
+
+      if(executorsDetails.size() == 0)
       {
-        auto trajExec
+        std::stringstream message;
+        message << "Unable to load executors details for " << ns;
+        throw std::runtime_error(message.str());
+      }
+
+      for(auto executorDetails: executorsDetails)
+      {
+        if(executorDetails.mType == "TRAJECTORY")
+        {
+          auto trajExec
             = std::make_shared<aikido::control::ros::RosTrajectoryExecutor>(
                 *mNode,
-                name + "/follow_joint_trajectory",
+                executorDetails.mController + "/follow_joint_trajectory",
                 DEFAULT_ROS_TRAJ_INTERP_TIME,
                 DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
                 subrobot->getMetaSkeleton());
-        auto mode = util::modeFromString(
-            mNode->param<std::string>("/" + name + "/mode", "VELOCITY"));
-        subrobot->registerExecutor(trajExec, name, mode);
-      }
-
-      // Position Executors
-      controllerNames = mNode->param<std::vector<std::string>>(
-          ns + "pos_controllers", std::vector<std::string>());
-      for (auto name : controllerNames)
-      {
-        auto posExec
-            = std::make_shared<aikido::control::ros::RosJointPositionExecutor>(
-                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
-        auto mode = util::modeFromString(
-            mNode->param<std::string>("/" + name + "/mode", "POSITION"));
-        subrobot->registerExecutor(posExec, name, mode);
-      }
-
-      // Effort Executors
-      controllerNames = mNode->param<std::vector<std::string>>(
-          ns + "eff_controllers", std::vector<std::string>());
-      for (auto name : controllerNames)
-      {
-        auto effExec
-            = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
-                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
-        auto effJacExec
-            = std::make_shared<aikido::control::JacobianEffortExecutor>(
-                handEnd, effExec);
-        auto mode = util::modeFromString(
-            mNode->param<std::string>("/" + name + "/mode", "EFFORT"));
-        subrobot->registerExecutor(effJacExec, name, mode);
-      }
-
-      // Velocity Executors
-      controllerNames = mNode->param<std::vector<std::string>>(
-          ns + "vel_controllers", std::vector<std::string>());
-      for (auto name : controllerNames)
-      {
-        auto velExec
-            = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
-                *mNode, name, subrobot->getMetaSkeleton()->getDofs());
-        auto jvExec
-            = std::make_shared<aikido::control::JacobianVelocityExecutor>(
-                handEnd, velExec);
-        auto vsExec
-            = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
-                handEnd, jvExec);
-        auto mode = util::modeFromString(
-            mNode->param<std::string>("/" + name + "/mode", "VELOCITY"));
-        subrobot->registerExecutor(vsExec, name, mode);
-        subrobot->registerExecutor(jvExec, name, mode);
+          auto controllerMode = util::modeFromString(
+            mNode->param<std::string>("/" + executorDetails.mController + "/mode", ""));
+          subrobot->registerExecutor(trajExec, executorDetails.mController, controllerMode, executorDetails.mId);
+        }
+        else if(executorDetails.mType == "JOINT_COMMAND")
+        {
+          if(executorDetails.mMode == "POSITION")
+          {
+            auto posExec
+              = std::make_shared<aikido::control::ros::RosJointPositionExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "POSITION"));
+            subrobot->registerExecutor(posExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+            subrobot->registerExecutor(velExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else if(executorDetails.mMode == "EFFORT")
+          {
+            auto effExec
+              = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "EFFORT"));
+            subrobot->registerExecutor(effExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
+        else if(executorDetails.mType == "TASK_COMMAND")
+        {
+          if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto jvExec
+              = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+                  handEnd, velExec);
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+            subrobot->registerExecutor(jvExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else if(executorDetails.mMode == "EFFORT")
+          {
+            auto effExec
+              = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto effJacExec
+              = std::make_shared<aikido::control::JacobianEffortExecutor>(
+                  handEnd, effExec);
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "EFFORT"));
+            subrobot->registerExecutor(effJacExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
+        else if(executorDetails.mType == "VISUAL_SERVOING")
+        {
+          if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  *mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto jvExec
+              = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+                  handEnd, velExec);
+            auto vsExec
+              = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
+                  handEnd, jvExec);
+            auto controllerMode = util::modeFromString(
+              mNode->param<std::string>("/" + executorDetails.mController + "/mode", "VELOCITY"));
+            subrobot->registerExecutor(vsExec, executorDetails.mController, controllerMode, executorDetails.mId);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
       }
     }
   }
@@ -511,13 +564,13 @@ std::future<int> Ada::executeJacobianCommand(
     const Eigen::Vector6d command, const std::chrono::duration<double>& timeout)
 {
   std::shared_ptr<aikido::control::JacobianVelocityExecutor> executor;
-  // Search for last added executor of given type
-  for (int i = mExecutors.size() - 1; i >= 0; i--)
+  // Search for last added executor of given type 
+  for (auto id = mExecutorsInsertionOrder.rbegin(); id != mExecutorsInsertionOrder.rend(); id++)
   {
     executor
         = std::dynamic_pointer_cast<aikido::control::JacobianVelocityExecutor>(
-            mExecutors[i]);
-    if (executor && activateExecutor(i))
+            mExecutors[*id]);
+    if (executor && activateExecutor(*id))
     {
       return executor->execute(command, timeout);
     }
@@ -535,11 +588,11 @@ std::future<int> Ada::executeVisualServoing(
 {
   std::shared_ptr<aikido::control::VisualServoingVelocityExecutor> executor;
   // Search for last added executor of given type
-  for (int i = mExecutors.size() - 1; i >= 0; i--)
+  for (auto id = mExecutorsInsertionOrder.rbegin(); id != mExecutorsInsertionOrder.rend(); id++)
   {
     executor = std::dynamic_pointer_cast<
-        aikido::control::VisualServoingVelocityExecutor>(mExecutors[i]);
-    if (executor && activateExecutor(i))
+        aikido::control::VisualServoingVelocityExecutor>(mExecutors[*id]);
+    if (executor && activateExecutor(*id))
     {
       executor->resetProperties(properties);
       return executor->execute(perception);
