@@ -29,7 +29,7 @@
   <param name="robot_description"
         command="cat $(find ada_description)/robots_urdf/ada.urdf" if="$(eval arg('version') == 2)"/>
   <param name="robot_description"
-        command="cat $(find kortex_description)/robots/gen3_6dof_vision.urdf" if="$(eval arg('version') == 3)"/>
+        command="cat $(find kortex_description)/robots/gen3_6dof_vision_forque.urdf" if="$(eval arg('version') == 3)"/>
 
 
   <group if="$(arg perception)">

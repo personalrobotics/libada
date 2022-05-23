@@ -14,6 +14,7 @@
 #include <aikido/constraint/dart/TSR.hpp>
 #include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
+#include "aikido/control/ros/RosJointModeCommandClient.hpp"
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
@@ -73,7 +74,7 @@ public:
 
 // Default Parameters
 #define DEFAULT_THREAD_CYCLE std::chrono::milliseconds(10)
-#define DEFAULT_ROS_TRAJ_INTERP_TIME 0.1
+#define DEFAULT_ROS_TRAJ_INTERP_TIME 0.04
 #define DEFAULT_ROS_TRAJ_GOAL_TIME_TOL 5.0
 #define DEFAULT_CONF_OBJ_NS "adaConf"
 #define DEFAULT_ARM_TRAJ_CTRL "trajectory_controller"
@@ -95,6 +96,7 @@ public:
   /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(bool simulation,
       aikido::planner::WorldPtr env = aikido::planner::World::create(),
+      std::string name = std::string("ada"),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
       const ::ros::NodeHandle* node = nullptr,
@@ -175,6 +177,8 @@ public:
   /// Opens Ada's hand
   std::future<void> openHand();
 
+  void switchTrajectoryLimits(std::string type);
+
   /// Closes Ada's hand
   std::future<void> closeHand();
 
@@ -186,6 +190,16 @@ public:
 
   /// Get Body Node of End Effector
   dart::dynamics::BodyNodePtr getEndEffectorBodyNode();
+
+  /// Switches between controllers.
+  /// \param[in] startControllers Controllers to start.
+  /// \param[in] stopControllers Controllers to stop.
+  /// Returns true if controllers successfully switched.
+  bool switchControllersHack(const std::string targetMode,
+    const std::string startController,
+    const std::string stopController);
+
+  bool switchControllersModeHack(const std::string targetMode);
 
 private:
   /// Switches between controllers.
@@ -219,7 +233,10 @@ private:
   std::unique_ptr<::ros::NodeHandle> mNode;
 
   // Ros controller service client.
-  std::unique_ptr<::ros::ServiceClient> mControllerServiceClient;
+  std::unique_ptr<::ros::ServiceClient> mRosControllerServiceClient;
+
+  // Ros joint mode command client.
+  std::unique_ptr<aikido::control::ros::RosJointModeCommandClient> mRosJointModeCommandClient; 
 
   // Ros joint state client.
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;

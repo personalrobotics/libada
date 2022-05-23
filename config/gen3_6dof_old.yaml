@@ -2,10 +2,8 @@
 adaConf:
   default_urdf: package://kortex_description/robots/gen3_6dof_vision_forque.urdf
   default_srdf: package://kortex_description/robots/gen3_6dof.srdf
-  default_accel_lim_acquisition: 2.0
-  default_vel_lim_acquisition: 0.7
-  default_accel_lim_transfer: 1.0
-  default_vel_lim_transfer: 0.35
+  default_accel_lim: 2.0
+  default_vel_lim: 0.7
   end_effector: robotiq_arg2f_base_link
   arm: [base_link, bracelet_link]
   hand_base: end_effector_link
@@ -31,7 +29,6 @@ velocity_controller:
   type: pr_ros_controllers/JointGroupVelocityController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  mode_handle: joint_mode
 
 # whole-arm base position controller
 position_controller:
@@ -39,7 +36,6 @@ position_controller:
   type: pr_ros_controllers/JointGroupPositionController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  mode_handle: joint_mode
 
 # whole-arm base effort controller
 effort_controller:
@@ -47,13 +43,6 @@ effort_controller:
   type: pr_ros_controllers/JointGroupEffortController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  mode_handle: joint_mode
-
-gravity_compensation_controller:
-  type: rewd_controllers/GravityCompensationController
-  joints: [joint_1, joint_2, joint_3,
-    joint_4, joint_5, joint_6]
-  is_lazy: NOPE
 
 # whole-arm base trajectory controller
 trajectory_controller:
@@ -92,7 +81,6 @@ trajectory_controller:
 # whole-arm base trajectory controller
 move_until_touch_topic_controller:
   mode: TRAJECTORY
-  is_lazy: NOPE
   type: rewd_controllers/MoveUntilTouchTopicController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
@@ -102,30 +90,29 @@ move_until_touch_topic_controller:
   # forcetorque_tare_name: /fingervision/fingerVisionTaring
   sensor_force_limit: 50
   sensor_torque_limit: 5
-  max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
   control_type: velocity
   constraints:
     stopped_velocity_tolerance: 1.0
     joint_1:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_2:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_3:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_4:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_5:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_6:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
   gains: # Required because we're controlling a velocity interface
     joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
     joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
@@ -133,152 +120,12 @@ move_until_touch_topic_controller:
     joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
     joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
     joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-  mode_handle: joint_mode
-
-# # whole-arm base trajectory controller
-towards_mouth_bite_transfer_controller:
-  mode_handle: joint_mode
-  is_lazy: NOPE   
-  mode: TRAJECTORY
-  type: rewd_controllers/MoveUntilTouchTopicController
-  # Forque Sensor
-  forcetorque_wrench_name: /forque/forqueSensor
-  forcetorque_tare_name: /forque/bias_controller/trigger
-  # FingerVision
-  # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
-  # forcetorque_tare_name: /fingervision/fingerVisionTaring
-  sensor_force_limit: 50
-  sensor_torque_limit: 5
-  max_ft_delay: 100
-  joints: [joint_1, joint_2, joint_3,
-    joint_4, joint_5, joint_6]
-  control_type: impedance
-  constraints:
-    stopped_velocity_tolerance: 1.0
-    joint_1:
-      goal: 0.04
-      trajectory: 5.0
-    joint_2:
-      goal: 0.04
-      trajectory: 5.0
-    joint_3:
-      goal: 0.04
-      trajectory: 5.0
-    joint_4:
-      goal: 0.04
-      trajectory: 5.0
-    joint_5:
-      goal: 0.04
-      trajectory: 5.0
-    joint_6:
-      goal: 0.04
-      trajectory: 5.0
-  gains: # Required because we're controlling an impedance interface
-    joint_1: {k: 34,  d: 9}
-    joint_2: {k: 33,  d: 9}
-    joint_3: {k: 25,  d: 6}
-    joint_4: {k: 25,  d: 6}
-    joint_5: {k: 34,  d: 15}
-    joint_6: {k: 25,  d: 6}
-
-# # whole-arm base trajectory controller
-inside_mouth_bite_transfer_controller:
-  mode_handle: joint_mode
-  is_lazy: OKAY   
-  mode: TRAJECTORY
-  type: rewd_controllers/MoveUntilTouchTopicController
-  # Forque Sensor
-  forcetorque_wrench_name: /forque/forqueSensor
-  forcetorque_tare_name: /forque/bias_controller/trigger
-  # FingerVision
-  # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
-  # forcetorque_tare_name: /fingervision/fingerVisionTaring
-  sensor_force_limit: 50
-  sensor_torque_limit: 5
-  max_ft_delay: 100
-  joints: [joint_1, joint_2, joint_3,
-    joint_4, joint_5, joint_6]
-  control_type: impedance
-  constraints:
-    stopped_velocity_tolerance: 1.0
-    joint_1:
-      goal: 0.04
-      trajectory: 5.0
-    joint_2:
-      goal: 0.04
-      trajectory: 5.0
-    joint_3:
-      goal: 0.04
-      trajectory: 5.0
-    joint_4:
-      goal: 0.04
-      trajectory: 5.0
-    joint_5:
-      goal: 0.04
-      trajectory: 5.0
-    joint_6:
-      goal: 0.04
-      trajectory: 5.0
-  gains: # Required because we're controlling an impedance interface
-    joint_1: {k: 34,  d: 9}
-    joint_2: {k: 33,  d: 9}
-    joint_3: {k: 25,  d: 6}
-    joint_4: {k: 25,  d: 6}
-    joint_5: {k: 34,  d: 15}
-    joint_6: {k: 25,  d: 6}
-
-# # whole-arm base trajectory controller
-# inside_mouth_bite_transfer_controller:
-#   mode_handle: joint_mode   
-#   mode: TRAJECTORY
-#   type: rewd_controllers/MoveUntilTouchTopicController
-#   # Forque Sensor
-#   forcetorque_wrench_name: /forque/forqueSensor
-#   forcetorque_tare_name: /forque/bias_controller/trigger
-#   # FingerVision
-#   # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
-#   # forcetorque_tare_name: /fingervision/fingerVisionTaring
-#   sensor_force_limit: 50
-#   sensor_torque_limit: 5
-#   max_ft_delay: 100
-#   joints: [joint_1, joint_2, joint_3,
-#     joint_4, joint_5, joint_6]
-#   control_type: impedance
-#   constraints:
-#     stopped_velocity_tolerance: 1.0
-#     joint_1:
-#       goal: 0.04
-#       trajectory: 5.0
-#     joint_2:
-#       goal: 0.04
-#       trajectory: 5.0
-#     joint_3:
-#       goal: 0.04
-#       trajectory: 5.0
-#     joint_4:
-#       goal: 0.04
-#       trajectory: 5.0
-#     joint_5:
-#       goal: 0.04
-#       trajectory: 5.0
-#     joint_6:
-#       goal: 0.04
-#       trajectory: 5.0
-#   gains: # Required because we're controlling an impedance interface
-#     joint_1: {k: 25,  d: 0}
-#     joint_2: {k: 25,  d: 0}
-#     joint_3: {k: 25,  d: 0}
-#     joint_4: {k: 25,  d: 0}
-#     joint_5: {k: 25,  d: 0}
-#     joint_6: {k: 25,  d: 0}
-#   mode_handle: joint_mode
 
 # Optional controller that might be useful for testing.
 # Should do the same thing as trajectory_controller, but this is 
 # the lab's rewd_controllers implementation
 rewd_trajectory_controller:
   mode: TRAJECTORY
-  is_lazy: NOPE
   type: rewd_controllers/JointTrajectoryController
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
@@ -286,22 +133,22 @@ rewd_trajectory_controller:
     stopped_velocity_tolerance: 1.0
     joint_1:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
     joint_2:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
     joint_3:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
     joint_4:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
     joint_5:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
     joint_6:
       goal: 0.02
-      trajectory: 12.0
+      trajectory: 10.0
   gains: # Required because we're controlling a velocity interface
     joint_1: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
     joint_2: {p: 0.2,  d: 0, i: 0, i_clamp: 1}

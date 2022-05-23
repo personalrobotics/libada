@@ -67,12 +67,34 @@ inline const dart::common::Uri getDartURI(
   return dart::common::Uri(uri);
 }
 
+inline hardware_interface::JointCommandModes modeFromString(std::string str) {
+  if(str == "BEGIN")
+    return hardware_interface::JointCommandModes::BEGIN;
+  if(str == "POSITION")
+    return hardware_interface::JointCommandModes::MODE_POSITION;
+  if(str == "VELOCITY")
+      return hardware_interface::JointCommandModes::MODE_VELOCITY;
+  if(str == "EFFORT")
+    return hardware_interface::JointCommandModes::MODE_EFFORT;
+  if(str == "NOMODE" || str == "OTHER")
+    return hardware_interface::JointCommandModes::NOMODE;
+  if(str == "EMERGENCY_STOP" || str == "ESTOP")
+    return hardware_interface::JointCommandModes::EMERGENCY_STOP;
+  if(str == "SWITCHING")
+      return hardware_interface::JointCommandModes::SWITCHING;
+  
+  // Else
+  ROS_WARN_STREAM("Setting unknown mode '" << str.c_str() << "' to ERROR.");
+  return hardware_interface::JointCommandModes::ERROR;
+}
+
 } // namespace internal
 
 //==============================================================================
 Ada::Ada(
     bool simulation,
     aikido::planner::WorldPtr env,
+    std::string name,
     const std::string confNamespace,
     const std::chrono::milliseconds threadCycle,
     const ::ros::NodeHandle* node,
@@ -81,7 +103,7 @@ Ada::Ada(
   : aikido::robot::ros::RosRobot(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
-        "ada",
+        name,
         retriever)
   , mSimulation(simulation)
 {
@@ -103,12 +125,12 @@ Ada::Ada(
 
   // Read default soft accleration/velocity limits
   double limit;
-  mNode->param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
+  mNode->param<double>("/" + confNamespace + "/default_accel_lim_acquisition", limit, 0);
   mSoftAccelerationLimits = mDefaultAccelerationLimits
       = (limit != 0)
             ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
             : mMetaSkeleton->getAccelerationUpperLimits();
-  mNode->param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
+  mNode->param<double>("/" + confNamespace + "/default_vel_lim_acquisition", limit, 0);
   mSoftVelocityLimits = mDefaultVelocityLimits
       = (limit != 0)
             ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
@@ -203,10 +225,17 @@ Ada::Ada(
   // Create joint state updates
   if (!mSimulation)
   {
-    // Real Robot, create state client
-    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
+    
+    mRosControllerServiceClient = std::make_unique<::ros::ServiceClient>(
         mNode->serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
+
+    mRosJointModeCommandClient 
+        = std::make_unique<aikido::control::ros::RosJointModeCommandClient>(*mNode,
+            "joint_mode_controller/joint_mode_command",
+            std::vector<std::string>{"joint_mode"});
+
+    // Real Robot, create state client
     mJointStateClient
         = std::make_unique<aikido::control::ros::RosJointStateClient>(
             mMetaSkeleton->getBodyNode(0)->getSkeleton(),
@@ -217,7 +246,7 @@ Ada::Ada(
   else
   {
     // Simulation, create state publisher
-    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
+    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states_1", 5);
   }
 
   // Create Inner AdaHand
@@ -234,6 +263,24 @@ Ada::~Ada()
   mThread->stop();
 }
 
+void Ada::switchTrajectoryLimits(std::string type)
+{
+  double limit;
+  mNode->param<double>("/adaConf/default_accel_lim_"+type, limit, 0);
+  mSoftAccelerationLimits = mDefaultAccelerationLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getAccelerationUpperLimits();
+  mNode->param<double>("/adaConf/default_vel_lim_"+type, limit, 0);
+  mSoftVelocityLimits = mDefaultVelocityLimits
+      = (limit != 0)
+            ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
+            : mMetaSkeleton->getVelocityUpperLimits();
+
+  // Use limits to set default postprocessor
+  setDefaultPostProcessor(
+      mSoftVelocityLimits, mSoftAccelerationLimits, KunzParams());
+}
 //==============================================================================
 void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 {
@@ -371,6 +418,7 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
 //==============================================================================
 bool Ada::startTrajectoryControllers()
 {
+  std::cout<<"Starting controller: "<<mArmTrajControllerName<<std::endl;
   return switchControllers(
       std::vector<std::string>{mArmTrajControllerName, mHandTrajControllerName},
       std::vector<std::string>());
@@ -400,6 +448,71 @@ Eigen::VectorXd Ada::getAccelerationLimits(bool armOnly) const
   return (armOnly) ? mSoftAccelerationLimits.segment(
                          0, mArm->getMetaSkeleton()->getNumDofs())
                    : mSoftAccelerationLimits;
+}
+//==============================================================================
+/// Switches between controllers.
+/// \param[in] startControllers Controllers to start.
+/// \param[in] stopControllers Controllers to stop.
+/// Returns true if controllers successfully switched.
+bool Ada::switchControllersHack(const std::string targetMode,
+    const std::string startController,
+    const std::string stopController)
+{
+  using aikido::control::KinematicSimulationTrajectoryExecutor;
+  using aikido::control::ros::RosTrajectoryExecutor;
+  if (mSimulation)
+  {
+    mArm->setTrajectoryExecutor(
+        std::make_shared<KinematicSimulationTrajectoryExecutor>(
+            mArm->getMetaSkeleton()));
+  }
+  else
+  {
+    mArm->releaseTrajectoryExecutor();
+    std::string serverName = startController + "/follow_joint_trajectory";
+    auto exec = std::make_shared<RosTrajectoryExecutor>(
+        *mNode,
+        serverName,
+        DEFAULT_ROS_TRAJ_INTERP_TIME,
+        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
+        mArm->getMetaSkeleton());
+    mArm->setTrajectoryExecutor(exec);
+  }
+
+  if(!switchControllers(std::vector<std::string>({startController}),std::vector<std::string>({stopController})))
+    throw std::runtime_error("Switching controllers wasn't successful!");
+  else
+    std::cout<<"Successfully switched controller to "<<startController<<std::endl;
+
+  if(targetMode != "")
+  {
+    if(!switchControllersModeHack(targetMode))
+      throw std::runtime_error("Switching controller mode wasn't successful!");
+    else
+      std::cout<<"Successfully switched controller mode to EFFORT Mode"<<std::endl;
+  }
+  return true;
+}
+
+bool Ada::switchControllersModeHack(const std::string targetMode)
+{
+  if (!mRosJointModeCommandClient)
+  {
+    throw std::runtime_error("ROS joint mode controller actionlib client not instantiated.");
+  }
+  
+  // Currently we only send the same control mode to each joint
+  mRosJointModeCommandClient->execute(std::vector<hardware_interface::JointCommandModes>{internal::modeFromString(targetMode)});
+  // try 
+  // {
+  //   std::cout<<"Waiting for future!"<<std::endl;
+  //   future.get();
+  //   std::cout<<"Future is now old man!"<<std::endl;
+  // } catch (const std::exception &e) {
+  //   dtwarn << "Exception in controller mode switching: " << e.what() << std::endl;
+  //   return false;
+  // }
+  return true;
 }
 
 //==============================================================================
@@ -438,7 +551,7 @@ bool Ada::switchControllers(
   if (!mNode)
     throw std::runtime_error("Ros node has not been instantiated.");
 
-  if (!mControllerServiceClient)
+  if (!mRosControllerServiceClient)
     throw std::runtime_error("ServiceClient not instantiated.");
 
   controller_manager_msgs::SwitchController srv;
@@ -447,7 +560,7 @@ bool Ada::switchControllers(
   srv.request.stop_controllers = startControllers;
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::BEST_EFFORT;
-  mControllerServiceClient->call(srv); // Don't care about response code
+  mRosControllerServiceClient->call(srv); // Don't care about response code
 
   // Actual command
   srv.request.start_controllers = startControllers;
@@ -455,7 +568,11 @@ bool Ada::switchControllers(
   srv.request.strictness
       = controller_manager_msgs::SwitchControllerRequest::STRICT;
 
-  return mControllerServiceClient->call(srv) && srv.response.ok;
+  for(int i=0; i<startControllers.size(); i++)
+    std::cout<<"Start controller: "<<startControllers[i]<<std::endl;
+  for(int i=0; i<stopControllers.size(); i++)
+  std::cout<<"Stop controller: "<<stopControllers[i]<<std::endl;
+  return mRosControllerServiceClient->call(srv) && srv.response.ok;
 }
 
 //==============================================================================

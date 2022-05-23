@@ -1,0 +1,36 @@
+<launch>
+
+  <arg name="use_forque" default="false" doc="Add forque to URDF and spawned controllers."/>
+  <arg name="perception" default="false" doc="Boolean flag of whether to set up the perception on ADA" />
+  <!-- Other options: retinanet, spnet, spanet -->
+  <!-- See possible networks in https://github.com/personalrobotics/food_detector/ -->
+  <arg name="detector" default="false" doc="Which network to use for food perception. Set to 'false' for simulation."/>
+  <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
+  <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
+
+  <!-- Gen3 specific arguments required by Kortex API for instantiating a private communication session -->
+  <arg name="ip_address" default="emprise-kortex.coecis.cornell.edu" doc="IP address for TCP/UDP comms"/>
+  <arg name="username" default="admin" doc="Username for kortex session"/>
+  <arg name="password" default="admin" doc="Password for kortex session"/>
+  <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
+  <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
+
+  <!-- Gen2 Hardware Node -->
+  <node name="jaco_hardware"
+          pkg="jaco_hardware"
+          type="jaco_hardware"
+          output="screen"
+          if="$(eval arg('version') == 2)" />
+  
+  <!-- Gen3 Hardware Node -->
+  <node name="kortex_hardware" pkg="kortex_hardware" type="kortex_hardware"
+          output="screen" if="$(eval arg('version') == 3)">
+      <param name="ip_address" value="$(arg ip_address)"/>
+      <param name="username" value="$(arg username)"/>
+      <param name="password" value="$(arg password)"/>
+      <param name="api_session_inactivity_timeout_ms" value="$(arg api_session_inactivity_timeout_ms)"/>
+      <param name="api_connection_inactivity_timeout_ms" value="$(arg api_connection_inactivity_timeout_ms)"/>
+  </node>
+
+</launch>
+
