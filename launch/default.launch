@@ -15,6 +15,7 @@
   <arg name="password" default="admin" doc="Password for kortex session"/>
   <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
   <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
+  <arg name="use_admittance" default="false" doc="Set to true when using Kinova-provided admittance mode"/>
 
   <!-- Gen2 Hardware Node -->
   <node name="jaco_hardware"
@@ -31,6 +32,8 @@
       <param name="password" value="$(arg password)"/>
       <param name="api_session_inactivity_timeout_ms" value="$(arg api_session_inactivity_timeout_ms)"/>
       <param name="api_connection_inactivity_timeout_ms" value="$(arg api_connection_inactivity_timeout_ms)"/>
+      <param name="dof" value="$(arg dof)"/>
+      <param name="use_admittance" value="$(arg use_admittance)"/>
   </node>
 
   <!-- load controller configuration -->
@@ -75,7 +78,7 @@
     <param name="robot_description"
           command="cat $(find ada_description)/robots_urdf/ada.urdf" if="$(eval arg('version') == 2)"/>
     <param name="robot_description"
-          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false dof:=$(arg dof)" if="$(eval arg('version') == 3)"/>
   </group>
 
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
