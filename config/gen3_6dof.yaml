@@ -20,9 +20,9 @@ adaConf:
     # Note: type TRAJECTORY does not require mode specification
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
     executors:
-      - {id: bite_transfer_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: towards_mouth_bite_transfer_controller}
-      # - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: EFFORT, controller: effort_controller}
-      - {id: bite_transfer_inside_mouth_executor, type: TRAJECTORY, mode: EFFORT, controller: inside_mouth_bite_transfer_controller}
+      - {id: bite_transfer_trajectory_executor, type: TRAJECTORY, controller: towards_mouth_bite_transfer_controller}
+      - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: VELOCITY, controller: velocity_controller}
+      - {id: bite_transfer_inside_mouth_executor, type: TRAJECTORY, controller: inside_mouth_bite_transfer_controller}
       - {id: bite_acquisition_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
   hand_executors:
     enable_controller_switching: true
