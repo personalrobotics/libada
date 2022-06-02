@@ -145,16 +145,16 @@ aikido::trajectory::TrajectoryPtr plan_to_configuration(
 {
   auto traj = self->getArm()->planToConfiguration(configuration);
   return traj;
-
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_configuration(
-    ada::Ada* self, const Eigen::VectorXd& configuration,
+    ada::Ada* self,
+    const Eigen::VectorXd& configuration,
     aikido::constraint::TestablePtr& testableConstraint)
 {
-  auto traj = self->getArm()->planToConfiguration(configuration, testableConstraint);
+  auto traj
+      = self->getArm()->planToConfiguration(configuration, testableConstraint);
   return traj;
-
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_offset(
@@ -172,7 +172,8 @@ aikido::trajectory::TrajectoryPtr plan_to_offset(
     const Eigen::Vector3d& offset,
     aikido::constraint::TestablePtr& testableConstraint)
 {
-  auto traj = self->getArm()->planToOffset(bodyNodeName, offset, testableConstraint);
+  auto traj
+      = self->getArm()->planToOffset(bodyNodeName, offset, testableConstraint);
   return traj;
 }
 
@@ -323,12 +324,42 @@ void Ada(pybind11::module& m)
       .def("compute_joint_space_path", compute_joint_space_path)
       .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
       .def("compute_retime_path", compute_retime_path)
-      .def("plan_to_configuration", py::overload_cast<ada::Ada*, const Eigen::VectorXd&>(&plan_to_configuration))
-      .def("plan_to_configuration", py::overload_cast<ada::Ada*, const Eigen::VectorXd&, aikido::constraint::TestablePtr&>(&plan_to_configuration))
-      .def("plan_to_offset", py::overload_cast<ada::Ada*, const std::string, const Eigen::Vector3d&>(&plan_to_offset))
-      .def("plan_to_offset", py::overload_cast<ada::Ada*, const std::string, const Eigen::Vector3d&, aikido::constraint::TestablePtr&>(&plan_to_offset))
-      .def("plan_to_tsr", py::overload_cast<ada::Ada*, const std::string, const aikido::constraint::dart::TSRPtr&>(&plan_to_tsr))
-      .def("plan_to_tsr", py::overload_cast<ada::Ada*, const std::string, const aikido::constraint::dart::TSRPtr&, aikido::constraint::TestablePtr&>(&plan_to_tsr))
+      .def(
+          "plan_to_configuration",
+          py::overload_cast<ada::Ada*, const Eigen::VectorXd&>(
+              &plan_to_configuration))
+      .def(
+          "plan_to_configuration",
+          py::overload_cast<
+              ada::Ada*,
+              const Eigen::VectorXd&,
+              aikido::constraint::TestablePtr&>(&plan_to_configuration))
+      .def(
+          "plan_to_offset",
+          py::overload_cast<
+              ada::Ada*,
+              const std::string,
+              const Eigen::Vector3d&>(&plan_to_offset))
+      .def(
+          "plan_to_offset",
+          py::overload_cast<
+              ada::Ada*,
+              const std::string,
+              const Eigen::Vector3d&,
+              aikido::constraint::TestablePtr&>(&plan_to_offset))
+      .def(
+          "plan_to_tsr",
+          py::overload_cast<
+              ada::Ada*,
+              const std::string,
+              const aikido::constraint::dart::TSRPtr&>(&plan_to_tsr))
+      .def(
+          "plan_to_tsr",
+          py::overload_cast<
+              ada::Ada*,
+              const std::string,
+              const aikido::constraint::dart::TSRPtr&,
+              aikido::constraint::TestablePtr&>(&plan_to_tsr))
       .def("execute_trajectory", execute_trajectory)
       .def("start_viewer", start_viewer);
 
