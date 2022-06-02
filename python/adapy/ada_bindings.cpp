@@ -141,27 +141,30 @@ aikido::trajectory::TrajectoryPtr compute_retime_path(
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_configuration(
-    ada::Ada* self, const Eigen::VectorXd& configuration)
+    ada::Ada* self, const Eigen::VectorXd& configuration,
+    const aikido::constraint::TestablePtr& testableConstraint)
 {
-  auto trajectory = self->getArm()->planToConfiguration(configuration);
+  auto trajectory = self->getArm()->planToConfiguration(configuration, testableConstraint);
   return trajectory;
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_offset(
     ada::Ada* self,
     const std::string bodyNodeName,
-    const Eigen::Vector3d& offset)
+    const Eigen::Vector3d& offset,
+    const aikido::constraint::TestablePtr& testableConstraint)
 {
-  auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset);
+  auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset, testableConstraint);
   return trajectory;
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_tsr(
     ada::Ada* self,
     const std::string bodyNodeName,
-    const aikido::constraint::dart::TSRPtr& tsr)
+    const aikido::constraint::dart::TSRPtr& tsr,
+    const aikido::constraint::TestablePtr& testableConstraint)
 {
-  auto trajectory = self->getArm()->planToTSR(bodyNodeName, tsr);
+  auto trajectory = self->getArm()->planToTSR(bodyNodeName, tsr, testableConstraint);
   return trajectory;
 }
 

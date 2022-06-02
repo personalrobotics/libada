@@ -45,7 +45,7 @@ if not rospy.is_shutdown():
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
-    traj = ada.plan_to_configuration(positions4)
+    traj = ada.plan_to_configuration(positions4, collision)
     traj_rev = ada.compute_joint_space_path(waypoints_rev)
 
     print("")
@@ -58,8 +58,8 @@ if not rospy.is_shutdown():
     offset = [0., 0.1, 0.]
     offset_rev = [0., -0.1, 0.]
     hand_node = rospy.get_param("adaConf/hand_base")
-    traj_off = ada.plan_to_offset(hand_node, offset)
-    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev)
+    traj_off = ada.plan_to_offset(hand_node, offset, collision)
+    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev, collision)
 
     print("")
     print("CONTINUE TO OFFSET")
