@@ -45,7 +45,7 @@ if not rospy.is_shutdown():
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
-    traj = ada.plan_to_configuration(positions4, collision)
+    traj = ada.plan_to_configuration(positions4)
     traj_rev = ada.compute_joint_space_path(waypoints_rev)
 
     print("")
