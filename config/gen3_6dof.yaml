@@ -20,10 +20,9 @@ adaConf:
     # Note: type TRAJECTORY does not require mode specification
     # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
     executors:
-      - {id: bite_transfer_trajectory_executor, type: TRAJECTORY, controller: towards_mouth_bite_transfer_controller}
-      - {id: bite_transfer_visual_servoing_executor, type: VISUAL_SERVOING, mode: VELOCITY, controller: velocity_controller}
-      - {id: bite_transfer_inside_mouth_executor, type: TRAJECTORY, controller: inside_mouth_bite_transfer_controller}
-      - {id: bite_acquisition_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
+      - {id: effort_command_executor, type: JOINT_COMMAND, mode: EFFORT, controller: move_until_touch_topic_joint_group_command_controller}
+      - {id: effort_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: effort_move_until_touch_topic_joint_trajectory_controller}
+      - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: velocity_move_until_touch_topic_joint_trajectory_controller}
   hand_executors:
     enable_controller_switching: true
     mode_controller: hand_mode_controller
@@ -101,11 +100,10 @@ trajectory_controller:
     joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
 
 # whole-arm base trajectory controller
-move_until_touch_topic_controller:
+velocity_move_until_touch_topic_joint_trajectory_controller:
   mode: TRAJECTORY
   controller_mode: VELOCITY
-  is_lazy: NOPE
-  type: rewd_controllers/MoveUntilTouchTopicController
+  type: rewd_controllers/MoveUntilTouchTopicJointTrajectoryController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
   forcetorque_tare_name: /forque/bias_controller/trigger
@@ -146,13 +144,11 @@ move_until_touch_topic_controller:
     joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
     joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
 
-# # whole-arm base trajectory controller
-towards_mouth_bite_transfer_controller:
-  mode_handle: joint_mode
-  is_lazy: NOPE   
+# whole-arm base trajectory controller
+effort_move_until_touch_topic_joint_trajectory_controller:
   mode: TRAJECTORY
   controller_mode: EFFORT
-  type: rewd_controllers/MoveUntilTouchTopicController
+  type: rewd_controllers/MoveUntilTouchTopicJointTrajectoryController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
   forcetorque_tare_name: /forque/bias_controller/trigger
@@ -164,42 +160,40 @@ towards_mouth_bite_transfer_controller:
   max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  control_type: impedance
+  control_type: velocity
   constraints:
     stopped_velocity_tolerance: 1.0
     joint_1:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_2:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_3:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_4:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_5:
-      goal: 0.04
-      trajectory: 5.0
+      goal: 0.02
+      trajectory: 1
     joint_6:
-      goal: 0.04
-      trajectory: 5.0
-  gains: # Required because we're controlling an impedance interface
-    joint_1: {k: 34,  d: 9}
-    joint_2: {k: 33,  d: 9}
-    joint_3: {k: 25,  d: 6}
-    joint_4: {k: 25,  d: 6}
-    joint_5: {k: 34,  d: 15}
-    joint_6: {k: 25,  d: 6}
+      goal: 0.02
+      trajectory: 1
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
 
-# # whole-arm base trajectory controller
-inside_mouth_bite_transfer_controller:
-  mode_handle: joint_mode
-  is_lazy: OKAY   
-  mode: TRAJECTORY
+# whole-arm base trajectory controller
+move_until_touch_topic_joint_group_command_controller:
+  # mode: TRAJECTORY
   controller_mode: EFFORT
-  type: rewd_controllers/MoveUntilTouchTopicController
+  type: rewd_controllers/MoveUntilTouchTopicJointGroupCommandController
   # Forque Sensor
   forcetorque_wrench_name: /forque/forqueSensor
   forcetorque_tare_name: /forque/bias_controller/trigger
@@ -211,34 +205,14 @@ inside_mouth_bite_transfer_controller:
   max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  control_type: impedance
-  constraints:
-    stopped_velocity_tolerance: 1.0
-    joint_1:
-      goal: 0.04
-      trajectory: 5.0
-    joint_2:
-      goal: 0.04
-      trajectory: 5.0
-    joint_3:
-      goal: 0.04
-      trajectory: 5.0
-    joint_4:
-      goal: 0.04
-      trajectory: 5.0
-    joint_5:
-      goal: 0.04
-      trajectory: 5.0
-    joint_6:
-      goal: 0.04
-      trajectory: 5.0
-  gains: # Required because we're controlling an impedance interface
-    joint_1: {k: 34,  d: 9}
-    joint_2: {k: 33,  d: 9}
-    joint_3: {k: 25,  d: 6}
-    joint_4: {k: 25,  d: 6}
-    joint_5: {k: 34,  d: 15}
-    joint_6: {k: 25,  d: 6}
+  control_type: effort_forward
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
 
 # Optional controller that might be useful for testing.
 # Should do the same thing as trajectory_controller, but this is 
