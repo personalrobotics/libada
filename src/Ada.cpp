@@ -599,29 +599,6 @@ std::future<int> Ada::executeJacobianCommand(
       "No JacobianVelocityExecutor registered.");
 }
 
-//==============================================================================
-std::future<int> Ada::executeVisualServoing(
-    std::function<std::shared_ptr<Eigen::Isometry3d>(void)> perception,
-    aikido::control::VisualServoingVelocityExecutor::Properties properties)
-{
-  std::shared_ptr<aikido::control::VisualServoingVelocityExecutor> executor;
-  // Search for last added executor of given type
-  for (auto id = mExecutorsInsertionOrder.rbegin(); id != mExecutorsInsertionOrder.rend(); id++)
-  {
-    executor = std::dynamic_pointer_cast<
-        aikido::control::VisualServoingVelocityExecutor>(mExecutors[*id]);
-    if (executor && activateExecutor(*id))
-    {
-      executor->resetProperties(properties);
-      return executor->execute(perception);
-    }
-  }
-
-  deactivateExecutor();
-  return aikido::control::make_exceptional_future<int>(
-      "No JacobianVelocityExecutor registered.");
-}
-
 void Ada::setTrajectoryLimitsFromParam(std::string type)
 {
   double limit;

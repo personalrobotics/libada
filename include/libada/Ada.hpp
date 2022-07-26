@@ -195,18 +195,6 @@ public:
       const Eigen::Vector6d command,
       const std::chrono::duration<double>& timeout);
 
-  ///
-  /// Convenience: runs velocity-command Visual Servoing
-  /// Will auto-activate a VisualServoingVelocityExecutor.
-  /// future will have exception if one doesn't exist.
-  ///
-  /// \param[in] command SE3, applied to end-effector
-  /// \param[in] timeout Timeout for the command
-  std::future<int> executeVisualServoing(
-      std::function<std::shared_ptr<Eigen::Isometry3d>(void)> perception,
-      aikido::control::VisualServoingVelocityExecutor::Properties properties
-      = aikido::control::VisualServoingVelocityExecutor::Properties());
-
   void setTrajectoryLimitsFromParam(std::string type);
 
 private:

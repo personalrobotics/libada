@@ -23,6 +23,7 @@ adaConf:
       - {id: effort_command_executor, type: JOINT_COMMAND, mode: EFFORT, controller: move_until_touch_topic_joint_group_command_controller}
       - {id: effort_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: effort_move_until_touch_topic_joint_trajectory_controller}
       - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: velocity_move_until_touch_topic_joint_trajectory_controller}
+      - {id: velocity_visual_servoing_executor, type: VISUAL_SERVOING, mode: VELOCITY, controller: velocity_visual_servoing_controller}
   hand_executors:
     enable_controller_switching: true
     mode_controller: hand_mode_controller
@@ -160,7 +161,7 @@ effort_move_until_touch_topic_joint_trajectory_controller:
   max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  control_type: velocity
+  control_type: velocity_effort
   constraints:
     stopped_velocity_tolerance: 1.0
     joint_1:
@@ -182,12 +183,12 @@ effort_move_until_touch_topic_joint_trajectory_controller:
       goal: 0.02
       trajectory: 1
   gains: # Required because we're controlling a velocity interface
-    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
-    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_1: {p: 34,  d: 9, i: 0, i_clamp: 1.0}
+    joint_2: {p: 33,  d: 9, i: 0, i_clamp: 1.0}
+    joint_3: {p: 25,  d: 6, i: 0, i_clamp: 1.0}
+    joint_4: {p: 25,  d: 6, i: 0, i_clamp: 1.0}
+    joint_5: {p: 34,  d: 15, i: 0, i_clamp: 1.0}
+    joint_6: {p: 25,  d: 6, i: 0, i_clamp: 1.0}
 
 # whole-arm base trajectory controller
 move_until_touch_topic_joint_group_command_controller:
@@ -205,7 +206,32 @@ move_until_touch_topic_joint_group_command_controller:
   max_ft_delay: 100
   joints: [joint_1, joint_2, joint_3,
     joint_4, joint_5, joint_6]
-  control_type: effort_forward
+  control_type: forward_effort
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+
+# whole-arm base trajectory controller
+velocity_visual_servoing_controller:
+  # mode: TRAJECTORY
+  controller_mode: EFFORT
+  type: rewd_controllers/MoveUntilTouchTopicJointGroupCommandController
+  # Forque Sensor
+  forcetorque_wrench_name: /forque/forqueSensor
+  forcetorque_tare_name: /forque/bias_controller/trigger
+  # FingerVision
+  # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
+  # forcetorque_tare_name: /fingervision/fingerVisionTaring
+  sensor_force_limit: 50
+  sensor_torque_limit: 5
+  max_ft_delay: 100
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+  control_type: velocity_effort
   gains: # Required because we're controlling a velocity interface
     joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
     joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
