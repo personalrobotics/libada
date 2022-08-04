@@ -90,7 +90,7 @@ if not rospy.is_shutdown():
     while trials < maxTrials:
 
         # plan_to_tsr may require more than one try to find a succesful path
-        traj = ada.plan_to_tsr(rospy.get_param("adaConf/end_effector"), grasp_tsr)
+        traj = ada.plan_to_tsr(rospy.get_param("adaConf/end_effector"), grasp_tsr, ada.get_world_collision_constraint())
         if traj:
             break
         trials += 1

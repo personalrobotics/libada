@@ -141,13 +141,6 @@ aikido::trajectory::TrajectoryPtr compute_retime_path(
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_configuration(
-    ada::Ada* self, const Eigen::VectorXd& configuration)
-{
-  auto traj = self->getArm()->planToConfiguration(configuration);
-  return traj;
-}
-
-aikido::trajectory::TrajectoryPtr plan_to_configuration(
     ada::Ada* self,
     const Eigen::VectorXd& configuration,
     aikido::constraint::TestablePtr& testableConstraint)
@@ -157,13 +150,12 @@ aikido::trajectory::TrajectoryPtr plan_to_configuration(
   return traj;
 }
 
-aikido::trajectory::TrajectoryPtr plan_to_offset(
-    ada::Ada* self,
-    const std::string bodyNodeName,
-    const Eigen::Vector3d& offset)
+aikido::trajectory::TrajectoryPtr plan_to_configuration(
+    ada::Ada* self, const Eigen::VectorXd& configuration)
 {
-  auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset);
-  return trajectory;
+  // Default to self collision constraint
+  auto traj = self->getArm()->planToConfiguration(configuration);
+  return traj;
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_offset(
@@ -177,13 +169,14 @@ aikido::trajectory::TrajectoryPtr plan_to_offset(
   return traj;
 }
 
-aikido::trajectory::TrajectoryPtr plan_to_tsr(
+aikido::trajectory::TrajectoryPtr plan_to_offset(
     ada::Ada* self,
     const std::string bodyNodeName,
-    const aikido::constraint::dart::TSRPtr& tsr)
+    const Eigen::Vector3d& offset)
 {
-  auto traj = self->getArm()->planToTSR(bodyNodeName, tsr);
-  return traj;
+  // Default to self collision constraint
+  auto trajectory = self->getArm()->planToOffset(bodyNodeName, offset);
+  return trajectory;
 }
 
 aikido::trajectory::TrajectoryPtr plan_to_tsr(
@@ -195,6 +188,17 @@ aikido::trajectory::TrajectoryPtr plan_to_tsr(
   auto traj = self->getArm()->planToTSR(bodyNodeName, tsr, testableConstraint);
   return traj;
 }
+
+aikido::trajectory::TrajectoryPtr plan_to_tsr(
+    ada::Ada* self,
+    const std::string bodyNodeName,
+    const aikido::constraint::dart::TSRPtr& tsr)
+{
+  // Default to self collision constraint
+  auto traj = self->getArm()->planToTSR(bodyNodeName, tsr);
+  return traj;
+}
+
 
 void execute_trajectory(
     ada::Ada* self, const aikido::trajectory::TrajectoryPtr& trajectory)
@@ -324,6 +328,10 @@ void Ada(pybind11::module& m)
       .def("compute_joint_space_path", compute_joint_space_path)
       .def("compute_smooth_joint_space_path", compute_smooth_joint_space_path)
       .def("compute_retime_path", compute_retime_path)
+      .def("execute_trajectory", execute_trajectory)
+      .def("start_viewer", start_viewer);
+      
+      // overload plan_to_ methods to make collision constraint optional
       .def(
           "plan_to_configuration",
           py::overload_cast<ada::Ada*, const Eigen::VectorXd&>(
@@ -360,8 +368,6 @@ void Ada(pybind11::module& m)
               const std::string,
               const aikido::constraint::dart::TSRPtr&,
               aikido::constraint::TestablePtr&>(&plan_to_tsr))
-      .def("execute_trajectory", execute_trajectory)
-      .def("start_viewer", start_viewer);
 
   py::class_<ada::Ada::AdaHand, std::shared_ptr<ada::Ada::AdaHand>>(
       m, "AdaHand")
