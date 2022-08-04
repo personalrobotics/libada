@@ -24,8 +24,11 @@ if not rospy.is_shutdown():
     viewer = ada.start_viewer("dart_markers/tsr_example", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [0.2, 0.2, 0., 0, 0, 0, 1]
+    tableURDFUri = "package://pr_assets/data/furniture/uw_demo_table.urdf"
+    tablePose = [0.8, 0.0, 0.0, 0.707107, 0, 0, 0.707107]
     world = ada.get_world()
     can = world.add_body_from_urdf(canURDFUri, sodaCanPose)
+    table = world.add_body_from_urdf(tableURDFUri, tablePose)
 
     collision = ada.get_self_collision_constraint()
 
@@ -82,7 +85,7 @@ if not rospy.is_shutdown():
     print("Tw_e", grasp_tsr.get_Tw_e())
 
     print("")
-    print("PLAN TO TSR")
+    print("PLAN TO TSR with COLLISION")
     print("")
     pdb.set_trace()
  
@@ -94,6 +97,23 @@ if not rospy.is_shutdown():
         if traj:
             break
         trials += 1
+
+    if not traj:
+        print("Did not find collision free path!")
+
+        print("")
+        print("PLAN TO TSR without COLLISION")
+        print("")
+        pdb.set_trace()
+     
+        trials, maxTrials = 0, 10
+        while trials < maxTrials:
+
+            # plan_to_tsr may require more than one try to find a succesful path
+            traj = ada.plan_to_tsr(rospy.get_param("adaConf/end_effector"), grasp_tsr)
+            if traj:
+                break
+            trials += 1
 
     print("")
     print("CONTINUE TO EXECUTE")

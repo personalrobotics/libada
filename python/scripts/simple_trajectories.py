@@ -24,7 +24,7 @@ if not rospy.is_shutdown():
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [1.0, 0.0, 0.73, 0, 0, 0, 1]
     tableURDFUri = "package://pr_assets/data/furniture/uw_demo_table.urdf"
-    tablePose = [1., 0.0, 0.0, 0.707107, 0, 0, 0.707107]
+    tablePose = [0.85, 0.0, 0.0, 0.707107, 0, 0, 0.707107]
     world = ada.get_world()
     can = world.add_body_from_urdf(canURDFUri, sodaCanPose)
     table = world.add_body_from_urdf(tableURDFUri, tablePose)
@@ -41,11 +41,20 @@ if not rospy.is_shutdown():
     positions3[0] += 1.5
     positions3[2] += 0.4
     positions4[1] -= 0.4
-    positions4[2] += 0.6
+    positions4[2] += 1.4
 
     waypoints = [(0.0, positions), (1.0, positions2), (2.0, positions3), (3.0, positions4)]
     waypoints_rev = [(0.0, positions4), (1.0, positions3), (2.0, positions2), (3.0, positions)]
-    traj = ada.plan_to_configuration(positions4, ada.get_world_collision_constraint())
+    
+    print("")
+    print("CONTINUE TO CONFIGURATION")
+    print("")
+    traj = ada.plan_to_configuration(positions4, collision)
+    if not traj:
+        print("")
+        print("Did not find collision free path!")
+        traj = ada.plan_to_configuration(positions4)
+
     traj_rev = ada.compute_joint_space_path(waypoints_rev)
 
     print("")
@@ -58,8 +67,8 @@ if not rospy.is_shutdown():
     offset = [0., 0.1, 0.]
     offset_rev = [0., -0.1, 0.]
     hand_node = rospy.get_param("adaConf/hand_base")
-    traj_off = ada.plan_to_offset(hand_node, offset, ada.get_world_collision_constraint())
-    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev, ada.get_world_collision_constraint())
+    traj_off = ada.plan_to_offset(hand_node, offset, collision)
+    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev, collision)
 
     print("")
     print("CONTINUE TO OFFSET")
