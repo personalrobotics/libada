@@ -216,7 +216,7 @@ private:
   Eigen::VectorXd mDefaultAccelerationLimits;
 
   // Ros node associated with this robot.
-  std::unique_ptr<::ros::NodeHandle> mNode;
+  ::ros::NodeHandle mNode;
 
   // Ros controller service client.
   std::unique_ptr<::ros::ServiceClient> mControllerServiceClient;
