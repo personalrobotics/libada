@@ -92,23 +92,19 @@ Ada::Ada(
   setRNG(std::make_unique<aikido::common::RNGWrapper<std::mt19937>>(rngSeed));
 
   // Set up ROS Node
-  if (!node)
+  if (node)
   {
-    mNode = std::make_unique<::ros::NodeHandle>();
-  }
-  else
-  {
-    mNode = std::make_unique<::ros::NodeHandle>(*node);
+    mNode = ::ros::NodeHandle(*node);
   }
 
   // Read default soft accleration/velocity limits
   double limit;
-  mNode->param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
+  mNode.param<double>("/" + confNamespace + "/default_accel_lim", limit, 0);
   mSoftAccelerationLimits = mDefaultAccelerationLimits
       = (limit != 0)
             ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
             : mMetaSkeleton->getAccelerationUpperLimits();
-  mNode->param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
+  mNode.param<double>("/" + confNamespace + "/default_vel_lim", limit, 0);
   mSoftVelocityLimits = mDefaultVelocityLimits
       = (limit != 0)
             ? Eigen::VectorXd::Constant(mMetaSkeleton->getNumDofs(), limit)
@@ -116,7 +112,7 @@ Ada::Ada(
 
   // Create sub-robot (arm)
   std::vector<std::string> armNodes;
-  mNode->getParam("/" + confNamespace + "/arm", armNodes);
+  mNode.getParam("/" + confNamespace + "/arm", armNodes);
   if (armNodes.size() < 2)
   {
     std::stringstream message;
@@ -134,13 +130,13 @@ Ada::Ada(
 
   // Register initial End Effector Node
   std::string endEffector;
-  mNode->param<std::string>(
+  mNode.param<std::string>(
       "/" + confNamespace + "/end_effector", mEndEffectorName, DEFAULT_EE_NAME);
   auto handEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, mEndEffectorName);
 
   // Create sub-robot (hand)
   std::string handBaseName;
-  if (!mNode->getParam("/" + confNamespace + "/hand_base", handBaseName))
+  if (!mNode.getParam("/" + confNamespace + "/hand_base", handBaseName))
   {
     std::stringstream message;
     message << "Configuration [/" << confNamespace
@@ -162,7 +158,7 @@ Ada::Ada(
   setTrajectoryExecutor(nullptr);
 
   // Load Arm Trajectory controller name
-  mNode->param<std::string>(
+  mNode.param<std::string>(
       "/" + confNamespace + "/arm_controller",
       mArmTrajControllerName,
       DEFAULT_ARM_TRAJ_CTRL);
@@ -170,7 +166,7 @@ Ada::Ada(
   createTrajectoryExecutor(false);
 
   // Load Hand Trajectory controller name
-  mNode->param<std::string>(
+  mNode.param<std::string>(
       "/" + confNamespace + "/hand_controller",
       mHandTrajControllerName,
       DEFAULT_HAND_TRAJ_CTRL);
@@ -180,7 +176,7 @@ Ada::Ada(
 
   // Load the named configurations if available
   std::string nameConfigs;
-  if (mNode->getParam("/" + confNamespace + "/named_configs", nameConfigs))
+  if (mNode.getParam("/" + confNamespace + "/named_configs", nameConfigs))
   {
     auto rootNode = aikido::io::loadYAML(nameConfigs, retriever);
     if (rootNode["hand"])
@@ -205,19 +201,19 @@ Ada::Ada(
   {
     // Real Robot, create state client
     mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
-        mNode->serviceClient<controller_manager_msgs::SwitchController>(
+        mNode.serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
     mJointStateClient
         = std::make_unique<aikido::control::ros::RosJointStateClient>(
             mMetaSkeleton->getBodyNode(0)->getSkeleton(),
-            *mNode,
+            mNode,
             "/joint_states",
             1);
   }
   else
   {
     // Simulation, create state publisher
-    mPub = mNode->advertise<sensor_msgs::JointState>("joint_states", 5);
+    mPub = mNode.advertise<sensor_msgs::JointState>("joint_states", 5);
   }
 
   // Create Inner AdaHand
@@ -421,7 +417,7 @@ void Ada::createTrajectoryExecutor(bool isHand)
   {
     std::string serverName = controller + "/follow_joint_trajectory";
     auto exec = std::make_shared<RosTrajectoryExecutor>(
-        *mNode,
+        mNode,
         serverName,
         DEFAULT_ROS_TRAJ_INTERP_TIME,
         DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
@@ -435,8 +431,8 @@ bool Ada::switchControllers(
     const std::vector<std::string>& startControllers,
     const std::vector<std::string>& stopControllers)
 {
-  if (!mNode)
-    throw std::runtime_error("Ros node has not been instantiated.");
+  if (!mNode.ok())
+    throw std::runtime_error("Ros is not active.");
 
   if (!mControllerServiceClient)
     throw std::runtime_error("ServiceClient not instantiated.");
