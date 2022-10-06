@@ -23,8 +23,10 @@ if not rospy.is_shutdown():
     viewer = ada.start_viewer("dart_markers/simple_trajectories", "map")
     canURDFUri = "package://pr_assets/data/objects/can.urdf"
     sodaCanPose = [1.0, 0.0, 0.73, 0, 0, 0, 1]
-    tableURDFUri = "package://pr_assets/data/furniture/uw_demo_table.urdf"
-    tablePose = [0.85, 0.0, 0.0, 0.707107, 0, 0, 0.707107]
+    tableURDFUri = "package://pr_assets/data/objects/large_white_box.urdf"
+    tablePose = [0.45, -0.15, 0.55, 0.707107, 0, 0, 0.707107]
+    # tableURDFUri = "package://pr_assets/data/furniture/uw_demo_table.urdf"
+    # tablePose = [0.73, 0.73, 0., 0.707107, 0, 0, 0.707107]
     world = ada.get_world()
     can = world.add_body_from_urdf(canURDFUri, sodaCanPose)
     table = world.add_body_from_urdf(tableURDFUri, tablePose)
@@ -40,6 +42,7 @@ if not rospy.is_shutdown():
     positions2[2] += 0.2
     positions3[0] += 1.5
     positions3[2] += 0.4
+    positions4[0] += 0.8
     positions4[1] -= 0.4
     positions4[2] += 1.4
 

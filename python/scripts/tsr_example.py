@@ -88,7 +88,7 @@ if not rospy.is_shutdown():
     print("PLAN TO TSR with COLLISION")
     print("")
     pdb.set_trace()
- 
+     
     trials, maxTrials = 0, 10
     while trials < maxTrials:
 
@@ -98,29 +98,13 @@ if not rospy.is_shutdown():
             break
         trials += 1
 
-    if not traj:
-        print("Did not find collision free path!")
-
+    if traj:
+        ada.execute_trajectory(traj)
+    else:
         print("")
-        print("PLAN TO TSR without COLLISION")
+        print("DID NOT FIND A COLLISION-FREE PATH!")
         print("")
-        pdb.set_trace()
-     
-        trials, maxTrials = 0, 10
-        while trials < maxTrials:
 
-            # plan_to_tsr may require more than one try to find a succesful path
-            traj = ada.plan_to_tsr(rospy.get_param("adaConf/end_effector"), grasp_tsr)
-            if traj:
-                break
-            trials += 1
-
-    print("")
-    print("CONTINUE TO EXECUTE")
-    print("")
-    pdb.set_trace()
-
-    ada.execute_trajectory(traj)
 
     print("")
     print("DONE! CONTINUE TO EXIT")
