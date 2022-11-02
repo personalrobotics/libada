@@ -123,6 +123,7 @@ Ada::Ada(
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
   mArm = registerSubRobot(arm, "adaArm");
+  mArm->clearExecutors();
   if (!mArm)
   {
     throw std::runtime_error("Could not create arm");
@@ -147,6 +148,7 @@ Ada::Ada(
   auto hand = dart::dynamics::Branch::create(
       dart::dynamics::Branch::Criteria(handBase), "adaHand");
   mHandRobot = registerSubRobot(hand, "adaHand");
+  mHandRobot->clearExecutors();
   if (!mHandRobot)
   {
     throw std::runtime_error("Could not create hand");
@@ -155,7 +157,7 @@ Ada::Ada(
   // Create Trajectory Executors
   // Should not execute trajectories on whole arm by default
   // This ensures that trajectories are executed on subrobots only.
-  setTrajectoryExecutor(nullptr);
+  clearExecutors();
 
   // Load Arm Trajectory controller name
   mNode.param<std::string>(
@@ -375,7 +377,7 @@ bool Ada::startTrajectoryControllers()
 //==============================================================================
 bool Ada::stopTrajectoryControllers()
 {
-  cancelAllTrajectories();
+  cancelAllCommands();
   return switchControllers(
       std::vector<std::string>(),
       std::vector<std::string>{mArmTrajControllerName,
@@ -409,9 +411,10 @@ void Ada::createTrajectoryExecutor(bool isHand)
 
   if (mSimulation)
   {
-    subrobot->setTrajectoryExecutor(
+    auto id = subrobot->registerExecutor(
         std::make_shared<KinematicSimulationTrajectoryExecutor>(
             subrobot->getMetaSkeleton()));
+    subrobot->activateExecutor(id);
   }
   else
   {
@@ -422,7 +425,8 @@ void Ada::createTrajectoryExecutor(bool isHand)
         DEFAULT_ROS_TRAJ_INTERP_TIME,
         DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
         subrobot->getMetaSkeleton());
-    subrobot->setTrajectoryExecutor(exec);
+    auto id = subrobot->registerExecutor(exec);
+    subrobot->activateExecutor(id);
   }
 }
 
