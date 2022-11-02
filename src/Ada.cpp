@@ -82,9 +82,13 @@ Ada::Ada(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
         "ada",
+        false,
         retriever)
   , mSimulation(simulation)
 {
+
+  // Clear Default Executors (should be redundant)
+  clearExecutors();
 
   // Metaskeleton loaded by RosRobot Constructor
   // Set up other args
@@ -157,7 +161,6 @@ Ada::Ada(
   // Create Trajectory Executors
   // Should not execute trajectories on whole arm by default
   // This ensures that trajectories are executed on subrobots only.
-  clearExecutors();
 
   // Load Arm Trajectory controller name
   mNode.param<std::string>(
@@ -414,7 +417,8 @@ void Ada::createTrajectoryExecutor(bool isHand)
     auto id = subrobot->registerExecutor(
         std::make_shared<KinematicSimulationTrajectoryExecutor>(
             subrobot->getMetaSkeleton()));
-    subrobot->activateExecutor(id);
+    if (!subrobot->activateExecutor(id))
+      throw std::runtime_error("Could not activate arm executor");
   }
   else
   {
@@ -426,7 +430,8 @@ void Ada::createTrajectoryExecutor(bool isHand)
         DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
         subrobot->getMetaSkeleton());
     auto id = subrobot->registerExecutor(exec);
-    subrobot->activateExecutor(id);
+    if (!subrobot->activateExecutor(id))
+      throw std::runtime_error("Could not activate arm executor");
   }
 }
 
