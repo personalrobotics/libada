@@ -60,8 +60,7 @@ if not rospy.is_shutdown():
     print("CLOSING HAND")
     print("")
     pdb.set_trace()
-    PRESHAPE = [1.1, 1.1]
-    ada.get_hand().execute_preshape(PRESHAPE)
+    ada.get_hand().close()
 
     print("")
     print("CONTINUE TO OFFSET")
