@@ -243,6 +243,8 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 
   Robot::step(timepoint);
 
+  static bool firstRun = true;
+
   if (!mSimulation && mJointStateClient)
   {
     // Spin joint state client
@@ -256,10 +258,19 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
     {
       mMetaSkeleton->setPositions(
           mJointStateClient->getLatestPosition(*mMetaSkeleton));
+      if (firstRun)
+      {
+        dtinfo << "Live joints successfully read into MetaSkeleton"
+               << std::endl;
+        firstRun = false;
+      }
     }
     catch (const std::exception& e)
     {
-      dtwarn << "Issue reading joints: " << e.what() << std::endl;
+      if (!firstRun)
+      {
+        dtwarn << "Issue reading joints: " << e.what() << std::endl;
+      }
     }
   }
   else
