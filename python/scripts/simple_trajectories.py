@@ -55,31 +55,35 @@ if not rospy.is_shutdown():
 
     ada.execute_trajectory(traj)
 
-    offset = [0., 0.1, 0.]
-    offset_rev = [0., -0.1, 0.]
-    hand_node = rospy.get_param("adaConf/hand_base")
-    traj_off = ada.plan_to_offset(hand_node, offset)
-    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev)
+    # close hand to grasp object
+    print("")
+    print("CLOSING HAND")
+    print("")
+    pdb.set_trace()
+    ada.get_hand().close()
 
     print("")
     print("CONTINUE TO OFFSET")
     print("")
     pdb.set_trace()
 
+    offset = [0., 0., -0.05]
+    hand_node = rospy.get_param("adaConf/hand_base")
+    traj_off = ada.plan_to_offset(hand_node, offset)
     if traj_off:
         # move to grasp position
         ada.execute_trajectory(traj_off)
 
-        # close hand to grasp object
-        PRESHAPE = [1.1, 1.1]
-        ada.get_hand().execute_preshape(PRESHAPE)
-        print("")
-        print("CLOSING HAND")
-        print("")
-        
-        if traj_off_rev:
-            # return to offset position
-            ada.execute_trajectory(traj_off_rev)
+    print("")
+    print("CONTINUE TO REVERSE OFFSET")
+    print("")
+    pdb.set_trace()
+
+    offset_rev = [-x for x in offset]
+    traj_off_rev = ada.plan_to_offset(hand_node, offset_rev)
+    if traj_off_rev:
+        # return to offset position
+        ada.execute_trajectory(traj_off_rev)
 
     print("")
     print("CONTINUE TO EXECUTE REVERSE")
@@ -88,10 +92,10 @@ if not rospy.is_shutdown():
 
     ada.execute_trajectory(traj_rev)
     
-    ada.get_hand().open()
     print("")
     print("OPENING HAND")
     print("")
+    ada.get_hand().open()    
 
     print("")
     print("DONE! CONTINUE TO EXIT")

@@ -1,7 +1,7 @@
 # Arm configuration parameters
 adaConf:
-  default_urdf: package://ada_description/robots_urdf/ada_with_camera_forque.urdf
-  default_srdf: package://ada_description/robots_urdf/ada_with_camera_forque.srdf
+  default_urdf: package://ada_description/robots_urdf/ada.urdf
+  default_srdf: package://ada_description/robots_urdf/ada.srdf
   default_accel_lim: 2.0
   default_vel_lim: 0.7
   end_effector: j2n6s200_end_effector

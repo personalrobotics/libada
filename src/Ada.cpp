@@ -82,9 +82,13 @@ Ada::Ada(
         internal::getDartURI(confNamespace, "default_urdf", DEFAULT_URDF),
         internal::getDartURI(confNamespace, "default_srdf", DEFAULT_SRDF),
         "ada",
+        false,
         retriever)
   , mSimulation(simulation)
 {
+
+  // Clear Default Executors (should be redundant)
+  clearExecutors();
 
   // Metaskeleton loaded by RosRobot Constructor
   // Set up other args
@@ -123,6 +127,7 @@ Ada::Ada(
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
   mArm = registerSubRobot(arm, "adaArm");
+  mArm->clearExecutors();
   if (!mArm)
   {
     throw std::runtime_error("Could not create arm");
@@ -147,6 +152,7 @@ Ada::Ada(
   auto hand = dart::dynamics::Branch::create(
       dart::dynamics::Branch::Criteria(handBase), "adaHand");
   mHandRobot = registerSubRobot(hand, "adaHand");
+  mHandRobot->clearExecutors();
   if (!mHandRobot)
   {
     throw std::runtime_error("Could not create hand");
@@ -155,7 +161,6 @@ Ada::Ada(
   // Create Trajectory Executors
   // Should not execute trajectories on whole arm by default
   // This ensures that trajectories are executed on subrobots only.
-  setTrajectoryExecutor(nullptr);
 
   // Load Arm Trajectory controller name
   mNode.param<std::string>(
@@ -238,6 +243,8 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 
   Robot::step(timepoint);
 
+  static bool firstRun = true;
+
   if (!mSimulation && mJointStateClient)
   {
     // Spin joint state client
@@ -251,10 +258,19 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
     {
       mMetaSkeleton->setPositions(
           mJointStateClient->getLatestPosition(*mMetaSkeleton));
+      if (firstRun)
+      {
+        dtinfo << "Live joints successfully read into MetaSkeleton"
+               << std::endl;
+        firstRun = false;
+      }
     }
     catch (const std::exception& e)
     {
-      dtwarn << "Issue reading joints: " << e.what() << std::endl;
+      if (!firstRun)
+      {
+        dtwarn << "Issue reading joints: " << e.what() << std::endl;
+      }
     }
   }
   else
@@ -375,7 +391,7 @@ bool Ada::startTrajectoryControllers()
 //==============================================================================
 bool Ada::stopTrajectoryControllers()
 {
-  cancelAllTrajectories();
+  cancelAllCommands();
   return switchControllers(
       std::vector<std::string>(),
       std::vector<std::string>{mArmTrajControllerName,
@@ -409,9 +425,11 @@ void Ada::createTrajectoryExecutor(bool isHand)
 
   if (mSimulation)
   {
-    subrobot->setTrajectoryExecutor(
+    auto id = subrobot->registerExecutor(
         std::make_shared<KinematicSimulationTrajectoryExecutor>(
             subrobot->getMetaSkeleton()));
+    if (!subrobot->activateExecutor(id))
+      throw std::runtime_error("Could not activate arm executor");
   }
   else
   {
@@ -422,7 +440,9 @@ void Ada::createTrajectoryExecutor(bool isHand)
         DEFAULT_ROS_TRAJ_INTERP_TIME,
         DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
         subrobot->getMetaSkeleton());
-    subrobot->setTrajectoryExecutor(exec);
+    auto id = subrobot->registerExecutor(exec);
+    if (!subrobot->activateExecutor(id))
+      throw std::runtime_error("Could not activate arm executor");
   }
 }
 
