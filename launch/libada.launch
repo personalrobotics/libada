@@ -1,138 +1,27 @@
 <launch>
 
-  <!-- Gneral Config -->
+  <!-- General Config -->
   <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
   <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
   <arg name="sim" default="false" doc="Whether to run in Aikido-sim only" />
 
   <!-- Hardware Include -->
   <group unless="$(arg sim)">
-    <include file="$(find libada)/config/gen$(arg version)_hardware.launch" pass_all_args="true" />
+    <include file="$(find libada)/launch/gen$(arg version)_hardware.launch" pass_all_args="true" />
   </group>
-
-
-
-  <arg name="use_forque" default="false" doc="Add forque to URDF and spawned controllers."/>
-  <arg name="use_apriltag_calib" default="false" doc="Whether to compute the camera tranform in real-time using AprilTags (as opposed to using a static transform)."/>
-
-
-  <!-- Gen3 specific arguments required by Kortex API for instantiating a private communication session -->
-  <arg name="ip_address" default="emprise-kortex.coecis.cornell.edu" doc="IP address for TCP/UDP comms"/>
-  <arg name="username" default="admin" doc="Username for kortex session"/>
-  <arg name="password" default="admin" doc="Password for kortex session"/>
-  <arg name="api_session_inactivity_timeout_ms" default="35000"/> <!--milliseconds-->
-  <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
-
-  <!-- Gen2 Hardware Node -->
-  <node name="jaco_hardware"
-          pkg="jaco_hardware"
-          type="jaco_hardware"
-          output="screen"
-          if="$(eval arg('version') == 2)" />
-  
-  <!-- Gen3 Hardware Node -->
-  <node name="kortex_hardware" pkg="kortex_hardware" type="kortex_hardware"
-          output="screen" if="$(eval arg('version') == 3)">
-      <param name="ip_address" value="$(arg ip_address)"/>
-      <param name="username" value="$(arg username)"/>
-      <param name="password" value="$(arg password)"/>
-      <param name="api_session_inactivity_timeout_ms" value="$(arg api_session_inactivity_timeout_ms)"/>
-      <param name="api_connection_inactivity_timeout_ms" value="$(arg api_connection_inactivity_timeout_ms)"/>
-  </node>
-
-  <!-- load controller configuration -->
-  <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof.yaml" command="load" />
-
-  <!-- start joint state and mode controllers -->
-  <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen"
-      args="
-        joint_state_controller
-        joint_mode_controller
-      " />
-
-  <!-- Gen2 Controllers -->
-  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" if="$(eval arg('version') == 2)"
-      args="
-        --stopped
-        position_controller
-        velocity_controller
-        effort_controller
-        trajectory_controller
-        hand_controller
-        " />
-
-  <!-- Gen3 Controllers -->
-  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" if="$(eval arg('version') == 3)"
-      args="
-        --stopped
-        velocity_controller
-        trajectory_controller
-        hand_controller
-        " />
 
   <!-- TODO: Initialize controllers directly via Aikido -->
 
+  <!-- Construct URDF -->
+  <include file="$(find libada)/launch/gen$(arg version)_urdf.launch" pass_all_args="true" />
 
-  <!-- Load Base URDF Files -->
-  <group unless="$(arg use_forque)">
-    <!-- load ada urdf -->
-    <param name="robot_description"
-          command="cat $(find ada_description)/robots_urdf/ada.urdf" if="$(eval arg('version') == 2)"/>
-    <param name="robot_description"
-          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
-  </group>
+  <!-- Default Configuration Params -->
+  <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof_config.yaml" command="load" ns="adaConf" />
 
+  <!-- TF Setup -->
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
-
   <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
     args="0 0 0 0 0 0 1 map world 10"/>
-
-  <!-- Initialize F/T Sensor -->
-  <group if="$(arg use_forque)">
-    <group if="$(eval arg('version') == 2)">
-      <!-- load ada urdf -->
-      <param name="robot_description"
-            command="cat $(find ada_description)/robots_urdf/ada_with_camera_forque.urdf"/>
-
-      <!-- Configure the transform from the robot to the camera -->
-      <group if="$(arg use_apriltag_calib)">    
-        <!-- This transform specifies where the center of the tag is relative to the robot. The rotation should be such that looking straight at the tag (oriented correctly), x is right, y is up and z is towards you (out of the tag).Ensure the child frame here matches the param camera_calibration_tag/tag_to_camera_default_transform/parent_frame -->
-        <node name="st_robot2tag" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-              args="0.014 0 0.035 0.5 0.5 0.5 0.5 j2n6s200_forque calibration_tag 10"/>
-
-        <node name="camera_calibration_tag" pkg="libada" type="camera_calibration_tag.py" respawn="false" output="screen"/>
-
-        <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector" ns="camera_calibration_tag" output="screen">
-          <remap from="image_rect" to="/camera/color/image_raw"/>
-          <remap from="camera_info" to="/camera/color/camera_info"/>
-        </node>
-      </group>  
-      <group unless="$(arg use_apriltag_calib)">
-        <!-- If we are not using real-time-calibration, use a static transform -->
-        <node name="st_robot2camera" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
-              args="0.0804 0.0191 0.1372 0.0312 0.8066 0.0124 0.5901 j2n6s200_forque camera_link 10"/>
-      </group>
-    </group>
-    <param name="robot_description"
-          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
-    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-          output="screen"
-          args="
-             --stopped
-             move_until_touch_topic_controller
-             " />
-  </group>
-
-  <group if="$(arg perception)">
-    <!-- start sim/real perception node-->
-    <node pkg="food_detector" type="run_perception_module.py" name="food_detector"
-          args="--demo-type $(arg detector)" output="screen" cwd="node" unless="$(eval arg('detector') == 'false' )"/>
-    <node pkg="food_detector" type="run_sim_food_detector.py" name="food_detector"
-          output="screen" cwd="node" if="$(eval arg('detector') == 'false' )"/>
-  </group>
 
 </launch>
 

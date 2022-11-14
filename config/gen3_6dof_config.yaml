@@ -1,0 +1,11 @@
+# Gen3 ADA configuration parameters
+default_urdf: package://kortex_description/robots/gen3_6dof_vision.urdf
+default_srdf: package://kortex_description/robots/gen3_6dof.srdf
+default_accel_lim: 2.0
+default_vel_lim: 0.7
+end_effector: robotiq_arg2f_base_link
+arm: [base_link, bracelet_link]
+hand_base: end_effector_link
+arm_controller: trajectory_controller
+hand_controller: hand_controller
+named_configs: package://libada/resources/g2_6d_named_configs.yaml  
