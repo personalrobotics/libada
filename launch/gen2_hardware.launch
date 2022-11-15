@@ -3,7 +3,7 @@
   <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
   <arg name="watchdog_topic" default="/watchdog" doc="Topic where watchdog messages are published." />
   <arg name="run_grav_calib" default="false" doc="Run Gravcomp Calibration." />
-  <arg name="grav_comp_file" default="$(find jaco_hardware)/calib/GravComParams_Empty.txt" doc="Where to read or write gravcomp parameters" />
+  <arg name="grav_comp_file" default="calib/GravComParams_Empty.txt" doc="Where to read or write gravcomp parameters" />
   <arg name="grav_comp" default="true" doc="Whether to enable gravity compensation for torque control and e-stop." />
   <arg name="run_grav_comp" default="false" doc="If true, will start the robot in gravcomp mode." />
   <arg name="control_rate" default="100.0" doc="HW Loop execution rate (Hz)" />
