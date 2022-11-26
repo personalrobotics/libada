@@ -44,6 +44,6 @@ This package offers two techniques for calibrating the camera using AprilTags: (
 `roslaunch libada libada.launch use_apriltag_calib:=true`
 
 ### Offline Calibration
-1. Roslaunch `offline_camera_calibration.launch`,where parameter `calib_parent_frame` specifies the frame of the robot you'd like to get the camera transform relative to.
-2. Pass the static transform as an argument: `libada.launch use_apriltag_calib:=false camera_transform:="x y z qw qx qy qz"`
+1. Roslaunch `gen2_camera_calib.launch`,where parameter `calib_parent_frame` specifies the frame of the robot you'd like to get the camera transform relative to.
+2. Pass the static transform as an argument: `libada.launch use_apriltag_calib:=false camera_transform:="x y z qw qx qy qz frame_from frame_to"`
 
