@@ -1,40 +1,36 @@
 # libada [![Build Status](https://github.com/personalrobotics/libada/actions/workflows/build-test.yml/badge.svg?branch=master)](https://github.com/personalrobotics/libada/actions)
 
-C++ library for simulating and running ADA based on DART and AIKIDO
+C++ library for simulating and running the Assistive Dexterous Arm (ADA). Currently used by the Personal Robotics Lab (University of Washington), EmPRISE Lab (Cornell University), and ICAROS (University of Southern California).
 
-## Launching the robot (default setup)
+Currently, the following base robot platforms are supported:
 
-Simply run `roslaunch libada default.launch`.
+* [Kinova JACO 2 6DoF](https://assistive.kinovarobotics.com/product/jaco-robotic-arm)
+* [Kinova JACO 3 7DoF](https://www.kinovarobotics.com/product/gen3-robots)
 
-Next, you can run a demo from `ada_demos`, that uses the plain Ada robot without any attachments.
+In principle, any single robot manipulator should be usable with this software. Each one just needs a new YAML file defining the URDF, RobotHW interface, and ROS controllers.
 
-## Launching the robot for the feeding demo
+## Dependencies
 
-The feeding demo requires some more configuration and some additional nodes.
-It can be started by running `roslaunch libada default.launch feeding:=true`.
-To run it with simulated perception `roslaunch libada default.launch feeding:=true perception:=false`.
+* [AIKIDO](https://github.com/personalrobotics/aikido): Robot system, connecting OMPL, Ros Controllers, Perception, and the DART collision engine
+* [ada_description](https://github.com/personalrobotics/ada_description): JACO 2 and Gen3 URDFs
+* [pr_ros_controllers](https://github.com/personalrobotics/pr_ros_controllers): Base joint position, velocity, and effort ROS controllers
+* [pr_control_msgs](https://github.com/personalrobotics/pr_control_msgs): Actionlib interface for the ROS controllers
+* [jaco_hardware](https://github.com/personalrobotics/jaco_hardware): JACO 2 RobotHW Class
+* [kortex_hardware](https://github.com/empriselab/kortex_hardware): Gen3 RobotHW Class
 
-You may also need to start
-- The camera node, running directly on the camera board. Typically the script is called something like `run_all.sh`
-- The forque sensor controller, using `roslaunch forque_sensor_hardware forque.launch`
-- The feeding demo parameters, and the feeding demo itself.
+Clone all of the above into your catkin workspace and build with `catkin build`. Most recently tested on ROS Noetic, Ubuntu 20.04 LTS.
 
-## Launching the simulated environment for the feeding demo
+## Launching the robot
 
-Simply run `roslaunch libada simulation.launch`.
+Basic Setup: `roslaunch libada libada.launch`
 
-This adds mandatory TF trees that the ADA demos are expecting, plus simulated food and face detection.
+**Arguments**:
+* `sim` (bool): Whether to run the RobotHW node and Ros Controllers
+* `version` (int) and `dof` (int): specify the Kinova arm type
 
-## Launching the simple perception demo
+This launch file will include sub-launch files to handle RobotHW and URDF generation, and then it will start the robot_state_publisher, which handles the TF tree and allows the robot to be viewed in RViz as the RobotModel.
 
-Run `roslaunch libada simple_perception.launch`.
-
-It takes one argument `adareal`, which should be set to `true` if running on the real robot:
-`roslaunch libada simple_perception.launch adareal:=true`
-
-For more information, see the [simple_perception demo in ada_demos](https://github.com/personalrobotics/ada_demos/tree/master/simple_perception).
-
-## Calibrating the Camera
+## JACO 2 Camera Calibration
 This package offers two techniques for calibrating the camera using AprilTags: (a) real-time; and (b) offline. Both require the same setup.
 
 ### Setup
@@ -45,9 +41,9 @@ This package offers two techniques for calibrating the camera using AprilTags: (
 5. Specify the tag parameters, referring to `config/gen2_6dof.yaml` as an example. The most important thing to ensure is that the `id` and `size` in `standalone_tags` and the `tag_family` match the tag you affixed to the robot. `tag_to_camera_default_transform` is not required, but is a good fallback; one way to get that transform is by running `apriltag_ros` `continuous_detection.launch` by itself and using [tf_echo](http://wiki.ros.org/tf#tf_echo) where the `target_frame` is `camera_link.`
 
 ### Real-Time Calibration
-Roslaunch `default_launch` with `use_apriltag_calib:=true`
+`roslaunch libada libada.launch use_apriltag_calib:=true`
 
 ### Offline Calibration
 1. Roslaunch `offline_camera_calibration.launch`,where parameter `calib_parent_frame` specifies the frame of the robot you'd like to get the camera transform relative to.
-2. Copy and paste the static transform outputted by the launched rosnode into the `st_robot2camera`node of `default.launch`.
+2. Pass the static transform as an argument: `libada.launch use_apriltag_calib:=false camera_transform:="x y z qw qx qy qz"`
 
