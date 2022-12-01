@@ -9,7 +9,7 @@ Currently, the following base robot platforms are supported:
 
 In principle, any single robot manipulator should be usable with this software. Each one just needs a new YAML file defining the URDF, RobotHW interface, and ROS controllers.
 
-## Dependencies
+## Dependencies (First Order)
 
 * [AIKIDO](https://github.com/personalrobotics/aikido): Robot system, connecting OMPL, Ros Controllers, Perception, and the DART collision engine
 * [ada_description](https://github.com/personalrobotics/ada_description): JACO 2 and Gen3 URDFs
@@ -18,15 +18,17 @@ In principle, any single robot manipulator should be usable with this software. 
 * [jaco_hardware](https://github.com/personalrobotics/jaco_hardware): JACO 2 RobotHW Class
 * [kortex_hardware](https://github.com/empriselab/kortex_hardware): Gen3 RobotHW Class
 
-Clone all of the above into your catkin workspace and build with `catkin build`. Most recently tested on ROS Noetic, Ubuntu 20.04 LTS.
+Clone the above into your catkin workspace and build with `catkin build`. Note some dependencies might have other dependencies (e.g. [pr_ros_controllers](https://github.com/personalrobotics/pr_ros_controllers)requires [pr_hardware_interfaces](https://github.com/personalrobotics/pr_hardware_interfaces)). See [pr-rosinstalls](https://github.com/personalrobotics/pr-rosinstalls) for a more complete list.
+
+Most recently tested on ROS Noetic, Ubuntu 20.04 LTS.
 
 ## Launching the robot
 
 Basic Setup: `roslaunch libada libada.launch`
 
 **Arguments**:
-* `sim` (bool): Whether to run the RobotHW node and Ros Controllers
-* `version` (int) and `dof` (int): specify the Kinova arm type
+* `sim` (bool, default `false`): Whether to run the RobotHW node and Ros Controllers
+* `version` (int, default `2`) and `dof` (int, default `6`): specify the Kinova arm type
 
 This launch file will include sub-launch files to handle RobotHW and URDF generation, and then it will start the robot_state_publisher, which handles the TF tree and allows the robot to be viewed in RViz as the RobotModel.
 
