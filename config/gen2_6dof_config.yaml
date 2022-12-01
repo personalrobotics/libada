@@ -1,0 +1,12 @@
+# JACO Ada configuration parameters
+default_urdf: package://ada_description/robots_urdf/ada.urdf
+default_srdf: package://ada_description/robots_urdf/ada.srdf
+default_accel_lim: 2.0
+default_vel_lim: 0.7
+# TODO: read EE, arm, and hand from SRDF
+end_effector: j2n6s200_end_effector
+arm: [j2n6s200_link_base, j2n6s200_link_6]
+hand_base: j2n6s200_hand_base
+arm_controller: trajectory_controller
+hand_controller: hand_controller
+named_configs: package://libada/resources/g2_6d_named_configs.yaml

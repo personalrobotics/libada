@@ -1,19 +1,4 @@
-# Arm configuration parameters
-adaConf:
-  default_urdf: package://ada_description/robots_urdf/ada.urdf
-  default_srdf: package://ada_description/robots_urdf/ada.srdf
-  default_accel_lim: 2.0
-  default_vel_lim: 0.7
-  end_effector: j2n6s200_end_effector
-  arm: [j2n6s200_link_base, j2n6s200_link_6]
-  hand_base: j2n6s200_hand_base
-  arm_controller: trajectory_controller
-  hand_controller: hand_controller
-  named_configs: package://libada/resources/g2_6d_named_configs.yaml
-
-# hardware parameters
-soft_limits:
-  eff: [16,16,16,10,10,10,1.3,1.3]
+### JACO Default Controllers
 
 # arm + gripper joint_state publisher
 joint_state_controller:
@@ -82,49 +67,6 @@ trajectory_controller:
     j2n6s200_joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
     j2n6s200_joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
 
-# whole-arm base trajectory controller
-move_until_touch_topic_controller:
-  mode: TRAJECTORY
-  type: rewd_controllers/MoveUntilTouchTopicController
-  # Forque Sensor
-  forcetorque_wrench_name: /forque/forqueSensor
-  forcetorque_tare_name: /forque/bias_controller/trigger
-  # FingerVision
-  # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
-  # forcetorque_tare_name: /fingervision/fingerVisionTaring
-  sensor_force_limit: 50
-  sensor_torque_limit: 5
-  joints: [j2n6s200_joint_1, j2n6s200_joint_2, j2n6s200_joint_3,
-    j2n6s200_joint_4, j2n6s200_joint_5, j2n6s200_joint_6]
-  control_type: velocity
-  constraints:
-    j2n6s200_joint_1:
-      goal: 0.02
-      trajectory: 7
-    j2n6s200_joint_2:
-      goal: 0.02
-      trajectory: 7
-    j2n6s200_joint_3:
-      goal: 0.02
-      trajectory: 7
-    j2n6s200_joint_4:
-      goal: 0.02
-      trajectory: 7
-    j2n6s200_joint_5:
-      goal: 0.02
-      trajectory: 7
-    j2n6s200_joint_6:
-      goal: 0.02
-      trajectory: 7
-  gains: # Required because we're controlling a velocity interface
-    j2n6s200_joint_1: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    j2n6s200_joint_2: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    j2n6s200_joint_3: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    j2n6s200_joint_4: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    j2n6s200_joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
-    j2n6s200_joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
-  max_ft_delay: 100
-
 # Optional controller that might be useful for testing.
 # Should do the same thing as trajectory_controller, but this is 
 # the lab's rewd_controllers implementation
@@ -191,29 +133,3 @@ hand_controller:
   gains: # Required because we're controlling a velocity interface
     j2n6s200_joint_finger_1: {p: 1,  d: 0, i: 0, i_clamp: 1}
     j2n6s200_joint_finger_2: {p: 1,  d: 0, i: 0, i_clamp: 1}
-
-camera_calibration_tag:
-  # Parameters for apriltag_ros's apriltag_ros_continuous_node
-  apriltag_detector:
-    # a list of all the tags the AprilTag detector should be looking for. 
-    # The first entry is used for calibration.
-    standalone_tags: [            
-      {id: 4, size: 0.014, name: "detected_calibration_tag"}
-    ]
-    tag_family:        'tag36h11' # options: tagStandard52h13, tagStandard41h12, tag36h11, tag25h9, tag16h5, tagCustom48h12, tagCircle21h7, tagCircle49h12
-    tag_threads:       2          # default: 2
-    tag_decimate:      1.0        # default: 1.0
-    tag_blur:          0.0        # default: 0.0
-    tag_refine_edges:  1          # default: 1
-    tag_debug:         0          # default: 0
-    max_hamming_dist:  2          # default: 2 (Tunable parameter with 2 being a good choice - values >=3 consume large amounts of memory. Choose the largest value possible.)
-    publish_tf:        true
-    publish_tag_detections_image: true
-    transport_hint:    "compressed"      # default: raw, see http://wiki.ros.org/image_transport#Known_Transport_Packages for options
-  fixed_tag_frame: "calibration_tag"
-  camera_frame: "camera_link"
-  # This transform is used initially if AprilTag does not detect the calibration tag. 
-  # Another way to think about this is the camera's pose in the tag's frame.
-  tag_to_camera_default_transform:
-    translation: [0.019, 0.099, 0.066]
-    rotation: [0.123,0.104, -0.679, 0.716]

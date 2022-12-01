@@ -1,0 +1,3 @@
+# JACO hardware parameters
+soft_limits:
+  eff: [16,16,16,10,10,10,1.3,1.3]
