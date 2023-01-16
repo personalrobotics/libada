@@ -1,0 +1,175 @@
+# Publish all joint states -----------------------------------
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+
+# whole-arm joint mode controller
+joint_mode_controller:
+  mode: MODE
+  type: pr_ros_controllers/JointModeController
+  default: VELOCITY
+  joints: [joint_mode]
+
+# whole-arm base velocity controller
+velocity_controller:
+  mode: VELOCITY
+  type: pr_ros_controllers/JointGroupVelocityController
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+
+# whole-arm base position controller
+position_controller:
+  mode: POSITION
+  type: pr_ros_controllers/JointGroupPositionController
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+
+# whole-arm base effort controller
+effort_controller:
+  mode: EFFORT
+  type: pr_ros_controllers/JointGroupEffortController
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+
+# whole-arm base trajectory controller
+trajectory_controller:
+  mode: TRAJECTORY
+  type: velocity_controllers/JointTrajectoryController
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+  constraints:
+    stopped_velocity_tolerance: 1.0
+    joint_1:
+      goal: 0.02
+      trajectory: 10.0
+    joint_2:
+      goal: 0.02
+      trajectory: 10.0
+    joint_3:
+      goal: 0.02
+      trajectory: 10.0
+    joint_4:
+      goal: 0.02
+      trajectory: 10.0
+    joint_5:
+      goal: 0.02
+      trajectory: 10.0
+    joint_6:
+      goal: 0.02
+      trajectory: 10.0
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_2: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_3: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_4: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_5: {p: 3,  d: 0, i: 0, i_clamp: 1}
+    joint_6: {p: 3,  d: 0, i: 0, i_clamp: 1}
+
+# whole-arm base trajectory controller
+move_until_touch_topic_controller:
+  mode: TRAJECTORY
+  type: rewd_controllers/MoveUntilTouchTopicController
+  # Forque Sensor
+  forcetorque_wrench_name: /forque/forqueSensor
+  forcetorque_tare_name: /forque/bias_controller/trigger
+  # FingerVision
+  # forcetorque_wrench_name: /fingervision/fv_3_l/wrench
+  # forcetorque_tare_name: /fingervision/fingerVisionTaring
+  sensor_force_limit: 50
+  sensor_torque_limit: 5
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+  control_type: velocity
+  constraints:
+    stopped_velocity_tolerance: 1.0
+    joint_1:
+      goal: 0.02
+      trajectory: 1
+    joint_2:
+      goal: 0.02
+      trajectory: 1
+    joint_3:
+      goal: 0.02
+      trajectory: 1
+    joint_4:
+      goal: 0.02
+      trajectory: 1
+    joint_5:
+      goal: 0.02
+      trajectory: 1
+    joint_6:
+      goal: 0.02
+      trajectory: 1
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_2: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_3: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_4: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_5: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+    joint_6: {p: 1.2,  d: 0, i: 0, i_clamp: 1.0}
+
+# Optional controller that might be useful for testing.
+# Should do the same thing as trajectory_controller, but this is 
+# the lab's rewd_controllers implementation
+rewd_trajectory_controller:
+  mode: TRAJECTORY
+  type: rewd_controllers/JointTrajectoryController
+  joints: [joint_1, joint_2, joint_3,
+    joint_4, joint_5, joint_6]
+  constraints:
+    stopped_velocity_tolerance: 1.0
+    joint_1:
+      goal: 0.02
+      trajectory: 10.0
+    joint_2:
+      goal: 0.02
+      trajectory: 10.0
+    joint_3:
+      goal: 0.02
+      trajectory: 10.0
+    joint_4:
+      goal: 0.02
+      trajectory: 10.0
+    joint_5:
+      goal: 0.02
+      trajectory: 10.0
+    joint_6:
+      goal: 0.02
+      trajectory: 10.0
+  gains: # Required because we're controlling a velocity interface
+    joint_1: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_2: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_3: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_4: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_5: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+    joint_6: {p: 0.2,  d: 0, i: 0, i_clamp: 1}
+  control_type: velocity
+
+##############################################
+
+# gripper base velocity controller
+hand_velocity_controller:
+  mode: VELOCITY
+  type: pr_ros_controllers/JointGroupVelocityController
+  joints: [finger_joint]
+
+# gripper base position controller
+hand_position_controller:
+  mode: POSITION
+  type: pr_ros_controllers/JointGroupPositionController
+  joints: [finger_joint]
+
+# gripper base effort controller
+hand_effort_controller:
+  mode: EFFORT
+  type: pr_ros_controllers/JointGroupEffortController
+  joints: [finger_joint]
+
+hand_controller:
+  mode: TRAJECTORY
+  type: velocity_controllers/JointTrajectoryController
+  joints: [finger_joint]
+  constraints:
+    stopped_velocity_tolerance: 1.0
+  gains: # Required because we're controlling a velocity interface
+    finger_joint: {p: 1,  d: 0, i: 0, i_clamp: 1}

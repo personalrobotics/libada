@@ -1,0 +1,47 @@
+<launch>
+  <!-- Hardware Parameters -->
+  <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
+  <arg name="watchdog_topic" default="/watchdog" doc="Topic where watchdog messages are published." />
+  <arg name="run_grav_calib" default="false" doc="Run Gravcomp Calibration." />
+  <arg name="grav_comp_file" default="calib/GravComParams_Empty.txt" doc="Where to read or write gravcomp parameters" />
+  <arg name="grav_comp" default="true" doc="Whether to enable gravity compensation for torque control and e-stop." />
+  <arg name="run_grav_comp" default="false" doc="If true, will start the robot in gravcomp mode." />
+  <arg name="control_rate" default="100.0" doc="HW Loop execution rate (Hz)" />
+
+  <!-- Base Hardware Node -->
+  <node name="jaco_hardware"
+          pkg="jaco_hardware"
+          type="jaco_hardware"
+          output="screen"
+          required="true">
+    <remap from="watchdog" to="$(arg watchdog_topic)" />
+    <param name="run_grav_calib" value="$(arg run_grav_calib)" />
+    <param name="grav_comp_file" value="$(arg grav_comp_file)" />
+    <param name="grav_comp" value="$(arg grav_comp)" />
+    <param name="control_rate" value="$(arg control_rate)" />
+    <rosparam file="$(find libada)/config/gen2_$(arg dof)dof_hardware.yaml" command="load" />
+  </node>
+
+  <!-- start joint state and mode controllers -->
+  <node name="controller_spawner_started" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen"
+      args="
+        joint_state_controller
+        joint_mode_controller
+      " />
+
+  <!-- load controller configuration -->
+  <rosparam file="$(find libada)/config/gen2_$(arg dof)dof_controllers.yaml" command="load" />
+
+  <!-- Default Controllers -->
+  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen"
+      args="
+        --stopped
+        position_controller
+        velocity_controller
+        effort_controller
+        trajectory_controller
+        hand_controller
+        " />
+</launch>

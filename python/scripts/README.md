@@ -1,5 +1,7 @@
 To run the python scripts for testing libada - 
 
+*Additional Dependency:* [pr_assets](https://github.com/personalrobotics/pr_assets)
+
 1. Launch the robot
     - Simulation
  	```

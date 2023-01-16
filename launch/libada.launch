@@ -1,0 +1,27 @@
+<launch>
+
+  <!-- General Config -->
+  <arg name="version" default="2" doc="Kinova Arm Version (JACO = 2, Kortex = 3)" />
+  <arg name="dof" default="6" doc="Number of degrees of freedom in arm" />
+  <arg name="sim" default="false" doc="Whether to run in Aikido-sim only" />
+
+  <!-- Hardware Include -->
+  <group unless="$(arg sim)">
+    <include file="$(find libada)/launch/gen$(arg version)_hardware.launch" pass_all_args="true" />
+  </group>
+
+  <!-- TODO: Initialize controllers directly via Aikido -->
+
+  <!-- Construct URDF -->
+  <include file="$(find libada)/launch/gen$(arg version)_urdf.launch" pass_all_args="true" />
+
+  <!-- Default Configuration Params -->
+  <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof_config.yaml" command="load" ns="adaConf" />
+
+  <!-- TF Setup -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
+  <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
+    args="0 0 0 0 0 0 1 map world 10"/>
+
+</launch>
+

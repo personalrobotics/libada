@@ -12,11 +12,7 @@
 #include <aikido/constraint/TestableIntersection.hpp>
 #include <aikido/constraint/dart/CollisionFree.hpp>
 #include <aikido/constraint/dart/TSR.hpp>
-#include <aikido/control/JacobianExecutor.hpp>
-#include <aikido/control/KinematicSimulationJointCommandExecutor.hpp>
-#include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
-#include <aikido/control/VisualServoingVelocityExecutor.hpp>
-#include <aikido/control/ros/RosJointModeCommandClient.hpp>
+#include <aikido/control/TrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosJointStateClient.hpp>
 #include <aikido/io/CatkinResourceRetriever.hpp>
 #include <aikido/planner/World.hpp>
@@ -99,7 +95,6 @@ public:
   /// \param[in] retriever Resource retriever for retrieving Ada
   Ada(bool simulation,
       aikido::planner::WorldPtr env = aikido::planner::World::create(),
-      std::string name = std::string("ada"),
       const std::string confNamespace = DEFAULT_CONF_OBJ_NS,
       const std::chrono::milliseconds threadCycle = DEFAULT_THREAD_CYCLE,
       const ::ros::NodeHandle* node = nullptr,
@@ -115,16 +110,16 @@ public:
   void step(const std::chrono::system_clock::time_point& timepoint) override;
 
   /// Get the arm.
-  aikido::robot::ros::RosRobotPtr getArm();
+  aikido::robot::RobotPtr getArm();
 
   /// Get the const arm.
-  aikido::robot::ros::ConstRosRobotPtr getArm() const;
+  aikido::robot::ConstRobotPtr getArm() const;
 
   /// Get the hand as an Aikido::Robot
-  aikido::robot::ros::RosRobotPtr getHandRobot();
+  aikido::robot::RobotPtr getHandRobot();
 
   /// Get the const hand as an Aikido::Robot
-  aikido::robot::ros::ConstRosRobotPtr getHandRobot() const;
+  aikido::robot::ConstRobotPtr getHandRobot() const;
 
   /// Get the hand as an Aikido::Hand
   std::shared_ptr<AdaHand> getHand();
@@ -167,6 +162,16 @@ public:
       const Eigen::VectorXd& accelerationLimits = Eigen::VectorXd(),
       const typename PostProcessor::Params& params = KunzParams());
 
+  /// Starts the provided trajectory controllers if not started already.
+  /// Makes sure that no other controllers are running and conflicting
+  /// with the ones we are about to start.
+  /// \return true if all controllers have been successfully switched
+  bool startTrajectoryControllers();
+
+  /// Turns off provided trajectory controllers
+  /// \return true if all controllers have been successfully switched
+  bool stopTrajectoryControllers();
+
   /// Opens Ada's hand
   std::future<void> openHand();
 
@@ -182,33 +187,39 @@ public:
   /// Get Body Node of End Effector
   dart::dynamics::BodyNodePtr getEndEffectorBodyNode();
 
-  /************ Convenience Execution Methods **************/
-
-  ///
-  /// Convenience: executes given SE3 command on end-effector.
-  /// Will auto-activate a JacobianVelocityExecutor.
-  /// future will have exception if one doesn't exist
-  ///
-  /// \param[in] command SE3, applied to end-effector
-  /// \param[in] timeout Timeout for the command
-  std::future<int> executeJacobianCommand(
-      const Eigen::Vector6d command,
-      const std::chrono::duration<double>& timeout);
-
-  void setTrajectoryLimitsFromParam(std::string type);
-
 private:
+  /// Switches between controllers.
+  /// \param[in] startControllers Controllers to start.
+  /// \param[in] stopControllers Controllers to stop.
+  /// Returns true if controllers successfully switched.
+  bool switchControllers(
+      const std::vector<std::string>& startControllers,
+      const std::vector<std::string>& stopControllers);
+
   // Call to spin first to pass current time to step
   void spin();
 
+  // Utility function to (re)-create and set trajectory executors
+  void createTrajectoryExecutor(bool isHand);
+
   // True if running in simulation.
   const bool mSimulation;
+
+  // Names of the ros trajectory controllers
+  std::string mArmTrajControllerName;
+  std::string mHandTrajControllerName;
 
   // Soft velocity and acceleration limits
   Eigen::VectorXd mSoftVelocityLimits;
   Eigen::VectorXd mSoftAccelerationLimits;
   Eigen::VectorXd mDefaultVelocityLimits;
   Eigen::VectorXd mDefaultAccelerationLimits;
+
+  // Ros node associated with this robot.
+  ::ros::NodeHandle mNode;
+
+  // Ros controller service client.
+  std::unique_ptr<::ros::ServiceClient> mControllerServiceClient;
 
   // Ros joint state client.
   std::unique_ptr<aikido::control::ros::RosJointStateClient> mJointStateClient;
@@ -218,10 +229,10 @@ private:
   std::string mEndEffectorName;
 
   // The robot arm
-  aikido::robot::ros::RosRobotPtr mArm;
+  aikido::robot::RobotPtr mArm;
 
   // The robot hand as an Aikido Robot
-  aikido::robot::ros::RosRobotPtr mHandRobot;
+  aikido::robot::RobotPtr mHandRobot;
 
   // Self-driving thread
   std::unique_ptr<aikido::common::ExecutorThread> mThread;
