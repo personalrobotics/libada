@@ -9,3 +9,20 @@ hand_base: end_effector_link
 arm_controller: trajectory_controller
 hand_controller: hand_controller
 named_configs: package://libada/resources/g2_6d_named_configs.yaml  
+arm_executors:
+  enable_controller_switching: true
+  mode_controller: joint_mode_controller
+  # Note: type can be TRAJECTOTY / JOINT_COMMAND / TASK_COMMAND / VISUAL_SERVOING
+  # Note: executor mode can be different from controller mode, for example joint command position executor and impedance controller
+  # Note: type TRAJECTORY does not require mode specification
+  # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+  executors:
+    - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
+hand_executors:
+  enable_controller_switching: true
+  mode_controller: hand_mode_controller
+  # Note: type can be TRAJECTOTY / JOINT_COMMAND / TASK_COMMAND / VISUAL_SERVOING
+  # Note: executor mode can be different from controller mode, for example joint command position executor and impedance controller
+  # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
+  executors:
+    - {id: forque_pickup_executor, type: JOINT_COMMAND, mode: POSITION, controller: hand_position_controller}

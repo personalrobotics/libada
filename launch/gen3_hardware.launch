@@ -27,13 +27,4 @@
   <!-- load controller configuration -->
   <rosparam file="$(find libada)/config/gen3_$(arg dof)dof_controllers.yaml" command="load" />
 
-  <!-- Default Controllers -->
-  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen"
-      args="
-        --stopped
-        velocity_controller
-        trajectory_controller
-        hand_controller
-        " />
 </launch>
