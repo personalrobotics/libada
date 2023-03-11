@@ -229,14 +229,19 @@ Ada::Ada(
     auto rosLoadControllerServiceClient = std::make_shared<::ros::ServiceClient>(
         mNode.serviceClient<controller_manager_msgs::LoadController>(
             "controller_manager/load_controller"));
+    auto rosListControllersServiceClient = std::make_shared<::ros::ServiceClient>(
+        mNode.serviceClient<controller_manager_msgs::ListControllers>(
+            "controller_manager/list_controllers"));
     auto rosSwitchControllerServiceClient = std::make_shared<::ros::ServiceClient>(
         mNode.serviceClient<controller_manager_msgs::SwitchController>(
             "controller_manager/switch_controller"));
     // Real ROS Executors
     for (auto subrobot :
-         std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
+         std::set<aikido::robot::ros::RosRobotPtr>{mArm})
+         // std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
     {
       subrobot->setRosLoadControllerServiceClient(rosLoadControllerServiceClient);
+      subrobot->setRosListControllersServiceClient(rosListControllersServiceClient);
       bool isHand = (subrobot == mHandRobot);
       std::string ns = isHand ? "/" + confNamespace + "/hand_executors/"
                               : "/" + confNamespace + "/arm_executors/";

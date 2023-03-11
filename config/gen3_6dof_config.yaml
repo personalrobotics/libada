@@ -17,7 +17,12 @@ arm_executors:
   # Note: type TRAJECTORY does not require mode specification
   # Note: last-controller is default when calling setActiveExecutor(ExecutorType)
   executors:
-    - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_controller}
+    - {id: effort_trajectory_executor, type: TRAJECTORY, mode: EFFORT, controller: effort_joint_trajectory_controller}
+    - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: move_until_touch_topic_joint_trajectory_controller}
+    - {id: bite_transfer_executor, type: JOINT_COMMAND, mode: EFFORT, controller: task_space_compliant_controller}
+  # executors:
+  #   - {id: velocity_trajectory_executor, type: TRAJECTORY, mode: VELOCITY, controller: rewd_trajectory_controller}
+  #   - {id: bite_transfer_executor, type: JOINT_COMMAND, mode: EFFORT, controller: task_space_compliant_controller}
 hand_executors:
   enable_controller_switching: true
   mode_controller: hand_mode_controller

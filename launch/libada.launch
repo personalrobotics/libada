@@ -19,7 +19,10 @@
   <rosparam file="$(find libada)/config/gen$(arg version)_$(arg dof)dof_config.yaml" command="load" ns="adaConf" />
 
   <!-- TF Setup -->
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="rob_st_pub">
+    <param name="ignore_timestamp" value="true" />
+  </node>
+
   <node name="st_map2world" pkg="tf" type="static_transform_publisher" respawn="false" output="screen"
     args="0 0 0 0 0 0 1 map world 10"/>
 
