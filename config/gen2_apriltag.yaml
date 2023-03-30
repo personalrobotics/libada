@@ -20,5 +20,5 @@ camera_frame: "camera_link"
 # This transform is used initially if AprilTag does not detect the calibration tag. 
 # Another way to think about this is the camera's pose in the tag's frame.
 tag_to_camera_default_transform:
-  translation: [0.019, 0.099, 0.066]
-  rotation: [0.123,0.104, -0.679, 0.716]
+  translation: [0.026, 0.099, 0.075]
+  rotation: [0.1051564, 0.1146537, -0.7064147, 0.6904889]
