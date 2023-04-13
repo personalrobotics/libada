@@ -4,7 +4,7 @@
 
   <arg name="tag_image_topic" default="/camera/color/image_raw" doc="Image topic for apriltag calibration" />
   <arg name="tag_camera_info" default="/camera/color/camera_info" doc="Camera Info topic for apriltag calibration" />
-  <arg name="camera_transform" default="0.021 0.074 -0.237 -0.410 -0.420 -0.575 0.571 j2n6s200_forque_end_effector camera_link" doc="'X Y Z QW QX QY QZ frame_from frame_to' static transform between camera and robot when apriltag is not in use" />
+  <arg name="camera_transform" default="0.035 0.074 -0.25 -0.410 -0.420 -0.575 0.571 j2n6s200_forque_end_effector camera_link" doc="'X Y Z QW QX QY QZ frame_from frame_to' static transform between camera and robot when apriltag is not in use" />
 
   <!-- Base URDF File -->
   <group unless="$(arg use_forque)">
