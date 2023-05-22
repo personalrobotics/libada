@@ -5,18 +5,12 @@
   <!-- Base URDF File -->
   <group unless="$(arg use_forque)">
     <param name="robot_description"
-          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" />
+          command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false forque:=false" />
   </group>
 
   <!-- Initialize F/T Sensor -->
   <group if="$(arg use_forque)">
     <param name="robot_description"
           command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" />
-    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-          output="screen"
-          args="
-             --stopped
-             move_until_touch_topic_controller
-             " />
   </group>
 </launch>

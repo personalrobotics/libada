@@ -13,6 +13,7 @@
 #include <aikido/constraint/Satisfied.hpp>
 #include <aikido/control/KinematicSimulationTrajectoryExecutor.hpp>
 #include <aikido/control/ros/RosTrajectoryExecutor.hpp>
+#include <aikido/control/ros/RosJointCommandExecutor.hpp>
 #include <aikido/distance/defaults.hpp>
 #include <aikido/io/yaml.hpp>
 #include <aikido/planner/kunzretimer/KunzRetimer.hpp>
@@ -126,7 +127,7 @@ Ada::Ada(
   auto armBase = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[0]);
   auto armEnd = internal::getBodyNodeOrThrow(mMetaSkeleton, armNodes[1]);
   auto arm = dart::dynamics::Chain::create(armBase, armEnd, "adaArm");
-  mArm = registerSubRobot(arm, "adaArm");
+  mArm = std::dynamic_pointer_cast<aikido::robot::ros::RosRobot>(registerSubRobot(arm, "adaArm"));
   mArm->clearExecutors();
   if (!mArm)
   {
@@ -151,33 +152,12 @@ Ada::Ada(
   auto handBase = internal::getBodyNodeOrThrow(mMetaSkeleton, handBaseName);
   auto hand = dart::dynamics::Branch::create(
       dart::dynamics::Branch::Criteria(handBase), "adaHand");
-  mHandRobot = registerSubRobot(hand, "adaHand");
+  mHandRobot = std::dynamic_pointer_cast<aikido::robot::ros::RosRobot>(registerSubRobot(hand, "adaHand"));
   mHandRobot->clearExecutors();
   if (!mHandRobot)
   {
     throw std::runtime_error("Could not create hand");
   }
-
-  // Create Trajectory Executors
-  // Should not execute trajectories on whole arm by default
-  // This ensures that trajectories are executed on subrobots only.
-
-  // Load Arm Trajectory controller name
-  mNode.param<std::string>(
-      "/" + confNamespace + "/arm_controller",
-      mArmTrajControllerName,
-      DEFAULT_ARM_TRAJ_CTRL);
-  // Create executor for controller
-  createTrajectoryExecutor(false);
-
-  // Load Hand Trajectory controller name
-  mNode.param<std::string>(
-      "/" + confNamespace + "/hand_controller",
-      mHandTrajControllerName,
-      DEFAULT_HAND_TRAJ_CTRL);
-
-  // Create executor for controller
-  createTrajectoryExecutor(true);
 
   // Load the named configurations if available
   std::string nameConfigs;
@@ -204,10 +184,6 @@ Ada::Ada(
   // Create joint state updates
   if (!mSimulation)
   {
-    // Real Robot, create state client
-    mControllerServiceClient = std::make_unique<::ros::ServiceClient>(
-        mNode.serviceClient<controller_manager_msgs::SwitchController>(
-            "controller_manager/switch_controller"));
     mJointStateClient
         = std::make_unique<aikido::control::ros::RosJointStateClient>(
             mMetaSkeleton->getBodyNode(0)->getSkeleton(),
@@ -224,9 +200,204 @@ Ada::Ada(
   // Create Inner AdaHand
   mHand = std::make_shared<AdaHand>(this, handBase, handEnd);
 
+  // Register all executors
+  if (mSimulation)
+  {
+    // Kinematic Executors
+    for (auto subrobot :
+         std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
+    {
+      subrobot->registerExecutor(
+          std::make_shared<
+              aikido::control::KinematicSimulationTrajectoryExecutor>(
+              subrobot->getMetaSkeleton()));
+      subrobot->registerExecutor(
+          std::make_shared<
+              aikido::control::KinematicSimulationPositionExecutor>(
+              subrobot->getMetaSkeleton()));
+      auto jvExec = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+          handEnd);
+      auto vsExec
+          = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
+              handEnd, jvExec);
+      subrobot->registerExecutor(vsExec);
+      subrobot->registerExecutor(jvExec);
+    }
+  }
+  else
+  {
+    auto rosLoadControllerServiceClient = std::make_shared<::ros::ServiceClient>(
+        mNode.serviceClient<controller_manager_msgs::LoadController>(
+            "controller_manager/load_controller"));
+    auto rosListControllersServiceClient = std::make_shared<::ros::ServiceClient>(
+        mNode.serviceClient<controller_manager_msgs::ListControllers>(
+            "controller_manager/list_controllers"));
+    auto rosSwitchControllerServiceClient = std::make_shared<::ros::ServiceClient>(
+        mNode.serviceClient<controller_manager_msgs::SwitchController>(
+            "controller_manager/switch_controller"));
+    // Real ROS Executors
+    for (auto subrobot :
+         std::set<aikido::robot::ros::RosRobotPtr>{mArm})
+         // std::set<aikido::robot::ros::RosRobotPtr>{mArm, mHandRobot})
+    {
+      subrobot->setRosLoadControllerServiceClient(rosLoadControllerServiceClient);
+      subrobot->setRosListControllersServiceClient(rosListControllersServiceClient);
+      bool isHand = (subrobot == mHandRobot);
+      std::string ns = isHand ? "/" + confNamespace + "/hand_executors/"
+                              : "/" + confNamespace + "/arm_executors/";
+      // Controller Switching Service Client
+      bool enableControllerSwitching = mNode.param<bool>(
+          ns + "enable_controller_switching",
+          false);
+      if(enableControllerSwitching)
+        subrobot->setRosSwitchControllerServiceClient(rosSwitchControllerServiceClient);
+      // Mode controller
+      auto modeControllerName = mNode.param<std::string>(
+          ns + "mode_controller",
+          std::string(""));
+      std::cout<<"Mode controller name: "<<modeControllerName<<std::endl;
+      if(!modeControllerName.empty())
+      {
+        auto rosJointModeCommandClient 
+            = std::make_shared<aikido::control::ros::RosJointModeCommandClient>(
+                mNode,
+                modeControllerName + "/joint_mode_command",
+                std::vector<std::string>{"joint_mode"});
+          subrobot->setRosJointModeCommandClient(rosJointModeCommandClient);
+      }
+      std::vector<util::ExecutorDetails> executorsDetails = util::loadExecutorsDetailsFromParameter(
+          mNode,
+          ns + "executors");
+      if(executorsDetails.size() == 0)
+      {
+        std::stringstream message;
+        message << "Unable to load executors details for " << ns;
+        throw std::runtime_error(message.str());
+      }
+      for(auto executorDetails: executorsDetails)
+      {
+        if(executorDetails.mType == "TRAJECTORY")
+        {
+          std::cout<<"Executor type is TRAJECTORY!!"<<std::endl;
+          auto trajExec
+            = std::make_shared<aikido::control::ros::RosTrajectoryExecutor>(
+                mNode,
+                executorDetails.mController + "/follow_joint_trajectory",
+                DEFAULT_ROS_TRAJ_INTERP_TIME,
+                DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
+                subrobot->getMetaSkeleton());
+          auto controllerMode = util::modeFromString(
+            mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", ""));
+          subrobot->registerExecutor(trajExec, executorDetails.mId, executorDetails.mController, controllerMode);
+        }
+        else if(executorDetails.mType == "JOINT_COMMAND")
+        {
+          if(executorDetails.mMode == "POSITION")
+          {
+            auto posExec
+              = std::make_shared<aikido::control::ros::RosJointPositionExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "POSITION"));
+            subrobot->registerExecutor(posExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
+            subrobot->registerExecutor(velExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else if(executorDetails.mMode == "EFFORT")
+          {
+            auto effExec
+              = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "EFFORT"));
+            subrobot->registerExecutor(effExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
+        else if(executorDetails.mType == "TASK_COMMAND")
+        {
+          if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto jvExec
+              = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+                  handEnd, velExec);
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
+            subrobot->registerExecutor(jvExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else if(executorDetails.mMode == "EFFORT")
+          {
+            auto effExec
+              = std::make_shared<aikido::control::ros::RosJointEffortExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto effJacExec
+              = std::make_shared<aikido::control::JacobianEffortExecutor>(
+                  handEnd, effExec);
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "EFFORT"));
+            subrobot->registerExecutor(effJacExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
+        else if(executorDetails.mType == "VISUAL_SERVOING")
+        {
+          if(executorDetails.mMode == "VELOCITY")
+          {
+            auto velExec
+              = std::make_shared<aikido::control::ros::RosJointVelocityExecutor>(
+                  mNode, executorDetails.mController, subrobot->getMetaSkeleton()->getDofs());
+            auto jvExec
+              = std::make_shared<aikido::control::JacobianVelocityExecutor>(
+                  handEnd, velExec);
+            auto vsExec
+              = std::make_shared<aikido::control::VisualServoingVelocityExecutor>(
+                  handEnd, jvExec);
+            auto controllerMode = util::modeFromString(
+              mNode.param<std::string>("/" + executorDetails.mController + "/controller_mode", "VELOCITY"));
+            subrobot->registerExecutor(vsExec, executorDetails.mId, executorDetails.mController, controllerMode);
+          }
+          else
+          {
+            std::stringstream message;
+            message << "Executor mode for [/" << ns << "/executors] - with id: "<<executorDetails.mId<<" and type: "<<executorDetails.mType<<" is incorrectly specified.";
+            throw std::runtime_error(message.str());
+          }
+        }
+      }
+    }
+  }
+
+  std::cout<<"Creating thread for executors!"<<std::endl;
   // Start driving self-thread
+  
   mThread = std::make_unique<aikido::common::ExecutorThread>(
       std::bind(&Ada::spin, this), threadCycle);
+  
+  std::cout<<"Thread created!"<<std::endl;
+  std::cout<<"Activating trajectory executor for arm!"<<std::endl;
+  // Activate Trajectory Executor for Arm
+  mArm->activateExecutor(aikido::control::ExecutorType::TRAJECTORY);
+  std::cout<<"Activated trajectory executor!"<<std::endl;
 }
 
 //==============================================================================
@@ -293,25 +464,22 @@ void Ada::step(const std::chrono::system_clock::time_point& timepoint)
 }
 
 //==============================================================================
-aikido::robot::RobotPtr Ada::getArm()
+aikido::robot::ros::RosRobotPtr Ada::getArm()
 {
   return mArm;
 }
-
 //==============================================================================
-aikido::robot::ConstRobotPtr Ada::getArm() const
+aikido::robot::ros::ConstRosRobotPtr Ada::getArm() const
 {
   return mArm;
 }
-
 //==============================================================================
-aikido::robot::RobotPtr Ada::getHandRobot()
+aikido::robot::ros::RosRobotPtr Ada::getHandRobot()
 {
   return mHandRobot;
 }
-
 //==============================================================================
-aikido::robot::ConstRobotPtr Ada::getHandRobot() const
+aikido::robot::ros::ConstRosRobotPtr Ada::getHandRobot() const
 {
   return mHandRobot;
 }
@@ -381,24 +549,6 @@ aikido::trajectory::TrajectoryPtr Ada::computeArmJointSpacePath(
 }
 
 //==============================================================================
-bool Ada::startTrajectoryControllers()
-{
-  return switchControllers(
-      std::vector<std::string>{mArmTrajControllerName, mHandTrajControllerName},
-      std::vector<std::string>());
-}
-
-//==============================================================================
-bool Ada::stopTrajectoryControllers()
-{
-  cancelAllCommands();
-  return switchControllers(
-      std::vector<std::string>(),
-      std::vector<std::string>{mArmTrajControllerName,
-                               mHandTrajControllerName});
-}
-
-//==============================================================================
 Eigen::VectorXd Ada::getVelocityLimits(bool armOnly) const
 {
   return (armOnly) ? mSoftVelocityLimits.segment(
@@ -412,66 +562,6 @@ Eigen::VectorXd Ada::getAccelerationLimits(bool armOnly) const
   return (armOnly) ? mSoftAccelerationLimits.segment(
                          0, mArm->getMetaSkeleton()->getNumDofs())
                    : mSoftAccelerationLimits;
-}
-
-//==============================================================================
-void Ada::createTrajectoryExecutor(bool isHand)
-{
-  std::string controller
-      = isHand ? mHandTrajControllerName : mArmTrajControllerName;
-  aikido::robot::RobotPtr subrobot = isHand ? mHandRobot : mArm;
-  using aikido::control::KinematicSimulationTrajectoryExecutor;
-  using aikido::control::ros::RosTrajectoryExecutor;
-
-  if (mSimulation)
-  {
-    auto id = subrobot->registerExecutor(
-        std::make_shared<KinematicSimulationTrajectoryExecutor>(
-            subrobot->getMetaSkeleton()));
-    if (!subrobot->activateExecutor(id))
-      throw std::runtime_error("Could not activate arm executor");
-  }
-  else
-  {
-    std::string serverName = controller + "/follow_joint_trajectory";
-    auto exec = std::make_shared<RosTrajectoryExecutor>(
-        mNode,
-        serverName,
-        DEFAULT_ROS_TRAJ_INTERP_TIME,
-        DEFAULT_ROS_TRAJ_GOAL_TIME_TOL,
-        subrobot->getMetaSkeleton());
-    auto id = subrobot->registerExecutor(exec);
-    if (!subrobot->activateExecutor(id))
-      throw std::runtime_error("Could not activate arm executor");
-  }
-}
-
-//==============================================================================
-bool Ada::switchControllers(
-    const std::vector<std::string>& startControllers,
-    const std::vector<std::string>& stopControllers)
-{
-  if (!mNode.ok())
-    throw std::runtime_error("Ros is not active.");
-
-  if (!mControllerServiceClient)
-    throw std::runtime_error("ServiceClient not instantiated.");
-
-  controller_manager_msgs::SwitchController srv;
-  // First try stopping the started controllers
-  // Avoids us falsely detecting a failure if already started
-  srv.request.stop_controllers = startControllers;
-  srv.request.strictness
-      = controller_manager_msgs::SwitchControllerRequest::BEST_EFFORT;
-  mControllerServiceClient->call(srv); // Don't care about response code
-
-  // Actual command
-  srv.request.start_controllers = startControllers;
-  srv.request.stop_controllers = stopControllers;
-  srv.request.strictness
-      = controller_manager_msgs::SwitchControllerRequest::STRICT;
-
-  return mControllerServiceClient->call(srv) && srv.response.ok;
 }
 
 //==============================================================================

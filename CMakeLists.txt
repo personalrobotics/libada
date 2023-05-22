@@ -145,7 +145,7 @@ target_link_libraries(libada
 
 #=============================================================================
 #Pybind
-option(BUILD_ADAPY "Build adapy (the python binding)" ON)
+option(BUILD_ADAPY "Build adapy (the python binding)" OFF)
 if(pybind11_FOUND AND BUILD_ADAPY)
 
   set(pybind_sources

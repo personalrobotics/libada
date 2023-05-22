@@ -26,12 +26,14 @@ aikido::constraint::TestablePtr get_self_collision_constraint(ada::Ada* self)
 
 bool start_trajectory_controllers(ada::Ada* self)
 {
-  return self->startTrajectoryControllers();
+  return true;
+  // return self->startTrajectoryControllers();
 }
 
 bool stop_trajectory_controllers(ada::Ada* self)
 {
-  return self->stopTrajectoryControllers();
+  return true;
+  // return self->stopTrajectoryControllers();
 }
 
 std::string get_name(ada::Ada* self)

@@ -7,6 +7,8 @@
 #include <aikido/trajectory/Trajectory.hpp>
 #include <ros/ros.h>
 
+#include <hardware_interface/joint_mode_interface.h>
+
 #include "libada/Ada.hpp"
 
 namespace ada {
@@ -59,6 +61,19 @@ Eigen::MatrixXd createBwMatrixForTSR(
     double rollTolerance,
     double pitchTolerance,
     double yawTolerance);
+
+/// Get jointcommandmode enum from string
+hardware_interface::JointCommandModes modeFromString(std::string str);
+
+
+struct ExecutorDetails {
+  std::string mId;
+  std::string mType;
+  std::string mMode;
+  std::string mController;
+};
+
+std::vector<ExecutorDetails> loadExecutorsDetailsFromParameter(const ros::NodeHandle &nodeHandle, const std::string &parameterName);
 
 } // namespace util
 } // namespace ada

@@ -56,16 +56,6 @@
         hand_controller
         " />
 
-  <!-- Gen3 Controllers -->
-  <node name="base_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" if="$(eval arg('version') == 3)"
-      args="
-        --stopped
-        velocity_controller
-        trajectory_controller
-        hand_controller
-        " />
-
   <!-- TODO: Initialize controllers directly via Aikido -->
 
 
@@ -111,12 +101,6 @@
     </group>
     <param name="robot_description"
           command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3_robotiq_2f_85.xacro sim:=false" if="$(eval arg('version') == 3)"/>
-    <node name="forque_controller_spawner_stopped" pkg="controller_manager" type="spawner" respawn="false"
-          output="screen"
-          args="
-             --stopped
-             move_until_touch_topic_controller
-             " />
   </group>
 
   <group if="$(arg perception)">
